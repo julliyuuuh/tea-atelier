@@ -2,17 +2,26 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCart } from "@/lib/cart-context";
 
-const links = ["Home", "Shop", "Collections", "About", "Contact"];
+const links = [
+  { label: "Home", href: "/" },
+  { label: "Shop", href: "/shop" },
+  { label: "Collections", href: "/collections" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
+];
 
 export default function Navbar() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { totalItems } = useCart();
 
   return (
     <header className="w-full border-b border-charcoal/10 bg-cream relative z-50">
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-8 py-5">
         {/* Logo */}
+
         <a
           href="/"
           className="font-display text-2xl tracking-tight text-charcoal"
@@ -24,18 +33,18 @@ export default function Navbar() {
         <ul className="hidden md:flex items-center gap-10">
           {links.map((link) => (
             <li
-              key={link}
+              key={link.label}
               className="relative"
-              onMouseEnter={() => setHovered(link)}
+              onMouseEnter={() => setHovered(link.label)}
               onMouseLeave={() => setHovered(null)}
             >
               <a
-                href="#"
+                href={link.href}
                 className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
               >
-                {link}
+                {link.label}
               </a>
-              {hovered === link && (
+              {hovered === link.label && (
                 <motion.div
                   layoutId="nav-underline"
                   className="absolute -bottom-1 left-0 right-0 h-[1.5px] bg-sage"
@@ -51,17 +60,17 @@ export default function Navbar() {
         {/* Desktop Cart + Login */}
         <div className="hidden md:flex items-center gap-6">
           <a
-            href="#"
+            href="/login"
             className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
           >
             Login
           </a>
 
           <a
-            href="#"
+            href="/cart"
             className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
           >
-            Cart (0)
+            Cart ({totalItems})
           </a>
         </div>
 
@@ -98,28 +107,31 @@ export default function Navbar() {
           >
             <ul className="flex flex-col px-8 py-6 gap-5">
               {links.map((link) => (
-                <li key={link}>
+                <li key={link.label}>
                   <a
-                    href="#"
+                    href={link.href}
                     onClick={() => setMenuOpen(false)}
                     className="font-display text-2xl text-charcoal"
                   >
-                    {link}
+                    {link.label}
                   </a>
                 </li>
               ))}
               <li className="pt-4 border-t border-charcoal/10 flex gap-6">
                 <a
-                  href="#"
+                  href="/login"
+                  onClick={() => setMenuOpen(false)}
                   className="font-body text-sm uppercase tracking-wide text-charcoal/80"
                 >
                   Login
                 </a>
+
                 <a
-                  href="#"
+                  href="/cart"
+                  onClick={() => setMenuOpen(false)}
                   className="font-body text-sm uppercase tracking-wide text-charcoal/80"
                 >
-                  Cart (0)
+                  Cart ({totalItems})
                 </a>
               </li>
             </ul>
