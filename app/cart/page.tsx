@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
+import Link from "next/link";
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, subtotal } = useCart();
@@ -21,12 +22,12 @@ export default function CartPage() {
               Your cart is empty.
             </p>
 
-            <a
+            <Link
               href="/shop"
-              className="inline-block bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
+              className="inline-block bg-sage text-cream font-bod`y text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
             >
               Continue Shopping
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
@@ -110,12 +111,12 @@ export default function CartPage() {
                 <span>${subtotal.toFixed(2)}</span>
               </div>
 
-              <a
+              <Link
                 href="/checkout"
                 className="block text-center bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
               >
                 Checkout
-              </a>
+              </Link>
             </div>
           </div>
         )}

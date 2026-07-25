@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
 
@@ -21,13 +22,12 @@ export default function Navbar() {
     <header className="w-full border-b border-charcoal/10 bg-cream relative z-50">
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-8 py-5">
         {/* Logo */}
-
-        <a
+        <Link
           href="/"
           className="font-display text-2xl tracking-tight text-charcoal"
         >
           Tea Atelier
-        </a>
+        </Link>
 
         {/* Desktop Nav Links */}
         <ul className="hidden md:flex items-center gap-10">
@@ -38,12 +38,12 @@ export default function Navbar() {
               onMouseEnter={() => setHovered(link.label)}
               onMouseLeave={() => setHovered(null)}
             >
-              <a
+              <Link
                 href={link.href}
                 className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
               >
                 {link.label}
-              </a>
+              </Link>
               {hovered === link.label && (
                 <motion.div
                   layoutId="nav-underline"
@@ -59,19 +59,19 @@ export default function Navbar() {
 
         {/* Desktop Cart + Login */}
         <div className="hidden md:flex items-center gap-6">
-          <a
+          <Link
             href="/login"
             className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
           >
             Login
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/cart"
             className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
           >
             Cart ({totalItems})
-          </a>
+          </Link>
         </div>
 
         {/* Mobile Hamburger */}
@@ -108,31 +108,31 @@ export default function Navbar() {
             <ul className="flex flex-col px-8 py-6 gap-5">
               {links.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     href={link.href}
                     onClick={() => setMenuOpen(false)}
                     className="font-display text-2xl text-charcoal"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
               <li className="pt-4 border-t border-charcoal/10 flex gap-6">
-                <a
+                <Link
                   href="/login"
                   onClick={() => setMenuOpen(false)}
                   className="font-body text-sm uppercase tracking-wide text-charcoal/80"
                 >
                   Login
-                </a>
+                </Link>
 
-                <a
+                <Link
                   href="/cart"
                   onClick={() => setMenuOpen(false)}
                   className="font-body text-sm uppercase tracking-wide text-charcoal/80"
                 >
                   Cart ({totalItems})
-                </a>
+                </Link>
               </li>
             </ul>
           </motion.div>

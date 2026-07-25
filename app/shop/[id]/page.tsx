@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { products } from "@/lib/products";
 import { useCart } from "@/lib/cart-context";
+import Link from "next/link";
 
 export default function ProductDetailsPage() {
   const { id } = useParams();
@@ -29,9 +30,9 @@ export default function ProductDetailsPage() {
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-8 pt-8">
         <span className="font-body text-xs text-charcoal/50">
-          <a href="/shop" className="hover:text-charcoal transition-colors">
+          <Link href="/shop" className="hover:text-charcoal transition-colors">
             Shop
-          </a>
+          </Link>
           <span className="mx-2">/</span>
           <span className="text-charcoal">{product.name}</span>
         </span>

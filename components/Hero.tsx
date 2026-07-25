@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 export default function Hero() {
   return (
@@ -19,12 +20,12 @@ export default function Hero() {
           Where Every Leaf Tells a Story
         </h1>
 
-        <a
+        <Link
           href="/shop"
           className="inline-block w-fit bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
         >
           Shop Now
-        </a>
+        </Link>
       </motion.div>
 
       {/* Right: large bleed image */}

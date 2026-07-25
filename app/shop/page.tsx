@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { products } from "@/lib/products";
 import { useCart } from "@/lib/cart-context";
+import Link from "next/link";
 
 const categories = ["All", "Leaf Tea", "Matcha", "Accessories"] as const;
 type Category = (typeof categories)[number];
@@ -85,7 +86,7 @@ export default function ShopPage() {
       <div className="max-w-7xl mx-auto px-8 pb-24">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-16">
           {filteredProducts.map((product) => (
-            <a
+            <Link
               href={`/shop/${product.id}`}
               key={product.id}
               className="group block"
@@ -129,7 +130,7 @@ export default function ShopPage() {
                   Add to Cart
                 </button>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

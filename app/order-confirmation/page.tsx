@@ -4,13 +4,18 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useCart } from "@/lib/cart-context";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function OrderConfirmationPage() {
-  const { subtotal } = useCart();
-  const deliveryFee = 5;
-  const total = subtotal + deliveryFee;
-  const orderNumber = `TA-${Math.floor(100000 + Math.random() * 900000)}`;
+  const searchParams = useSearchParams();
+  const subtotal = parseFloat(searchParams.get("subtotal") || "0");
+  const deliveryFee = parseFloat(searchParams.get("delivery") || "0");
+  const total = parseFloat(searchParams.get("total") || "0");
+  const [orderNumber, setOrderNumber] = useState("");
+  useEffect(() => {
+    setOrderNumber(`TA-${Math.floor(100000 + Math.random() * 900000)}`);
+  }, []);
 
   return (
     <main className="min-h-screen bg-cream">

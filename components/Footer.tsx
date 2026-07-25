@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="bg-charcoal text-cream">
@@ -22,9 +24,12 @@ export default function Footer() {
           </h4>
           <ul className="space-y-2 font-body text-sm text-cream/80">
             <li>
-              <a href="#" className="hover:text-sage-light transition-colors">
+              <Link
+                href="#"
+                className="hover:text-sage-light transition-colors"
+              >
                 Home
-              </a>
+              </Link>
             </li>
             <li>
               <a href="#" className="hover:text-sage-light transition-colors">

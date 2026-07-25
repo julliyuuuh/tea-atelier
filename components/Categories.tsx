@@ -1,12 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 const categories = [
   { name: "Leaf Tea", image: "/images/category-leaf.jpg" },
   { name: "Matcha", image: "/images/category-matcha.jpg" },
   { name: "Tea Accessories", image: "/images/category-accessories.jpg" },
 ];
+const MotionLink = motion(Link);
 
 export default function Categories() {
   return (
@@ -20,8 +22,8 @@ export default function Categories() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {categories.map((cat) => (
-          <motion.a
-            href="#"
+          <MotionLink
+            href="/shop"
             key={cat.name}
             whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
@@ -37,7 +39,7 @@ export default function Categories() {
             <span className="absolute top-4 left-4 bg-cream/90 px-3 py-1 font-body text-[10px] tracking-[0.15em] uppercase text-charcoal">
               {cat.name}
             </span>
-          </motion.a>
+          </MotionLink>
         ))}
       </div>
     </section>
