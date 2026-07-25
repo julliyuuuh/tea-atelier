@@ -9,7 +9,6 @@ export default function LoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Front-end only for now — no real auth wired up yet
     console.log("Login attempt:", { email, password });
   };
 
