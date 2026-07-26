@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Tea Atelier — Admin",
-};
+import { useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 const navItems = [
   { label: "Overview", href: "/admin" },
@@ -17,6 +17,39 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { user, isLoading, logout } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    document.title = "Tea Atelier — Admin";
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    if (user.role !== "admin") {
+      router.push("/");
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading || !user || user.role !== "admin") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F4F4F2]">
+        <p className="font-body text-sm text-charcoal/60">Loading...</p>
+      </div>
+    );
+  }
+
+  function handleLogout() {
+    logout();
+    router.push("/login");
+  }
+
   return (
     <div className="min-h-screen flex bg-[#F4F4F2]">
       {/* Sidebar */}
@@ -41,12 +74,12 @@ export default function AdminLayout({
         </nav>
 
         <div className="px-6 py-5 border-t border-cream/10">
-          <Link
-            href="/admin/login"
+          <button
+            onClick={handleLogout}
             className="font-body text-xs text-cream/50 hover:text-cream transition-colors"
           >
             Log Out
-          </Link>
+          </button>
         </div>
       </aside>
 

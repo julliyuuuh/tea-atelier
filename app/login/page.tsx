@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
     setIsLoading(true);
@@ -26,7 +26,12 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.error || "Login failed.");
 
       login(data.token, data.user);
-      window.location.href = "/";
+
+      if (data.user.role === "admin") {
+        window.location.href = "/admin";
+      } else {
+        window.location.href = "/";
+      }
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Something went wrong."
