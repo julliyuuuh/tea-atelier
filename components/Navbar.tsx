@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
 
 const links = [
   { label: "Home", href: "/" },
@@ -17,6 +18,7 @@ export default function Navbar() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const { totalItems } = useCart();
+  const { user, logout } = useAuth();
 
   return (
     <header className="w-full border-b border-charcoal/10 bg-cream relative z-50">
@@ -59,12 +61,21 @@ export default function Navbar() {
 
         {/* Desktop Cart + Login */}
         <div className="hidden md:flex items-center gap-6">
-          <Link
-            href="/login"
-            className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
-          >
-            Login
-          </Link>
+          {user ? (
+            <button
+              onClick={logout}
+              className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
+            >
+              Log Out
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
+            >
+              Login
+            </Link>
+          )}
 
           <Link
             href="/cart"
@@ -118,13 +129,25 @@ export default function Navbar() {
                 </li>
               ))}
               <li className="pt-4 border-t border-charcoal/10 flex gap-6">
-                <Link
-                  href="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="font-body text-sm uppercase tracking-wide text-charcoal/80"
-                >
-                  Login
-                </Link>
+                {user ? (
+                  <button
+                    onClick={() => {
+                      logout();
+                      setMenuOpen(false);
+                    }}
+                    className="font-body text-sm uppercase tracking-wide text-charcoal/80"
+                  >
+                    Log Out
+                  </button>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="font-body text-sm uppercase tracking-wide text-charcoal/80"
+                  >
+                    Login
+                  </Link>
+                )}
 
                 <Link
                   href="/cart"

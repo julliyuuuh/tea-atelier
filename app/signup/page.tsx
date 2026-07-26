@@ -2,21 +2,48 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/lib/auth-context";
 
 export default function SignupPage() {
-  const [name, setName] = useState("");
+  const { login } = useAuth();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage("");
+
     if (password !== confirmPassword) {
-      alert("Passwords don't match");
+      setErrorMessage("Passwords don't match.");
       return;
     }
-    // Front-end only for now — no real auth wired up yet
-    console.log("Signup attempt:", { name, email, password });
+
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email, phoneNumber, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Signup failed.");
+
+      login(data.token, data.user);
+      window.location.href = "/";
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Something went wrong."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -41,18 +68,39 @@ export default function SignupPage() {
           Join us for early access to seasonal blends
         </p>
 
+        {errorMessage && (
+          <p className="font-body text-sm text-red-600 text-center mb-6">
+            {errorMessage}
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
-              Full Name
-            </label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-transparent border-b border-charcoal/30 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-            />
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+                First Name
+              </label>
+              <input
+                type="text"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full bg-transparent border-b border-charcoal/30 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+              />
+            </div>
+
+            <div className="flex-1">
+              <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+                Last Name
+              </label>
+              <input
+                type="text"
+                required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full bg-transparent border-b border-charcoal/30 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+              />
+            </div>
           </div>
 
           <div>
@@ -64,6 +112,18 @@ export default function SignupPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-transparent border-b border-charcoal/30 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+              Phone Number <span className="normal-case text-charcoal/40">(optional)</span>
+            </label>
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
               className="w-full bg-transparent border-b border-charcoal/30 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
             />
           </div>
@@ -96,9 +156,10 @@ export default function SignupPage() {
 
           <button
             type="submit"
-            className="w-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
+            disabled={isLoading}
+            className="w-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:opacity-50"
           >
-            Create Account
+            {isLoading ? "Creating account..." : "Create Account"}
           </button>
         </form>
 

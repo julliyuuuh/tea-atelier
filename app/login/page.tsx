@@ -2,14 +2,38 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/lib/auth-context";
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login attempt:", { email, password });
+    setErrorMessage("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Login failed.");
+
+      login(data.token, data.user);
+      window.location.href = "/";
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Something went wrong."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -33,6 +57,12 @@ export default function LoginPage() {
         <p className="font-body text-sm text-charcoal/60 text-center mb-10">
           Sign in to continue to your account
         </p>
+
+        {errorMessage && (
+          <p className="font-body text-sm text-red-600 text-center mb-6">
+            {errorMessage}
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -72,9 +102,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
+            disabled={isLoading}
+            className="w-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:opacity-50"
           >
-            Log In
+            {isLoading ? "Logging in..." : "Log In"}
           </button>
         </form>
 
