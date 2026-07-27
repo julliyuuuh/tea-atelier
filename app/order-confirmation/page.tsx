@@ -15,7 +15,7 @@ function OrderConfirmationContent() {
   const [orderNumber, setOrderNumber] = useState("");
 
   useEffect(() => {
-    setOrderNumber(`TA-₱{Math.floor(100000 + Math.random() * 900000)}`);
+    setOrderNumber(`TA-${Math.floor(100000 + Math.random() * 900000)}`);
   }, []);
 
   return (
