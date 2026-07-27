@@ -54,7 +54,7 @@ export default function CartPage() {
                         {item.product.name}
                       </h3>
                       <span className="font-body text-sm text-charcoal/60">
-                        ${item.product.price}
+                        ₱{item.product.price}
                       </span>
                     </div>
 
@@ -100,7 +100,7 @@ export default function CartPage() {
               </h2>
               <div className="flex justify-between font-body text-sm text-charcoal/70 mb-3">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>₱{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-body text-sm text-charcoal/70 mb-6">
                 <span>Shipping</span>
@@ -108,7 +108,7 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between font-display text-lg text-charcoal border-t border-charcoal/10 pt-4 mb-8">
                 <span>Total</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>₱{subtotal.toFixed(2)}</span>
               </div>
 
               <Link
