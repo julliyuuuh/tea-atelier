@@ -1,24 +1,67 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { products } from "@/lib/products";
 import { useCart } from "@/lib/cart-context";
 import Link from "next/link";
 
+type Product = {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  category: string;
+  price: number;
+  availability: string;
+};
+
 export default function ProductDetailsPage() {
   const { id } = useParams();
-  const product = products.find((p) => p.id === id);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
 
-  if (!product) {
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadProduct() {
+      try {
+        const res = await fetch(`/api/products/${id}`, { signal: controller.signal });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Product not found.");
+        setProduct(data.product);
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          setErrorMessage(error.message);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadProduct();
+    return () => controller.abort();
+  }, [id]);
+
+  if (isLoading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="font-body text-charcoal/60">Product not found.</p>
+        <p className="font-body text-charcoal/60">Loading...</p>
+      </main>
+    );
+  }
+
+  if (errorMessage || !product) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <p className="font-body text-charcoal/60">
+          {errorMessage || "Product not found."}
+        </p>
       </main>
     );
   }
@@ -40,7 +83,6 @@ export default function ProductDetailsPage() {
 
       {/* Product Layout */}
       <div className="max-w-7xl mx-auto px-8 py-12 grid grid-cols-1 md:grid-cols-2 gap-16">
-        {/* Image */}
         <motion.div
           initial={{ opacity: 0, scale: 1.03 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -54,7 +96,6 @@ export default function ProductDetailsPage() {
           />
         </motion.div>
 
-        {/* Info */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -78,7 +119,6 @@ export default function ProductDetailsPage() {
             {product.availability}
           </span>
 
-          {/* Quantity + Add to Cart */}
           <div className="flex items-center gap-6">
             <div className="flex items-center border border-charcoal/20">
               <button

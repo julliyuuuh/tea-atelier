@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { products } from "@/lib/products";
 import { useCart } from "@/lib/cart-context";
 import Link from "next/link";
 
@@ -11,10 +10,45 @@ const categories = ["All", "Leaf Tea", "Matcha", "Accessories"] as const;
 type Category = (typeof categories)[number];
 type SortOption = "Newest" | "Price: Low to High" | "Price: High to Low";
 
+type Product = {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  category: string;
+  price: number;
+  availability: string;
+};
+
 export default function ShopPage() {
   const [activeCategory, setActiveCategory] = useState<Category>("All");
   const [sortBy, setSortBy] = useState<SortOption>("Newest");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
   const { addToCart } = useCart();
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadProducts() {
+      try {
+        const res = await fetch("/api/products", { signal: controller.signal });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Unable to load products.");
+        setProducts(data.products);
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          setErrorMessage(error.message);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadProducts();
+    return () => controller.abort();
+  }, []);
 
   const filteredProducts = useMemo(() => {
     let list =
@@ -29,7 +63,7 @@ export default function ShopPage() {
     }
 
     return list;
-  }, [activeCategory, sortBy]);
+  }, [products, activeCategory, sortBy]);
 
   return (
     <main className="min-h-screen">
@@ -47,13 +81,12 @@ export default function ShopPage() {
       <div className="max-w-7xl mx-auto px-8 pt-6 pb-10">
         <h1 className="font-display text-4xl text-charcoal mb-2">Shop All</h1>
         <p className="font-body text-sm text-charcoal/60">
-          {filteredProducts.length} products
+          {isLoading ? "Loading products..." : `${filteredProducts.length} products`}
         </p>
       </div>
 
       {/* Filters Bar */}
       <div className="max-w-7xl mx-auto px-8 pb-10 flex flex-wrap items-center justify-between gap-6 border-y border-charcoal/10 py-5">
-        {/* Category Filter */}
         <div className="flex items-center gap-6">
           {categories.map((cat) => (
             <button
@@ -70,7 +103,6 @@ export default function ShopPage() {
           ))}
         </div>
 
-        {/* Sort */}
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -84,6 +116,14 @@ export default function ShopPage() {
 
       {/* Product Grid */}
       <div className="max-w-7xl mx-auto px-8 pb-24">
+        {errorMessage && (
+          <p className="font-body text-sm text-red-600 mb-8">{errorMessage}</p>
+        )}
+
+        {!isLoading && filteredProducts.length === 0 && !errorMessage && (
+          <p className="font-body text-sm text-charcoal/60">No products found.</p>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-16">
           {filteredProducts.map((product) => (
             <Link
@@ -103,7 +143,6 @@ export default function ShopPage() {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    // Quick View placeholder — we'll wire this up later
                   }}
                   className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-cream text-charcoal font-body text-[10px] tracking-wide uppercase px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
