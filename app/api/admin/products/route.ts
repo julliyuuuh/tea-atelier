@@ -6,15 +6,15 @@ export async function POST(req: Request) {
   const { error } = requireAdmin(req);
   if (error) return error;
 
-  const { name, category, price, image, description, availability } = await req.json();
+  const { name, category, price, image, description, stockQuantity } = await req.json();
 
-  const status = availability === "Out of Stock" ? "NO STOCK" : "IN STOCK";
+  const status = stockQuantity > 0 ? "IN STOCK" : "NO STOCK";
 
   const result = await pool.query(
-    `INSERT INTO products (product_name, product_desc, product_image, category, price, status)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING product_id, product_name, product_desc, product_image, category, price, status`,
-    [name, description, image, category, price, status]
+    `INSERT INTO products (product_name, product_desc, product_image, category, price, status, stock_quantity)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING product_id, product_name, product_desc, product_image, category, price, status, stock_quantity`,
+    [name, description, image, category, price, status, stockQuantity]
   );
 
   const row = result.rows[0];
@@ -27,6 +27,7 @@ export async function POST(req: Request) {
       category: row.category,
       price: parseFloat(row.price),
       availability: row.status === "NO STOCK" ? "Out of Stock" : "In Stock",
+      stockQuantity: row.stock_quantity,
     },
   });
 }
