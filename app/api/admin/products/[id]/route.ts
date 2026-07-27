@@ -10,15 +10,15 @@ export async function PUT(
   if (error) return error;
 
   const { id } = await params;
-  const { name, category, price, image, description, availability } = await req.json();
-  const status = availability === "Out of Stock" ? "NO STOCK" : "IN STOCK";
+  const { name, category, price, image, description, stockQuantity } = await req.json();
+  const status = stockQuantity > 0 ? "IN STOCK" : "NO STOCK";
 
   const result = await pool.query(
     `UPDATE products
-     SET product_name = $1, product_desc = $2, product_image = $3, category = $4, price = $5, status = $6
-     WHERE product_id = $7
-     RETURNING product_id, product_name, product_desc, product_image, category, price, status`,
-    [name, description, image, category, price, status, id]
+     SET product_name = $1, product_desc = $2, product_image = $3, category = $4, price = $5, status = $6, stock_quantity = $7
+     WHERE product_id = $8
+     RETURNING product_id, product_name, product_desc, product_image, category, price, status, stock_quantity`,
+    [name, description, image, category, price, status, stockQuantity, id]
   );
 
   const row = result.rows[0];
@@ -35,6 +35,7 @@ export async function PUT(
       category: row.category,
       price: parseFloat(row.price),
       availability: row.status === "NO STOCK" ? "Out of Stock" : "In Stock",
+      stockQuantity: row.stock_quantity,
     },
   });
 }
