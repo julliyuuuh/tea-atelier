@@ -61,6 +61,15 @@ export default function Navbar() {
 
         {/* Desktop Cart + Login */}
         <div className="hidden md:flex items-center gap-6">
+          {user && (
+            <Link
+              href="/orders"
+              className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
+            >
+              My Orders
+            </Link>
+          )}
+
           {user ? (
             <button
               onClick={logout}
@@ -128,6 +137,17 @@ export default function Navbar() {
                   </Link>
                 </li>
               ))}
+              {user && (
+                <li>
+                  <Link
+                    href="/orders"
+                    onClick={() => setMenuOpen(false)}
+                    className="font-display text-2xl text-charcoal"
+                  >
+                    My Orders
+                  </Link>
+                </li>
+              )}
               <li className="pt-4 border-t border-charcoal/10 flex gap-6">
                 {user ? (
                   <button
