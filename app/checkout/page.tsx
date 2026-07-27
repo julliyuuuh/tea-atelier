@@ -40,6 +40,13 @@ export default function CheckoutPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+
+    if (name === "phone") {
+      const digitsOnly = value.replace(/[^0-9]/g, "").slice(0, 11);
+      setFormData((prev) => ({ ...prev, phone: digitsOnly }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -150,6 +157,7 @@ export default function CheckoutPage() {
                     value={formData.phone}
                     onChange={handleChange}
                     required
+                    maxLength={11}
                     className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
                   />
                 </div>
