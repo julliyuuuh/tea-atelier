@@ -4,11 +4,12 @@ import { getUserId } from "@/lib/api-auth";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { productId } = await params;
   const { quantity } = await req.json();
   if (!quantity || quantity < 1) {
     return NextResponse.json({ error: "quantity must be at least 1" }, { status: 400 });
@@ -16,21 +17,23 @@ export async function PATCH(
 
   await pool.query(
     "UPDATE cart SET quantity = $1 WHERE user_id = $2 AND product_id = $3",
-    [quantity, userId, params.productId]
+    [quantity, userId, productId]
   );
   return NextResponse.json({ success: true });
 }
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { productId } = await params;
+
   await pool.query(
     "DELETE FROM cart WHERE user_id = $1 AND product_id = $2",
-    [userId, params.productId]
+    [userId, productId]
   );
   return NextResponse.json({ success: true });
 }
