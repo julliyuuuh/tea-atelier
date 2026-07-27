@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { products as initialProducts, Product } from "@/lib/products";
+import React, { useState, useEffect } from "react";
+import type { Product } from "@/lib/products";
 
 const emptyForm = {
   name: "",
@@ -13,19 +13,48 @@ const emptyForm = {
 };
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  async function loadProducts() {
+    try {
+      const res = await fetch("/api/products");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to load products.");
+      setProducts(data.products);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const handleDelete = (id: string) => {
-    if (confirm("Delete this product?")) {
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this product?")) return;
+
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Unable to delete product.");
       setProducts((prev) => prev.filter((p) => p.id !== id));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Something went wrong.");
     }
   };
 
@@ -48,36 +77,55 @@ export default function AdminProductsPage() {
     setModalOpen(true);
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const token = localStorage.getItem("token");
 
-    if (editingId) {
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === editingId
-            ? { ...p, ...form, price: parseFloat(form.price) }
-            : p,
-        ),
-      );
-    } else {
-      const newProduct: Product = {
-        id: form.name.toLowerCase().replace(/\s+/g, "-"),
-        ...form,
-        price: parseFloat(form.price),
-      };
-      setProducts((prev) => [...prev, newProduct]);
+    const payload = {
+      name: form.name,
+      category: form.category,
+      price: parseFloat(form.price),
+      image: form.image,
+      description: form.description,
+      availability: form.availability,
+    };
+
+    try {
+      if (editingId) {
+        const res = await fetch(`/api/admin/products/${editingId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Unable to update product.");
+        setProducts((prev) => prev.map((p) => (p.id === editingId ? data.product : p)));
+      } else {
+        const res = await fetch("/api/admin/products", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Unable to add product.");
+        setProducts((prev) => [...prev, data.product]);
+      }
+
+      setModalOpen(false);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Something went wrong.");
     }
-
-    setModalOpen(false);
   };
 
   return (
@@ -88,7 +136,7 @@ export default function AdminProductsPage() {
             Products
           </h1>
           <p className="font-body text-sm text-charcoal/60">
-            {products.length} products total
+            {isLoading ? "Loading..." : `${products.length} products total`}
           </p>
         </div>
         <button
@@ -98,6 +146,10 @@ export default function AdminProductsPage() {
           + Add Product
         </button>
       </div>
+
+      {errorMessage && (
+        <p className="font-body text-sm text-red-600 mb-4">{errorMessage}</p>
+      )}
 
       <input
         type="text"
@@ -189,7 +241,6 @@ export default function AdminProductsPage() {
         </table>
       </div>
 
-      {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-50 p-6">
           <div className="bg-white w-full max-w-md p-8 max-h-[90vh] overflow-y-auto">
