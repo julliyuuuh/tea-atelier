@@ -1,0 +1,34 @@
+import { NextResponse } from "next/server";
+import { pool } from "@/lib/db";
+
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const result = await pool.query(
+      `SELECT product_id, product_name, product_desc, product_image, category, price, status
+       FROM products WHERE product_id = $1`,
+      [params.id]
+    );
+
+    const row = result.rows[0];
+    if (!row) {
+      return NextResponse.json({ error: "Product not found." }, { status: 404 });
+    }
+
+    const product = {
+      id: String(row.product_id),
+      name: row.product_name,
+      description: row.product_desc,
+      image: row.product_image,
+      category: row.category,
+      price: parseFloat(row.price),
+      availability: row.status === "NO STOCK" ? "Out of Stock" : "In Stock",
+    };
+
+    return NextResponse.json({ product });
+  } catch (error) {
+    return NextResponse.json({ error: "Unable to load product." }, { status: 500 });
+  }
+}
