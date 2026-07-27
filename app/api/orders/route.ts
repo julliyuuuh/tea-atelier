@@ -7,48 +7,6 @@ export async function GET(req: Request) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const ordersResult = await pool.query(
-    `SELECT order_id, shipping_cost, total_amount, order_status, payment_method, created_at
-     FROM orders
-     WHERE user_id = $1
-     ORDER BY created_at DESC`,
-    [userId]
-  );
-
-  const orders = await Promise.all(
-    ordersResult.rows.map(async (order) => {
-      const itemsResult = await pool.query(
-        `SELECT oi.quantity, oi.price, p.product_name, p.product_image
-         FROM order_items oi
-         JOIN products p ON p.product_id = oi.product_id
-         WHERE oi.order_id = $1`,
-        [order.order_id]
-      );
-
-      return {
-        id: order.order_id,
-        status: order.order_status,
-        paymentMethod: order.payment_method,
-        shippingCost: parseFloat(order.shipping_cost),
-        totalAmount: parseFloat(order.total_amount),
-        createdAt: order.created_at,
-        items: itemsResult.rows.map((item) => ({
-          name: item.product_name,
-          image: item.product_image,
-          quantity: item.quantity,
-          price: parseFloat(item.price),
-        })),
-      };
-    })
-  );
-
-  return NextResponse.json({ orders });
-}
-
-export async function GET(req: Request) {
-  const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const ordersResult = await pool.query(
     `SELECT order_id, shipping_cost, total_amount, order_status, payment_method, recipient_name, created_at
      FROM orders
      WHERE user_id = $1
