@@ -15,6 +15,22 @@ export async function PATCH(
     return NextResponse.json({ error: "quantity must be at least 1" }, { status: 400 });
   }
 
+  const productResult = await pool.query(
+    "SELECT stock_quantity FROM products WHERE product_id = $1",
+    [productId]
+  );
+  const product = productResult.rows[0];
+  if (!product) {
+    return NextResponse.json({ error: "Product not found." }, { status: 404 });
+  }
+
+  if (quantity > product.stock_quantity) {
+    return NextResponse.json(
+      { error: `Only ${product.stock_quantity} in stock.` },
+      { status: 400 }
+    );
+  }
+
   await pool.query(
     "UPDATE cart SET quantity = $1 WHERE user_id = $2 AND product_id = $3",
     [quantity, userId, productId]

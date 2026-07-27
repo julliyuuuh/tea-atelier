@@ -53,10 +53,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "productId is required" }, { status: 400 });
   }
 
+  const productResult = await pool.query(
+    "SELECT stock_quantity FROM products WHERE product_id = $1",
+    [productId]
+  );
+  const product = productResult.rows[0];
+  if (!product) {
+    return NextResponse.json({ error: "Product not found." }, { status: 404 });
+  }
+
   const existing = await pool.query(
     "SELECT quantity FROM cart WHERE user_id = $1 AND product_id = $2",
     [userId, productId]
   );
+
+  const currentCartQuantity = existing.rows[0]?.quantity || 0;
+  const newTotalQuantity = currentCartQuantity + quantity;
+
+  if (newTotalQuantity > product.stock_quantity) {
+    return NextResponse.json(
+      { error: `Only ${product.stock_quantity} in stock.` },
+      { status: 400 }
+    );
+  }
 
   if (existing.rows.length > 0) {
     await pool.query(

@@ -51,9 +51,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     fetch("/api/cart", { method: "DELETE", headers: authHeaders() }).catch(() => {});
   };
 
-  const addToCart = (product: Product, quantity: number = 1) => {
+  const addToCart = async (product: Product, quantity: number = 1) => {
+    const existing = items.find((i) => i.product.id === product.id);
+    const currentQuantity = existing?.quantity || 0;
+
+    if (currentQuantity + quantity > product.stockQuantity) {
+      alert(`Only ${product.stockQuantity} in stock.`);
+      return;
+    }
+
     setItems((prev) => {
-      const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
         return prev.map((i) =>
           i.product.id === product.id
@@ -64,11 +71,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [...prev, { product, quantity }];
     });
 
-    fetch("/api/cart", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify({ productId: product.id, quantity }),
-    }).catch(() => {});
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ productId: product.id, quantity }),
+      });
+      if (!res.ok) {
+        // Server rejected it (e.g. stock changed between check and now) — roll back
+        setItems((prev) =>
+          existing
+            ? prev.map((i) =>
+                i.product.id === product.id
+                  ? { ...i, quantity: i.quantity - quantity }
+                  : i,
+              )
+            : prev.filter((i) => i.product.id !== product.id),
+        );
+        const data = await res.json();
+        alert(data.error || "Unable to add to cart.");
+      }
+    } catch {
+      // network failure 
+    }
   };
 
   const removeFromCart = (productId: string) => {
@@ -79,17 +104,45 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }).catch(() => {});
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = async (productId: string, quantity: number) => {
     if (quantity < 1) return;
+
+    const item = items.find((i) => i.product.id === productId);
+    if (item && quantity > item.product.stockQuantity) {
+      alert(`Only ${item.product.stockQuantity} in stock.`);
+      return;
+    }
+
+    const previousQuantity = item?.quantity;
+
     setItems((prev) =>
       prev.map((i) => (i.product.id === productId ? { ...i, quantity } : i)),
     );
 
-    fetch(`/api/cart/${productId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify({ quantity }),
-    }).catch(() => {});
+    try {
+      const res = await fetch(`/api/cart/${productId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ quantity }),
+      });
+      if (!res.ok && previousQuantity !== undefined) {
+        setItems((prev) =>
+          prev.map((i) =>
+            i.product.id === productId ? { ...i, quantity: previousQuantity } : i,
+          ),
+        );
+        const data = await res.json();
+        alert(data.error || "Unable to update quantity.");
+      }
+    } catch {
+      if (previousQuantity !== undefined) {
+        setItems((prev) =>
+          prev.map((i) =>
+            i.product.id === productId ? { ...i, quantity: previousQuantity } : i,
+          ),
+        );
+      }
+    }
   };
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
