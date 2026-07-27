@@ -9,7 +9,7 @@ const emptyForm = {
   price: "",
   image: "",
   description: "",
-  availability: "In Stock" as Product["availability"],
+  stockQuantity: "",
 };
 
 export default function AdminProductsPage() {
@@ -62,6 +62,7 @@ export default function AdminProductsPage() {
   const openAddModal = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setImageFile(null);
     setModalOpen(true);
   };
 
@@ -73,8 +74,9 @@ export default function AdminProductsPage() {
       price: product.price.toString(),
       image: product.image,
       description: product.description,
-      availability: product.availability,
+      stockQuantity: product.stockQuantity.toString(),
     });
+    setImageFile(null);
     setModalOpen(true);
   };
 
@@ -118,7 +120,7 @@ export default function AdminProductsPage() {
       price: parseFloat(form.price),
       image: imageUrl,
       description: form.description,
-      availability: form.availability,
+      stockQuantity: parseInt(form.stockQuantity, 10) || 0,
     };
 
     try {
@@ -199,6 +201,9 @@ export default function AdminProductsPage() {
                 Price
               </th>
               <th className="font-body text-xs uppercase tracking-wide text-charcoal/50 px-5 py-3">
+                Stock
+              </th>
+              <th className="font-body text-xs uppercase tracking-wide text-charcoal/50 px-5 py-3">
                 Availability
               </th>
               <th className="font-body text-xs uppercase tracking-wide text-charcoal/50 px-5 py-3 text-right">
@@ -234,6 +239,11 @@ export default function AdminProductsPage() {
                 <td className="px-5 py-3">
                   <span className="font-body text-sm text-charcoal/70">
                     ₱{product.price}
+                  </span>
+                </td>
+                <td className="px-5 py-3">
+                  <span className="font-body text-sm text-charcoal/70">
+                    {product.stockQuantity}
                   </span>
                 </td>
                 <td className="px-5 py-3">
@@ -322,6 +332,25 @@ export default function AdminProductsPage() {
 
               <div>
                 <label className="font-body text-xs text-charcoal/60 block mb-1.5">
+                  Stock Quantity
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  name="stockQuantity"
+                  value={form.stockQuantity}
+                  onChange={handleChange}
+                  required
+                  className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
+                />
+                <p className="font-body text-xs text-charcoal/40 mt-1">
+                  Availability is automatically set based on inputted number.
+                </p>
+              </div>
+
+              <div>
+                <label className="font-body text-xs text-charcoal/60 block mb-1.5">
                   Product Image
                 </label>
 
@@ -360,21 +389,6 @@ export default function AdminProductsPage() {
                   required
                   className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
                 />
-              </div>
-
-              <div>
-                <label className="font-body text-xs text-charcoal/60 block mb-1.5">
-                  Availability
-                </label>
-                <select
-                  name="availability"
-                  value={form.availability}
-                  onChange={handleChange}
-                  className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
-                >
-                  <option>In Stock</option>
-                  <option>Out of Stock</option>
-                </select>
               </div>
 
               <div className="flex gap-3 pt-2">
