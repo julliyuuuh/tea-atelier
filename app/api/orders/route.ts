@@ -6,9 +6,9 @@ export async function POST(req: Request) {
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { street, barangay, city, province, zip, deliveryFee, paymentMethod } = await req.json();
+  const { street, city, province, deliveryFee, paymentMethod, phone } = await req.json();
 
-  if (!street || !barangay || !city || !province || !zip) {
+  if (!street || !city || !province) {
     return NextResponse.json({ error: "All address fields are required." }, { status: 400 });
   }
 
@@ -44,10 +44,10 @@ export async function POST(req: Request) {
 
     // Save the delivery address
     const addressResult = await client.query(
-      `INSERT INTO user_address (user_id, address_line1, address_line2, address_line3)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO user_address (user_id, address_line1, address_line2)
+       VALUES ($1, $2, $3)
        RETURNING address_id`,
-      [userId, street, barangay, `${city}, ${province} ${zip}`]
+      [userId, street, `${city}, ${province}`]
     );
     const addressId = addressResult.rows[0].address_id;
 
@@ -61,10 +61,10 @@ export async function POST(req: Request) {
 
     // Create the order
     const orderResult = await client.query(
-      `INSERT INTO orders (user_id, address_id, shipping_cost, total_amount, order_status, payment_method)
-       VALUES ($1, $2, $3, $4, 'PENDING', $5)
+      `INSERT INTO orders (user_id, address_id, shipping_cost, total_amount, order_status, payment_method, contact_phone)
+       VALUES ($1, $2, $3, $4, 'PENDING', $5, $6)
        RETURNING order_id`,
-      [userId, addressId, shippingCost, totalAmount, paymentMethod || "cod"]
+      [userId, addressId, shippingCost, totalAmount, paymentMethod || "cod", phone || null]
     );
     const orderId = orderResult.rows[0].order_id;
 

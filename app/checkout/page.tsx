@@ -20,10 +20,8 @@ export default function CheckoutPage() {
     email: "",
     phone: "",
     street: "",
-    barangay: "",
     city: "",
     province: "",
-    zip: "",
   });
 
   useEffect(() => {
@@ -59,10 +57,8 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           street: formData.street,
-          barangay: formData.barangay,
           city: formData.city,
           province: formData.province,
-          zip: formData.zip,
           deliveryFee,
           paymentMethod,
         }),
@@ -173,19 +169,7 @@ export default function CheckoutPage() {
                     value={formData.street}
                     onChange={handleChange}
                     required
-                    className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
-                  />
-                </div>
-                <div>
-                  <label className="block font-body text-sm text-charcoal/70 mb-2">
-                    Barangay
-                  </label>
-                  <input
-                    type="text"
-                    name="barangay"
-                    value={formData.barangay}
-                    onChange={handleChange}
-                    required
+                    placeholder="House/unit number, street name"
                     className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
                   />
                 </div>
@@ -210,19 +194,6 @@ export default function CheckoutPage() {
                     type="text"
                     name="province"
                     value={formData.province}
-                    onChange={handleChange}
-                    required
-                    className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
-                  />
-                </div>
-                <div>
-                  <label className="block font-body text-sm text-charcoal/70 mb-2">
-                    ZIP Code
-                  </label>
-                  <input
-                    type="text"
-                    name="zip"
-                    value={formData.zip}
                     onChange={handleChange}
                     required
                     className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
