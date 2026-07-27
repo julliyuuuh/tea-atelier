@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { Product } from "./products";
 import { useAuth } from "./auth-context";
 
@@ -26,6 +27,8 @@ function authHeaders(): Record<string, string> {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,6 +55,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const addToCart = async (product: Product, quantity: number = 1) => {
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      return;
+    }
+
     const existing = items.find((i) => i.product.id === product.id);
     const currentQuantity = existing?.quantity || 0;
 
@@ -92,7 +100,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         alert(data.error || "Unable to add to cart.");
       }
     } catch {
-      // network failure 
+      // network failure
     }
   };
 
