@@ -15,6 +15,7 @@ type Order = {
   id: number;
   status: string;
   paymentMethod: string;
+  recipientName: string | null;
   shippingCost: number;
   totalAmount: number;
   createdAt: string;
@@ -95,13 +96,18 @@ export default function OrderHistoryPage() {
                   <p className="font-body text-sm text-charcoal">
                     Order #TA-{order.id}
                   </p>
-                  <p className="font-body text-xs text-charcoal/50 mt-1">
+                    <p className="font-body text-xs text-charcoal/50 mt-1">
                     {new Date(order.createdAt).toLocaleDateString("en-PH", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
                     })}
-                  </p>
+                    </p>
+                    {order.recipientName && (
+                    <p className="font-body text-xs text-charcoal/50 mt-1">
+                        For: {order.recipientName}
+                    </p>
+                    )}
                 </div>
                 <span className="font-body text-xs uppercase tracking-wide px-3 py-1 bg-sage/15 text-sage">
                   {order.status}
