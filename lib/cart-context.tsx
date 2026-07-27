@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { Product, products } from "./products";
+import { Product } from "./products";
 import { useAuth } from "./auth-context";
 
 type CartItem = { product: Product; quantity: number };
@@ -41,15 +41,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     fetch("/api/cart", { headers: authHeaders() })
       .then((res) => (res.ok ? res.json() : []))
-      .then((rows: { product_id: string; quantity: number }[]) => {
-        const hydrated = rows
-          .map((row) => {
-            const product = products.find((p) => p.id === row.product_id);
-            return product ? { product, quantity: row.quantity } : null;
-          })
-          .filter((i): i is CartItem => i !== null);
-        setItems(hydrated);
-      })
+      .then((rows: CartItem[]) => setItems(rows))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user, authLoading]);

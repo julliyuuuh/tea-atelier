@@ -2,15 +2,46 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getUserId } from "@/lib/api-auth";
 
+function toAvailability(status: string): "In Stock" | "Out of Stock" {
+  return status === "IN STOCK" ? "In Stock" : "Out of Stock";
+}
+
 export async function GET(req: Request) {
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const result = await pool.query(
-    "SELECT product_id, quantity FROM cart WHERE user_id = $1",
+    `SELECT
+       p.product_id,
+       p.product_name,
+       p.category,
+       p.price,
+       p.product_image,
+       p.product_desc,
+       p.status,
+       p.stock_quantity,
+       c.quantity AS cart_quantity
+     FROM cart c
+     JOIN products p ON p.product_id = c.product_id
+     WHERE c.user_id = $1`,
     [userId]
   );
-  return NextResponse.json(result.rows);
+
+  const items = result.rows.map((row) => ({
+    product: {
+      id: String(row.product_id),
+      name: row.product_name,
+      category: row.category,
+      price: parseFloat(row.price),
+      image: row.product_image,
+      description: row.product_desc,
+      availability: toAvailability(row.status),
+      stockQuantity: row.stock_quantity,
+    },
+    quantity: row.cart_quantity,
+  }));
+
+  return NextResponse.json(items);
 }
 
 export async function POST(req: Request) {
