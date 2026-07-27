@@ -249,43 +249,6 @@ export default function CheckoutPage() {
                     Cash on Delivery
                   </span>
                 </label>
-                <label className="flex items-center gap-3 border border-charcoal/10 p-4 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="gcash"
-                    checked={paymentMethod === "gcash"}
-                    onChange={() => setPaymentMethod("gcash")}
-                    className="accent-sage"
-                  />
-                  <span className="font-body text-sm text-charcoal">GCash</span>
-                </label>
-                <label className="flex items-center gap-3 border border-charcoal/10 p-4 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="credit"
-                    checked={paymentMethod === "credit"}
-                    onChange={() => setPaymentMethod("credit")}
-                    className="accent-sage"
-                  />
-                  <span className="font-body text-sm text-charcoal">
-                    Credit Card
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 border border-charcoal/10 p-4 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="paypal"
-                    checked={paymentMethod === "paypal"}
-                    onChange={() => setPaymentMethod("paypal")}
-                    className="accent-sage"
-                  />
-                  <span className="font-body text-sm text-charcoal">
-                    PayPal
-                  </span>
-                </label>
               </div>
             </div>
           </form>
