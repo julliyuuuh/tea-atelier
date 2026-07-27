@@ -24,77 +24,67 @@ export default function CartPage() {
 
             <Link
               href="/shop"
-              className="inline-block bg-sage text-cream font-bod`y text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
+              className="inline-block bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
             >
               Continue Shopping
             </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {/* Items */}
+            {/* Cart Items */}
             <div className="md:col-span-2 space-y-8">
               {items.map((item) => (
                 <motion.div
                   key={item.product.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="flex gap-6 border-b border-charcoal/10 pb-8"
+                  className="flex items-center justify-between border-b pb-4"
                 >
-                  <div className="w-28 h-32 bg-sand overflow-hidden shrink-0">
+                  <div className="flex items-center space-x-4">
                     <img
                       src={item.product.image}
                       alt={item.product.name}
-                      className="w-full h-full object-cover"
+                      className="w-20 h-20 object-cover rounded"
                     />
-                  </div>
-
-                  <div className="flex-1 flex flex-col justify-between">
                     <div>
-                      <h3 className="font-display text-xl text-charcoal mb-1">
-                        {item.product.name}
-                      </h3>
-                      <span className="font-body text-sm text-charcoal/60">
-                        ${item.product.price}
-                      </span>
+                      <h2 className="font-body text-lg">{item.product.name}</h2>
+                      <p className="text-sm text-charcoal/60">
+                        ${item.product.price} x {item.quantity}
+                      </p>
                     </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center border border-charcoal/20">
-                        <button
-                          onClick={() =>
-                            updateQuantity(item.product.id, item.quantity - 1)
-                          }
-                          className="px-3 py-2 font-body text-charcoal hover:bg-sand transition-colors"
-                        >
-                          −
-                        </button>
-                        <span className="px-4 font-body text-sm text-charcoal">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() =>
-                            updateQuantity(item.product.id, item.quantity + 1)
-                          }
-                          className="px-3 py-2 font-body text-charcoal hover:bg-sand transition-colors"
-                        >
-                          +
-                        </button>
-                      </div>
-
-                      <button
-                        onClick={() => removeFromCart(item.product.id)}
-                        className="font-body text-xs uppercase tracking-wide text-charcoal/50 hover:text-sage transition-colors"
-                      >
-                        Remove
-                      </button>
-                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    {/* Minus Button */}
+                    <button
+                      onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                      className="px-2 py-1 bg-sage text-cream rounded hover:bg-charcoal transition-colors"
+                      disabled={item.quantity <= 1}
+                    >
+                      -
+                    </button>
+                    {/* Quantity Display */}
+                    <span className="font-body text-lg">{item.quantity}</span>
+                    {/* Plus Button */}
+                    <button
+                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                      className="px-2 py-1 bg-sage text-cream rounded hover:bg-charcoal transition-colors"
+                    >
+                      +
+                    </button>
+                    {/* Remove Button */}
+                    <button
+                      onClick={() => removeFromCart(item.product.id)}
+                      className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-700 transition-colors"
+                    >
+                      Remove
+                    </button>
                   </div>
                 </motion.div>
               ))}
             </div>
 
-            {/* Summary */}
-            <div className="bg-sand/40 p-8 h-fit">
+            {/* Order Summary */}
+            <div className="bg-sand/40 p-8 h-fit rounded">
               <h2 className="font-display text-xl text-charcoal mb-6">
                 Order Summary
               </h2>
@@ -113,7 +103,7 @@ export default function CartPage() {
 
               <Link
                 href="/checkout"
-                className="block text-center bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
+                className="block text-center bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 rounded hover:bg-charcoal transition-colors"
               >
                 Checkout
               </Link>
