@@ -61,6 +61,7 @@ export default function CheckoutPage() {
           province: formData.province,
           deliveryFee,
           paymentMethod,
+          phone: formData.phone,
         }),
       });
 
