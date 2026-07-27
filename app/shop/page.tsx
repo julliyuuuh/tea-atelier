@@ -148,7 +148,7 @@ export default function ShopPage() {
                     {product.name}
                   </h3>
                   <span className="font-body text-sm text-charcoal/70">
-                    ${product.price}
+                    ₱{product.price}
                   </span>
                 </div>
                 <button

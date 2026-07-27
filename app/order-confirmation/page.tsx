@@ -15,7 +15,7 @@ function OrderConfirmationContent() {
   const [orderNumber, setOrderNumber] = useState("");
 
   useEffect(() => {
-    setOrderNumber(`TA-${Math.floor(100000 + Math.random() * 900000)}`);
+    setOrderNumber(`TA-₱{Math.floor(100000 + Math.random() * 900000)}`);
   }, []);
 
   return (
@@ -42,15 +42,15 @@ function OrderConfirmationContent() {
         <div className="bg-sand/40 border border-charcoal/10 p-8 max-w-sm mx-auto text-left mb-12">
           <div className="flex justify-between font-body text-sm text-charcoal/70 mb-3">
             <span>Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>₱{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-body text-sm text-charcoal/70 mb-3">
             <span>Delivery Fee</span>
-            <span>${deliveryFee.toFixed(2)}</span>
+            <span>₱{deliveryFee.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-display text-lg text-charcoal border-t border-charcoal/10 pt-3">
             <span>Total Paid</span>
-            <span>${total.toFixed(2)}</span>
+            <span>₱{total.toFixed(2)}</span>
           </div>
         </div>
 

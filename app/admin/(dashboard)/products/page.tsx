@@ -233,7 +233,7 @@ export default function AdminProductsPage() {
                 </td>
                 <td className="px-5 py-3">
                   <span className="font-body text-sm text-charcoal/70">
-                    ${product.price}
+                    ₱{product.price}
                   </span>
                 </td>
                 <td className="px-5 py-3">
@@ -307,7 +307,7 @@ export default function AdminProductsPage() {
 
               <div>
                 <label className="font-body text-xs text-charcoal/60 block mb-1.5">
-                  Price ($)
+                  Price (₱)
                 </label>
                 <input
                   type="number"
@@ -324,12 +324,25 @@ export default function AdminProductsPage() {
                 <label className="font-body text-xs text-charcoal/60 block mb-1.5">
                   Product Image
                 </label>
+
+                <label
+                  htmlFor="product-image-upload"
+                  className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal cursor-pointer flex items-center justify-between hover:border-sage transition-colors"
+                >
+                  <span className="truncate">
+                    {imageFile ? imageFile.name : "Choose File"}
+                  </span>
+                  <span className="text-charcoal/40 text-xs shrink-0 ml-2">Browse</span>
+                </label>
+
                 <input
+                  id="product-image-upload"
                   type="file"
                   accept="image/*"
                   onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                  className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
+                  className="hidden"
                 />
+
                 {form.image && !imageFile && (
                   <img src={form.image} alt="Current" className="w-16 h-16 object-cover mt-2" />
                 )}

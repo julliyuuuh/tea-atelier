@@ -100,7 +100,7 @@ export default function ProductDetailsPage() {
             {product.name}
           </h1>
           <span className="font-body text-2xl text-charcoal/80 mb-6">
-            ${product.price}
+            ₱{product.price}
           </span>
           <p className="font-body text-sm text-charcoal/70 leading-relaxed mb-8">
             {product.description}
