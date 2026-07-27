@@ -13,6 +13,7 @@ const emptyForm = {
 };
 
 export default function AdminProductsPage() {
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -84,13 +85,38 @@ export default function AdminProductsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!editingId && !imageFile) {
+      alert("Please select an image to add the new product.");
+      return;
+    }
+
     const token = localStorage.getItem("token");
+
+    let imageUrl = form.image;
+
+    if (imageFile) {
+      const uploadData = new FormData();
+      uploadData.append("file", imageFile);
+
+      const uploadRes = await fetch("/api/admin/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: uploadData,
+      });
+      const uploadResult = await uploadRes.json();
+      if (!uploadRes.ok) {
+        alert(uploadResult.error || "Image upload failed.");
+        return;
+      }
+      imageUrl = uploadResult.url;
+    }
 
     const payload = {
       name: form.name,
       category: form.category,
       price: parseFloat(form.price),
-      image: form.image,
+      image: imageUrl,
       description: form.description,
       availability: form.availability,
     };
@@ -296,17 +322,17 @@ export default function AdminProductsPage() {
 
               <div>
                 <label className="font-body text-xs text-charcoal/60 block mb-1.5">
-                  Image Path
+                  Product Image
                 </label>
                 <input
-                  type="text"
-                  name="image"
-                  value={form.image}
-                  onChange={handleChange}
-                  placeholder="/images/product.jpg"
-                  required
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                   className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
                 />
+                {form.image && !imageFile && (
+                  <img src={form.image} alt="Current" className="w-16 h-16 object-cover mt-2" />
+                )}
               </div>
 
               <div>
