@@ -33,8 +33,7 @@ export default function AdminOverviewPage() {
 
       <div className="mt-10 bg-white border border-charcoal/10 p-6">
         <span className="font-body text-xs text-charcoal/40">
-          Note: placeholder data — connects to real numbers once the database is
-          wired up.
+          Note: placeholder 
         </span>
       </div>
     </div>
