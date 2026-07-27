@@ -109,7 +109,7 @@ export default function ProductDetailsPage() {
           <span className="font-body text-xs uppercase tracking-wide mb-8">
             {product.stockQuantity === 0 ? (
               <span className="text-charcoal/40">Out of Stock</span>
-            ) : product.stockQuantity <= 5 ? (
+            ) : product.stockQuantity <= 10 ? (
               <span className="text-amber-600">Low Stock</span>
             ) : (
               <span className="text-sage">In Stock</span>
