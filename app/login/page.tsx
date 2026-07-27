@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
-export default function LoginPage() {
+function LoginForm() {
   const { login, user, isLoading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -13,9 +17,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      window.location.href = user.role === "admin" ? "/admin" : "/";
+      window.location.href =
+        user.role === "admin" ? "/admin" : redirectTo || "/";
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, redirectTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +41,7 @@ export default function LoginPage() {
       if (data.user.role === "admin") {
         window.location.href = "/admin";
       } else {
-        window.location.href = "/";
+        window.location.href = redirectTo || "/";
       }
     } catch (error) {
       setErrorMessage(
@@ -131,5 +136,13 @@ export default function LoginPage() {
         </p>
       </motion.div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-cream" />}>
+      <LoginForm />
+    </Suspense>
   );
 }
