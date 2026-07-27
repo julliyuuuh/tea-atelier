@@ -3,13 +3,15 @@ import { pool } from "@/lib/db";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+
     const result = await pool.query(
       `SELECT product_id, product_name, product_desc, product_image, category, price, status
        FROM products WHERE product_id = $1`,
-      [params.id]
+      [id]
     );
 
     const row = result.rows[0];
