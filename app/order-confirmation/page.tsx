@@ -38,7 +38,7 @@ function OrderConfirmationContent() {
 
         <div className="bg-sand/40 border border-charcoal/10 p-8 max-w-sm mx-auto text-left mb-12">
           {recipientName && (
-            <div className="flex justify-between font-body text-sm text-charcoal/70 mb-3">
+            <div className="flex justify-between font-display text-lg text-charcoal border-b border-charcoal/10 pb-3 mb-3">
               <span>Recipient</span>
               <span>{recipientName}</span>
             </div>
