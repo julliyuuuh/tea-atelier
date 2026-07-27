@@ -249,12 +249,18 @@ export default function AdminProductsPage() {
                 <td className="px-5 py-3">
                   <span
                     className={`font-body text-xs px-2 py-1 ${
-                      product.availability === "In Stock"
-                        ? "bg-sage/15 text-sage"
-                        : "bg-charcoal/10 text-charcoal/50"
+                      product.stockQuantity === 0
+                        ? "bg-charcoal/10 text-charcoal/50"
+                        : product.stockQuantity <= 10
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-sage/15 text-sage"
                     }`}
                   >
-                    {product.availability}
+                    {product.stockQuantity === 0
+                      ? "Out of Stock"
+                      : product.stockQuantity <= 10
+                      ? "Low Stock"
+                      : "In Stock"}
                   </span>
                 </td>
                 <td className="px-5 py-3 text-right">
@@ -276,7 +282,8 @@ export default function AdminProductsPage() {
           </tbody>
         </table>
       </div>
-
+      
+      {/*Modal to edit or add product*/}
       {modalOpen && (
         <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-50 p-6">
           <div className="bg-white w-full max-w-md p-8 max-h-[90vh] overflow-y-auto">
