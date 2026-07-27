@@ -6,17 +6,8 @@ import { useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
+import type { Product } from "@/lib/products";
 import Link from "next/link";
-
-type Product = {
-  id: string;
-  name: string;
-  description: string;
-  image: string;
-  category: string;
-  price: number;
-  availability: string;
-};
 
 export default function ProductDetailsPage() {
   const { id } = useParams();
@@ -34,7 +25,7 @@ export default function ProductDetailsPage() {
         const res = await fetch(`/api/products/${id}`, { signal: controller.signal });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Product not found.");
-        setProduct(data.product);
+        setProduct(data.product as Product);
       } catch (error) {
         if (error instanceof Error && error.name !== "AbortError") {
           setErrorMessage(error.message);

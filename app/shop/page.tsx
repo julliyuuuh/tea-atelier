@@ -4,21 +4,12 @@ import { useState, useMemo, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
+import type { Product } from "@/lib/products";
 import Link from "next/link";
 
 const categories = ["All", "Leaf Tea", "Matcha", "Accessories"] as const;
 type Category = (typeof categories)[number];
 type SortOption = "Newest" | "Price: Low to High" | "Price: High to Low";
-
-type Product = {
-  id: string;
-  name: string;
-  description: string;
-  image: string;
-  category: string;
-  price: number;
-  availability: string;
-};
 
 export default function ShopPage() {
   const [activeCategory, setActiveCategory] = useState<Category>("All");
@@ -36,7 +27,7 @@ export default function ShopPage() {
         const res = await fetch("/api/products", { signal: controller.signal });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to load products.");
-        setProducts(data.products);
+        setProducts(data.products as Product[]);
       } catch (error) {
         if (error instanceof Error && error.name !== "AbortError") {
           setErrorMessage(error.message);
@@ -143,6 +134,7 @@ export default function ShopPage() {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
+                    // Quick View placeholder — we'll wire this up later
                   }}
                   className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-cream text-charcoal font-body text-[10px] tracking-wide uppercase px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
