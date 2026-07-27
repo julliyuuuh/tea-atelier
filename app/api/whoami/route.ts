@@ -14,11 +14,11 @@ export async function GET(req: Request) {
     const decoded = verifyToken(token);
 
     const result = await pool.query(
-      "SELECT user_id, first_name, last_name, email, role FROM users WHERE user_id = $1",
+      "SELECT user_id, first_name, last_name, email, role, phone_number FROM users WHERE user_id = $1",
       [decoded.userId]
     );
-    const user = result.rows[0];
 
+    const user = result.rows[0];
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
@@ -28,6 +28,7 @@ export async function GET(req: Request) {
         name: `${user.first_name} ${user.last_name}`,
         email: user.email,
         role: user.role,
+        phone: user.phone_number,
       },
     });
   } catch {

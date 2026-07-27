@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
 
 const deliveryFee = 5;
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
+  const { user } = useAuth();
   const router = useRouter();
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [formData, setFormData] = useState({
@@ -23,6 +25,17 @@ export default function CheckoutPage() {
     province: "",
     zip: "",
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: user.name,
+        email: user.email,
+        phone: user.phone || "",
+      }));
+    }
+  }, [user]);
 
   const total = subtotal + deliveryFee;
   const isCartEmpty = items.length === 0;
@@ -311,7 +324,7 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                       <p className="font-body text-sm text-charcoal">
-                        ${(item.product.price * item.quantity).toFixed(2)}
+                        ₱{(item.product.price * item.quantity).toFixed(2)}
                       </p>
                     </div>
                   ))}
@@ -321,15 +334,15 @@ export default function CheckoutPage() {
               <div className="mt-6 space-y-3 border-t border-charcoal/10 pt-6">
                 <div className="flex justify-between font-body text-sm text-charcoal/70">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>₱{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-body text-sm text-charcoal/70">
                   <span>Delivery Fee</span>
-                  <span>${deliveryFee.toFixed(2)}</span>
+                  <span>₱{deliveryFee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-display text-lg text-charcoal pt-3 border-t border-charcoal/10">
                   <span>Total Amount</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>₱{total.toFixed(2)}</span>
                 </div>
               </div>
 
