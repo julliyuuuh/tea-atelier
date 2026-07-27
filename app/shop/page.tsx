@@ -150,6 +150,15 @@ export default function ShopPage() {
                   <span className="font-body text-sm text-charcoal/70">
                     ₱{product.price}
                   </span>
+                  <p className="font-body text-xs mt-1">
+                    {product.stockQuantity === 0 ? (
+                      <span className="text-charcoal/40">Out of Stock</span>
+                    ) : product.stockQuantity <= 5 ? (
+                      <span className="text-amber-600">Low Stock</span>
+                    ) : (
+                      <span className="text-sage">In Stock</span>
+                    )}
+                  </p>
                 </div>
                 <button
                   onClick={(e) => {

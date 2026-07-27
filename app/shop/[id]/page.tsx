@@ -96,7 +96,7 @@ export default function ProductDetailsPage() {
           <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-4">
             {product.category}
           </span>
-          <h1 className="font-display text-4xl text-charcoal mb-4">
+          <h1 className="font-display text-4xl text-charcoal mb-4"> 
             {product.name}
           </h1>
           <span className="font-body text-2xl text-charcoal/80 mb-6">
@@ -106,8 +106,14 @@ export default function ProductDetailsPage() {
             {product.description}
           </p>
 
-          <span className="font-body text-xs uppercase tracking-wide text-sage mb-8">
-            {product.availability}
+          <span className="font-body text-xs uppercase tracking-wide mb-8">
+            {product.stockQuantity === 0 ? (
+              <span className="text-charcoal/40">Out of Stock</span>
+            ) : product.stockQuantity <= 5 ? (
+              <span className="text-amber-600">Low Stock</span>
+            ) : (
+              <span className="text-sage">In Stock</span>
+            )}
           </span>
 
           <div className="flex items-center gap-6">
