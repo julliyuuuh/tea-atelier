@@ -32,15 +32,47 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams({
-      subtotal: subtotal.toFixed(2),
-      delivery: deliveryFee.toFixed(2),
-      total: total.toFixed(2),
-    });
-    clearCart();
-    router.push(`/order-confirmation?${params.toString()}`);
+
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          street: formData.street,
+          barangay: formData.barangay,
+          city: formData.city,
+          province: formData.province,
+          zip: formData.zip,
+          deliveryFee,
+          paymentMethod,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Unable to place order.");
+        return;
+      }
+
+      clearCart();
+
+      const params = new URLSearchParams({
+        subtotal: data.subtotal,
+        delivery: data.deliveryFee,
+        total: data.total,
+      });
+      router.push(`/order-confirmation?${params.toString()}`);
+    } catch {
+      alert("Something went wrong. Please try again.");
+    }
   };
   return (
     <main className="min-h-screen bg-cream">
