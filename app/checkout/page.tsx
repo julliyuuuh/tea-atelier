@@ -87,6 +87,7 @@ export default function CheckoutPage() {
       subtotal: data.subtotal,
       delivery: data.deliveryFee,
       total: data.total,
+      recipientName: formData.fullName,
     });
       router.push(`/order-confirmation?${params.toString()}`);
     } catch {
