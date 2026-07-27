@@ -9,7 +9,7 @@ export async function GET(
     const { id } = await params;
 
     const result = await pool.query(
-      `SELECT product_id, product_name, product_desc, product_image, category, price, status
+      `SELECT product_id, product_name, product_desc, product_image, category, price, status, stock_quantity
        FROM products WHERE product_id = $1`,
       [id]
     );
@@ -27,6 +27,7 @@ export async function GET(
       category: row.category,
       price: parseFloat(row.price),
       availability: row.status === "NO STOCK" ? "Out of Stock" : "In Stock",
+      stockQuantity: row.stock_quantity,
     };
 
     return NextResponse.json({ product });

@@ -4,9 +4,9 @@ import { pool } from "@/lib/db";
 export async function GET() {
   try {
     const result = await pool.query(
-      `SELECT product_id, product_name, product_desc, product_image, category, price, status
-       FROM products
-       ORDER BY product_id DESC`
+      `SELECT product_id, product_name, product_desc, product_image, category, price, status, stock_quantity
+      FROM products
+      ORDER BY product_id DESC`
     );
 
     const products = result.rows.map((row) => ({
@@ -17,6 +17,7 @@ export async function GET() {
       category: row.category,
       price: parseFloat(row.price),
       availability: row.status === "NO STOCK" ? "Out of Stock" : "In Stock",
+      stockQuantity: row.stock_quantity,
     }));
 
     return NextResponse.json({ products });
