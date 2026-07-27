@@ -74,6 +74,7 @@ export default function CheckoutPage() {
       clearCart();
 
       const params = new URLSearchParams({
+        orderId: data.orderId.toString(),
         subtotal: data.subtotal,
         delivery: data.deliveryFee,
         total: data.total,

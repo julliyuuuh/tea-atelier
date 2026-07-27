@@ -4,19 +4,15 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useState, useEffect, Suspense } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
+  const orderId = searchParams.get("orderId");
   const subtotal = parseFloat(searchParams.get("subtotal") || "0");
   const deliveryFee = parseFloat(searchParams.get("delivery") || "0");
   const total = parseFloat(searchParams.get("total") || "0");
-  const [orderNumber, setOrderNumber] = useState("");
-
-  useEffect(() => {
-    setOrderNumber(`TA-${Math.floor(100000 + Math.random() * 900000)}`);
-  }, []);
 
   return (
     <section className="max-w-3xl mx-auto px-6 md:px-8 py-24 text-center">
@@ -32,7 +28,7 @@ function OrderConfirmationContent() {
           Thank you for your order
         </h1>
         <p className="font-body text-sm text-charcoal/70 mb-2">
-          Order #{orderNumber}
+          Order #TA-{orderId}
         </p>
         <p className="font-body text-charcoal/70 leading-relaxed max-w-lg mx-auto mb-12">
           A confirmation email is on its way. We're preparing your tea now and
