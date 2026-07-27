@@ -21,6 +21,16 @@ type Order = {
   items: OrderItem[];
 };
 
+function formatPaymentMethod(method: string): string {
+  const labels: Record<string, string> = {
+    cod: "Cash on Delivery",
+    gcash: "GCash",
+    credit: "Credit Card",
+    paypal: "PayPal",
+  };
+  return labels[method] || method;
+}
+
 export default function OrderHistoryPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -122,7 +132,7 @@ export default function OrderHistoryPage() {
               </div>
 
               <div className="flex justify-between font-body text-sm text-charcoal/70 pt-4 border-t border-charcoal/10">
-                <span>Total ({order.paymentMethod.toUpperCase()})</span>
+                <span>Total ({formatPaymentMethod(order.paymentMethod)})</span>
                 <span className="font-display text-base text-charcoal">
                   ₱{order.totalAmount.toFixed(2)}
                 </span>
