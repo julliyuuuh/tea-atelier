@@ -14,6 +14,7 @@ type SortOption = "Newest" | "Price: Low to High" | "Price: High to Low";
 export default function ShopPage() {
   const [activeCategory, setActiveCategory] = useState<Category>("All");
   const [sortBy, setSortBy] = useState<SortOption>("Newest");
+  const [search, setSearch] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -47,6 +48,15 @@ export default function ShopPage() {
         ? [...products]
         : products.filter((p) => p.category === activeCategory);
 
+    const term = search.trim().toLowerCase();
+    if (term) {
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(term) ||
+          p.description.toLowerCase().includes(term),
+      );
+    }
+
     if (sortBy === "Price: Low to High") {
       list.sort((a, b) => a.price - b.price);
     } else if (sortBy === "Price: High to Low") {
@@ -54,7 +64,7 @@ export default function ShopPage() {
     }
 
     return list;
-  }, [products, activeCategory, sortBy]);
+  }, [products, activeCategory, sortBy, search]);
 
   return (
     <main className="min-h-screen">
@@ -74,6 +84,27 @@ export default function ShopPage() {
         <p className="font-body text-sm text-charcoal/60">
           {isLoading ? "Loading products..." : `${filteredProducts.length} products`}
         </p>
+      </div>
+
+      {/* Search Bar */}
+      <div className="max-w-7xl mx-auto px-8 pb-6">
+        <div className="relative max-w-sm">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-charcoal/40 hover:text-charcoal text-sm"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filters Bar */}
@@ -112,7 +143,19 @@ export default function ShopPage() {
         )}
 
         {!isLoading && filteredProducts.length === 0 && !errorMessage && (
-          <p className="font-body text-sm text-charcoal/60">No products found.</p>
+          <div className="text-center py-12">
+            <p className="font-body text-sm text-charcoal/60 mb-3">
+              {search ? `No results for "${search}"` : "No products found."}
+            </p>
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="font-body text-xs uppercase tracking-wide text-sage hover:text-charcoal transition-colors"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-16">
@@ -134,7 +177,6 @@ export default function ShopPage() {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    // Quick View placeholder — we'll wire this up later
                   }}
                   className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-cream text-charcoal font-body text-[10px] tracking-wide uppercase px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
