@@ -109,7 +109,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const item = items.find((i) => i.product.id === productId);
     if (item && quantity > item.product.stockQuantity) {
-      alert(`Only ${item.product.stockQuantity} in stock.`);
+      alert(`Exceeds stock.`);
       return;
     }
 
