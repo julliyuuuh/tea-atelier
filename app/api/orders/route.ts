@@ -6,12 +6,25 @@ export async function GET(req: Request) {
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const url = new URL(req.url);
+  const page = parseInt(url.searchParams.get("page") || "1", 10);
+  const pageSize = 4;
+  const offset = (page - 1) * pageSize;
+
+  const countResult = await pool.query(
+    "SELECT COUNT(*) FROM orders WHERE user_id = $1",
+    [userId]
+  );
+  const totalOrders = parseInt(countResult.rows[0].count, 10);
+  const totalPages = Math.ceil(totalOrders / pageSize);
+
   const ordersResult = await pool.query(
     `SELECT order_id, shipping_cost, total_amount, order_status, payment_method, recipient_name, created_at
      FROM orders
      WHERE user_id = $1
-     ORDER BY created_at DESC`,
-    [userId]
+     ORDER BY created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [userId, pageSize, offset]
   );
 
   const orders = await Promise.all(
@@ -42,7 +55,7 @@ export async function GET(req: Request) {
     })
   );
 
-  return NextResponse.json({ orders });
+  return NextResponse.json({ orders, totalPages, currentPage: page });
 }
 
 export async function POST(req: Request) {

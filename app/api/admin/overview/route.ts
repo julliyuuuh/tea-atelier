@@ -14,6 +14,7 @@ export async function GET(req: Request) {
       (SELECT COUNT(*) FROM users WHERE role = 'customer') AS total_customers
   `);
 
+  // Gets the 5 most recent orders
   const recentOrdersResult = await pool.query(`
     SELECT order_id, recipient_name, total_amount, order_status, created_at
     FROM orders

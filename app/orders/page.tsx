@@ -36,6 +36,8 @@ export default function OrderHistoryPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -48,14 +50,16 @@ export default function OrderHistoryPage() {
         return;
       }
 
+      setIsLoading(true);
       try {
-        const res = await fetch("/api/orders", {
+        const res = await fetch(`/api/orders?page=${page}`, {
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to load orders.");
         setOrders(data.orders);
+        setTotalPages(data.totalPages);
       } catch (error) {
         if (error instanceof Error && error.name !== "AbortError") {
           setErrorMessage(error.message);
@@ -67,7 +71,7 @@ export default function OrderHistoryPage() {
 
     loadOrders();
     return () => controller.abort();
-  }, []);
+  }, [page]);
 
   return (
     <main className="min-h-screen bg-cream">
@@ -96,18 +100,18 @@ export default function OrderHistoryPage() {
                   <p className="font-body text-sm text-charcoal">
                     Order #TA-{order.id}
                   </p>
-                    <p className="font-body text-xs text-charcoal/50 mt-1">
+                  <p className="font-body text-xs text-charcoal/50 mt-1">
                     {new Date(order.createdAt).toLocaleDateString("en-PH", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
                     })}
-                    </p>
-                    {order.recipientName && (
+                  </p>
+                  {order.recipientName && (
                     <p className="font-body text-xs text-charcoal/50 mt-1">
-                        For: {order.recipientName}
+                      For: {order.recipientName}
                     </p>
-                    )}
+                  )}
                 </div>
                 <span className="font-body text-xs uppercase tracking-wide px-3 py-1 bg-sage/15 text-sage">
                   {order.status}
@@ -146,6 +150,28 @@ export default function OrderHistoryPage() {
             </div>
           ))}
         </div>
+
+        {!isLoading && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-10">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="font-body text-xs uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="font-body text-xs text-charcoal/50">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="font-body text-xs uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </section>
 
       <Footer />
