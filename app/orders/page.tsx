@@ -161,7 +161,7 @@ export default function OrderHistoryPage() {
               {/*Prev Button*/}
               &lt;
             </button>
-            <span className="font-body text-xs text-charcoal/50">
+            <span className="font-body text-base text-charcoal/50">
               Page {page} of {totalPages}
             </span>
             <button
