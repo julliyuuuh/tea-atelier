@@ -89,7 +89,7 @@ export default function CheckoutPage() {
       total: data.total,
       recipientName: formData.fullName,
     });
-      router.push(`/order-confirmation?${params.toString()}`);
+      router.push(`/order-confirmation?orderId=${data.orderId}`);
     } catch {
       alert("Something went wrong. Please try again.");
     }
