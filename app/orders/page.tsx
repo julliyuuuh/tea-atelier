@@ -158,7 +158,8 @@ export default function OrderHistoryPage() {
               disabled={page === 1}
               className="font-body text-xs uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              Previous
+              {/*Prev Button*/}
+              &lt;
             </button>
             <span className="font-body text-xs text-charcoal/50">
               Page {page} of {totalPages}
@@ -168,7 +169,8 @@ export default function OrderHistoryPage() {
               disabled={page === totalPages}
               className="font-body text-xs uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              Next
+              {/*Next Button*/}
+              &gt;
             </button>
           </div>
         )}
