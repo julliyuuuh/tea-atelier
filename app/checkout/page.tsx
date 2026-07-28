@@ -82,13 +82,13 @@ export default function CheckoutPage() {
 
       clearCart();
 
-    const params = new URLSearchParams({
-      orderId: data.orderId.toString(),
-      subtotal: data.subtotal,
-      delivery: data.deliveryFee,
-      total: data.total,
-      recipientName: formData.fullName,
-    });
+      const params = new URLSearchParams({
+        orderId: data.orderId.toString(),
+        subtotal: data.subtotal,
+        delivery: data.deliveryFee,
+        total: data.total,
+        recipientName: formData.fullName,
+      });
       router.push(`/order-confirmation?orderId=${data.orderId}`);
     } catch {
       alert("Something went wrong. Please try again.");
