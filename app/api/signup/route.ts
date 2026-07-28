@@ -14,9 +14,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
     }
 
+    // Check email if it exists
     const existing = await pool.query("SELECT user_id FROM users WHERE email = $1", [email]);
     if (existing.rows.length > 0) {
       return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+    }
+
+    // Check phonenum if it exists
+    if (phoneNumber) {
+      const existingPhone = await pool.query(
+        "SELECT user_id FROM users WHERE phone_number = $1",
+        [phoneNumber]
+      );
+      if (existingPhone.rows.length > 0) {
+        return NextResponse.json({ error: "An account with this phone number already exists." }, { status: 409 });
+      }
     }
 
     const passwordHash = await hashPassword(password);
