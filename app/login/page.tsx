@@ -16,9 +16,8 @@ function LoginForm() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (!authLoading && user) {
-      window.location.href =
-        user.role === "admin" ? "/admin" : redirectTo || "/";
+    if (!authLoading && user && user.role !== "admin") {
+      window.location.href = redirectTo || "/";
     }
   }, [user, authLoading, redirectTo]);
 
@@ -36,13 +35,14 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed.");
 
-      login(data.token, data.user);
-
       if (data.user.role === "admin") {
-        window.location.href = "/admin";
-      } else {
-        window.location.href = redirectTo || "/";
+        setErrorMessage("Administrators must sign in through the admin portal.");
+        setIsLoading(false);
+        return;
       }
+
+      login(data.token, data.user);
+      window.location.href = redirectTo || "/";
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Something went wrong."
@@ -132,6 +132,16 @@ function LoginForm() {
             className="text-sage hover:text-charcoal transition-colors"
           >
             Sign up
+          </a>
+        </p>
+
+        <p className="font-body text-xs text-charcoal/40 text-center mt-4">
+          Administrator?{" "}
+          <a
+            href="/admin/login"
+            className="text-sage hover:text-charcoal transition-colors"
+          >
+            Click here
           </a>
         </p>
       </motion.div>
