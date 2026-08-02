@@ -15,6 +15,7 @@ export default function CheckoutPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [showConfirm, setShowConfirm] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -28,7 +29,6 @@ export default function CheckoutPage() {
     if (user) {
       setFormData((prev) => ({
         ...prev,
-        fullName: user.name,
         email: user.email,
         phone: user.phone || "",
       }));
@@ -50,9 +50,13 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowConfirm(true);
+  };
 
+  const confirmOrder = async () => {
+    setShowConfirm(false);
     const token = localStorage.getItem("token");
 
     try {
@@ -81,19 +85,12 @@ export default function CheckoutPage() {
       }
 
       clearCart();
-
-      const params = new URLSearchParams({
-        orderId: data.orderId.toString(),
-        subtotal: data.subtotal,
-        delivery: data.deliveryFee,
-        total: data.total,
-        recipientName: formData.fullName,
-      });
       router.push(`/order-confirmation?orderId=${data.orderId}`);
     } catch {
       alert("Something went wrong. Please try again.");
     }
   };
+
   return (
     <main className="min-h-screen bg-cream">
       <Navbar />
@@ -115,7 +112,7 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-10">
           <form
             id="checkout-form"
-            onSubmit={handleSubmit}
+            onSubmit={handleFormSubmit}
             className="space-y-8"
           >
             <div className="bg-cream border border-charcoal/10 p-6 md:p-8">
@@ -130,6 +127,7 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     name="fullName"
+                    value={formData.fullName}
                     onChange={handleChange}
                     required
                     className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
@@ -142,6 +140,7 @@ export default function CheckoutPage() {
                   <input
                     type="email"
                     name="email"
+                    value={formData.email}
                     onChange={handleChange}
                     required
                     className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
@@ -154,6 +153,7 @@ export default function CheckoutPage() {
                   <input
                     type="tel"
                     name="phone"
+                    value={formData.phone}
                     onChange={handleChange}
                     required
                     maxLength={11}
@@ -301,6 +301,30 @@ export default function CheckoutPage() {
           </aside>
         </div>
       </section>
+
+      {showConfirm && (
+        <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6">
+          <div className="bg-cream border border-charcoal/10 rounded-lg p-8 max-w-sm w-full text-center">
+            <p className="font-body text-sm text-charcoal mb-6">
+              Are you sure you want to check out?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmOrder}
+                className="flex-1 bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </main>

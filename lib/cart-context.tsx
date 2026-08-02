@@ -68,7 +68,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const currentQuantity = existing?.quantity || 0;
 
     if (currentQuantity + quantity > product.stockQuantity) {
-      setStockError(`Only ${product.stockQuantity} in stock.`);
+      setStockError(`Exceeds stock.`);
       return;
     }
 
