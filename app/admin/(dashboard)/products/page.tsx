@@ -21,7 +21,6 @@ export default function AdminProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [errorMessage, setErrorMessage] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -29,10 +28,7 @@ export default function AdminProductsPage() {
 
   async function loadProducts() {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("/api/admin/products", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch("/api/products");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to load products.");
       setProducts(data.products);
@@ -43,15 +39,12 @@ export default function AdminProductsPage() {
     }
   }
 
-  const activeProducts = products.filter((p) => !p.isArchived);
-  const archivedProducts = products.filter((p) => p.isArchived);
-
-  const filtered = activeProducts.filter((p) =>
+  const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Remove this product?")) return;
+    if (!confirm("Delete this product?")) return;
 
     const token = localStorage.getItem("token");
     try {
@@ -59,26 +52,8 @@ export default function AdminProductsPage() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Unable to remove product.");
-      setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, isArchived: true } : p))
-      );
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "Something went wrong.");
-    }
-  };
-
-  const handleRestore = async (id: string) => {
-    const token = localStorage.getItem("token");
-    try {
-      const res = await fetch(`/api/admin/products/${id}`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Unable to restore product.");
-      setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, isArchived: false } : p))
-      );
+      if (!res.ok) throw new Error("Unable to delete product.");
+      setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (error) {
       alert(error instanceof Error ? error.message : "Something went wrong.");
     }
@@ -160,7 +135,7 @@ export default function AdminProductsPage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to update product.");
-        setProducts((prev) => prev.map((p) => (p.id === editingId ? { ...data.product, isArchived: p.isArchived } : p)));
+        setProducts((prev) => prev.map((p) => (p.id === editingId ? data.product : p)));
       } else {
         const res = await fetch("/api/admin/products", {
           method: "POST",
@@ -172,7 +147,7 @@ export default function AdminProductsPage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to add product.");
-        setProducts((prev) => [...prev, { ...data.product, isArchived: false }]);
+        setProducts((prev) => [...prev, data.product]);
       }
 
       setModalOpen(false);
@@ -189,7 +164,7 @@ export default function AdminProductsPage() {
             Products
           </h1>
           <p className="font-body text-sm text-charcoal/60">
-            {isLoading ? "Loading..." : `${activeProducts.length} products total`}
+            {isLoading ? "Loading..." : `${products.length} products total`}
           </p>
         </div>
         <button
@@ -307,72 +282,7 @@ export default function AdminProductsPage() {
           </tbody>
         </table>
       </div>
-
-      {/* Archived products toggle + list*/}
-      {archivedProducts.length > 0 && (
-        <div className="mt-6">
-          <button
-            onClick={() => setShowArchived((prev) => !prev)}
-            className="font-body text-xs text-charcoal/50 hover:text-charcoal underline"
-          >
-            {showArchived ? "Hide" : "Show"} Archived Products ({archivedProducts.length})
-          </button>
-
-          {showArchived && (
-            <div className="bg-white border border-charcoal/10 mt-4">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-charcoal/10">
-                    <th className="font-body text-xs uppercase tracking-wide text-charcoal/50 px-5 py-3">
-                      Product
-                    </th>
-                    <th className="font-body text-xs uppercase tracking-wide text-charcoal/50 px-5 py-3">
-                      Category
-                    </th>
-                    <th className="font-body text-xs uppercase tracking-wide text-charcoal/50 px-5 py-3 text-right">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {archivedProducts.map((product) => (
-                    <tr key={product.id} className="border-b border-charcoal/5 last:border-0">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-sand overflow-hidden shrink-0 opacity-50">
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <span className="font-body text-sm text-charcoal/60">
-                            {product.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3">
-                        <span className="font-body text-sm text-charcoal/50">
-                          {product.category}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <button
-                          onClick={() => handleRestore(product.id)}
-                          className="font-body text-xs text-sage hover:text-charcoal transition-colors"
-                        >
-                          Restore
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
+      
       {/*Modal to edit or add product*/}
       {modalOpen && (
         <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-50 p-6">

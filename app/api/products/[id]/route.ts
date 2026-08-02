@@ -10,7 +10,7 @@ export async function GET(
 
     const result = await pool.query(
       `SELECT product_id, product_name, product_desc, product_image, category, price, status, stock_quantity
-      FROM products WHERE product_id = $1 AND is_archived = false`,
+       FROM products WHERE product_id = $1`,
       [id]
     );
 

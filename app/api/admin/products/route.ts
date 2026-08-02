@@ -31,28 +31,3 @@ export async function POST(req: Request) {
     },
   });
 }
-
-export async function GET(req: Request) {
-  const { error } = requireAdmin(req);
-  if (error) return error;
-
-  const result = await pool.query(
-    `SELECT product_id, product_name, product_desc, product_image, category, price, status, stock_quantity, is_archived
-     FROM products
-     ORDER BY product_id DESC`
-  );
-
-  const products = result.rows.map((row) => ({
-    id: String(row.product_id),
-    name: row.product_name,
-    description: row.product_desc,
-    image: row.product_image,
-    category: row.category,
-    price: parseFloat(row.price),
-    availability: row.status === "NO STOCK" ? "Out of Stock" : "In Stock",
-    stockQuantity: row.stock_quantity,
-    isArchived: row.is_archived,
-  }));
-
-  return NextResponse.json({ products });
-}

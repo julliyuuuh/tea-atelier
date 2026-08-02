@@ -40,27 +40,6 @@ export async function PUT(
   });
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { error } = requireAdmin(req);
-  if (error) return error;
-
-  const { id } = await params;
-
-  const result = await pool.query(
-    "UPDATE products SET is_archived = false WHERE product_id = $1 RETURNING product_id",
-    [id]
-  );
-
-  if (result.rows.length === 0) {
-    return NextResponse.json({ error: "Product not found." }, { status: 404 });
-  }
-
-  return NextResponse.json({ success: true });
-}
-
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -69,20 +48,7 @@ export async function DELETE(
   if (error) return error;
 
   const { id } = await params;
+  await pool.query("DELETE FROM products WHERE product_id = $1", [id]);
 
-  try {
-    const result = await pool.query(
-      "UPDATE products SET is_archived = true WHERE product_id = $1 RETURNING product_id",
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return NextResponse.json({ error: "Product not found." }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("Archive product error:", err);
-    return NextResponse.json({ error: "Unable to remove product." }, { status: 500 });
-  }
+  return NextResponse.json({ success: true });
 }
