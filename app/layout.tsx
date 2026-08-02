@@ -3,6 +3,7 @@ import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/lib/cart-context";
 import { AuthProvider } from "@/lib/auth-context";
+import StockErrorModal from "@/components/StockErrorModal";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -31,7 +32,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${fraunces.variable} ${inter.variable} antialiased`}>
         <AuthProvider>
-          <CartProvider>{children}</CartProvider>
+          <CartProvider>
+            {children}
+            <StockErrorModal />
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>

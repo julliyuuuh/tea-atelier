@@ -16,6 +16,8 @@ type CartContextType = {
   totalItems: number;
   subtotal: number;
   loading: boolean;
+  stockError: string | null;
+  clearStockError: () => void;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -31,6 +33,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stockError, setStockError] = useState<string | null>(null);
+  const clearStockError = () => setStockError(null);
 
   useEffect(() => {
     if (authLoading) return; // wait for auth to resolve first
@@ -64,7 +68,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const currentQuantity = existing?.quantity || 0;
 
     if (currentQuantity + quantity > product.stockQuantity) {
-      alert(`Exceeds stock.`);
+      setStockError(`Only ${product.stockQuantity} in stock.`);
       return;
     }
 
@@ -170,6 +174,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         totalItems,
         subtotal,
         loading,
+        stockError,
+        clearStockError,
       }}
     >
       {children}
