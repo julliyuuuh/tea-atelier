@@ -154,7 +154,7 @@ export default function LoginPage() {
           </form>
 
           <p className="font-body text-sm text-charcoal/60 text-center mt-8">
-            Don't have an accounts?{" "}
+            Don't have an account?{" "}
             <Link
               href="/signup"
               className="text-sage hover:text-charcoal transition-colors"
