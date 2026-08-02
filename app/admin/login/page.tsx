@@ -111,6 +111,16 @@ export default function AdminLoginPage() {
             {isLoading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+
+        <p className="font-body text-xs text-cream/40 text-center mt-4">
+        Customer?{" "}
+        <a
+            href="/login"
+            className="text-sage hover:text-cream transition-colors"
+        >
+            Click here
+        </a>
+        </p>
       </motion.div>
     </main>
   );
