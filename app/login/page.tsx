@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -9,6 +9,7 @@ function LoginForm() {
   const { login, user, isLoading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,6 +21,56 @@ function LoginForm() {
       window.location.href = redirectTo || "/";
     }
   }, [user, authLoading, redirectTo]);
+
+  const handleGoogleResponse = async (response: { credential: string }) => {
+    setErrorMessage("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Google sign-in failed.");
+
+      login(data.token, data.user);
+      window.location.href = redirectTo || "/";
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Something went wrong."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const initGoogle = () => {
+      if (!(window as any).google || !googleButtonRef.current) return;
+
+      (window as any).google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
+      });
+
+      (window as any).google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: "outline",
+        size: "large",
+        width: 320,
+      });
+    };
+
+    const interval = setInterval(() => {
+      if ((window as any).google) {
+        clearInterval(interval);
+        initGoogle();
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +175,17 @@ function LoginForm() {
             {isLoading ? "Logging in..." : "Log In"}
           </button>
         </form>
+
+        <div className="flex items-center gap-4 my-6">
+          <div className="flex-1 h-px bg-charcoal/10" />
+          <span className="font-body text-xs text-charcoal/40 uppercase tracking-wide">
+            or
+          </span>
+          <div className="flex-1 h-px bg-charcoal/10" />
+        </div>
+        <div className="flex justify-center">
+          <div ref={googleButtonRef}></div>
+        </div>
 
         <p className="font-body text-sm text-charcoal/60 text-center mt-8">
           Don't have an account?{" "}
