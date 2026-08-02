@@ -55,10 +55,12 @@ function LoginForm() {
         callback: handleGoogleResponse,
       });
 
+      const buttonWidth = googleButtonRef.current.offsetWidth;
+
       (window as any).google.accounts.id.renderButton(googleButtonRef.current, {
         theme: "outline",
         size: "large",
-        width: 320,
+        width: buttonWidth,
       });
     };
 
@@ -183,8 +185,9 @@ function LoginForm() {
           </span>
           <div className="flex-1 h-px bg-charcoal/10" />
         </div>
+        
         <div className="flex justify-center">
-          <div ref={googleButtonRef}></div>
+          <div ref={googleButtonRef} className="w-full"></div>
         </div>
 
         <p className="font-body text-sm text-charcoal/60 text-center mt-8">
