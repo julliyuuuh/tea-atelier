@@ -28,7 +28,7 @@ export default function AdminLayout({
     if (isLoading) return;
 
     if (!user) {
-      router.push("/login");
+      router.push("/admin/login");
       return;
     }
 
@@ -47,7 +47,7 @@ export default function AdminLayout({
 
   function handleLogout() {
     logout();
-    router.push("/login");
+    router.push("/admin/login");
   }
 
   return (

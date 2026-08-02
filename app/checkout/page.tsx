@@ -30,7 +30,6 @@ export default function CheckoutPage() {
       setFormData((prev) => ({
         ...prev,
         email: user.email,
-        phone: user.phone || "",
       }));
     }
   }, [user]);
