@@ -6,6 +6,7 @@ export async function GET() {
     const result = await pool.query(
       `SELECT product_id, product_name, product_desc, product_image, category, price, status, stock_quantity
       FROM products
+      WHERE is_archived = false
       ORDER BY product_id DESC`
     );
 

@@ -7,4 +7,5 @@ export type Product = {
   description: string;
   availability: "In Stock" | "Out of Stock";
   stockQuantity: number;
+  isArchived: boolean;
 };
