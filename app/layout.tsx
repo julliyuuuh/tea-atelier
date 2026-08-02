@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/lib/cart-context";
-import PageTransition from "@/components/PageTransition";
 import { AuthProvider } from "@/lib/auth-context";
+import StockErrorModal from "@/components/StockErrorModal";
+import Script from "next/script";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -31,9 +32,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${fraunces.variable} ${inter.variable} antialiased`}>
+        <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
         <AuthProvider>
           <CartProvider>
-            <PageTransition>{children}</PageTransition>
+            {children}
+            <StockErrorModal />
           </CartProvider>
         </AuthProvider>
       </body>
