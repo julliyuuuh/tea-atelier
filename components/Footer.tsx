@@ -6,7 +6,11 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-8 py-16 grid grid-cols-1 md:grid-cols-4 gap-12">
         {/* Contact */}
         <div>
-          <h3 className="font-display text-xl mb-4">Tea Atelier</h3>
+          <img
+            src="/images/logo-full.png"
+            alt="Tea Atelier"
+            className="w-48 mb-4 opacity-90"
+          />
           <p className="font-body text-sm text-cream/70 leading-relaxed">
             123 Leaf Street
             <br />
