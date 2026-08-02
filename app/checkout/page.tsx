@@ -130,7 +130,6 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     name="fullName"
-                    value={formData.fullName}
                     onChange={handleChange}
                     required
                     className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
@@ -143,7 +142,6 @@ export default function CheckoutPage() {
                   <input
                     type="email"
                     name="email"
-                    value={formData.email}
                     onChange={handleChange}
                     required
                     className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
@@ -156,7 +154,6 @@ export default function CheckoutPage() {
                   <input
                     type="tel"
                     name="phone"
-                    value={formData.phone}
                     onChange={handleChange}
                     required
                     maxLength={11}
