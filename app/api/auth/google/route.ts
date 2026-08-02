@@ -23,7 +23,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid Google credential." }, { status: 401 });
     }
 
-    const { email, given_name, family_name, sub: googleId } = payload;
+    const { email, given_name, family_name, sub: googleId, email_verified } = payload;
+
+    if (!email_verified) {
+      return NextResponse.json({ error: "Google email not verified." }, { status: 401 });
+    }
 
     const existing = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
 
