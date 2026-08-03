@@ -114,7 +114,7 @@ export default function CheckoutPage() {
             onSubmit={handleFormSubmit}
             className="space-y-8"
           >
-            <div className="bg-cream border border-charcoal/10 p-6 md:p-8">
+            <div className="bg-cream border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Customer Information
               </h2>
@@ -129,7 +129,7 @@ export default function CheckoutPage() {
                     value={formData.fullName}
                     onChange={handleChange}
                     required
-                    className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
+                    className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
                   />
                 </div>
                 <div>
@@ -142,7 +142,7 @@ export default function CheckoutPage() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
+                    className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -156,13 +156,13 @@ export default function CheckoutPage() {
                     onChange={handleChange}
                     required
                     maxLength={11}
-                    className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
+                    className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-cream border border-charcoal/10 p-6 md:p-8">
+            <div className="bg-cream border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Delivery Address
               </h2>
@@ -178,7 +178,7 @@ export default function CheckoutPage() {
                     onChange={handleChange}
                     required
                     placeholder="House/unit number, street name"
-                    className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
+                    className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
                   />
                 </div>
                 <div>
@@ -191,7 +191,7 @@ export default function CheckoutPage() {
                     value={formData.city}
                     onChange={handleChange}
                     required
-                    className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
+                    className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
                   />
                 </div>
                 <div>
@@ -204,18 +204,18 @@ export default function CheckoutPage() {
                     value={formData.province}
                     onChange={handleChange}
                     required
-                    className="w-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
+                    className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-cream border border-charcoal/10 p-6 md:p-8">
+            <div className="bg-cream border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Payment Method
               </h2>
               <div className="space-y-3">
-                <label className="flex items-center gap-3 border border-charcoal/10 p-4 cursor-pointer">
+                <label className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer">
                   <input
                     type="radio"
                     name="payment"
@@ -233,7 +233,7 @@ export default function CheckoutPage() {
           </form>
 
           <aside className="space-y-8">
-            <div className="bg-sand/40 border border-charcoal/10 p-6 md:p-8">
+            <div className="bg-sand/40 border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Order Summary
               </h2>
@@ -245,7 +245,7 @@ export default function CheckoutPage() {
                   </p>
                   <Link
                     href="/shop"
-                    className="inline-block bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
+                    className="inline-block rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
                   >
                     Browse Tea
                   </Link>
@@ -292,7 +292,7 @@ export default function CheckoutPage() {
                 type="submit"
                 form="checkout-form"
                 disabled={isCartEmpty}
-                className="w-full mt-8 bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"
+                className="w-full mt-8 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"
               >
                 Place Order
               </button>
@@ -303,20 +303,20 @@ export default function CheckoutPage() {
 
       {showConfirm && (
         <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6">
-          <div className="bg-cream border border-charcoal/10 rounded-lg p-8 max-w-sm w-full text-center">
+          <div className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center">
             <p className="font-body text-sm text-charcoal mb-6">
               Are you sure you want to check out?
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
+                className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmOrder}
-                className="flex-1 bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors"
+                className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors"
               >
                 Confirm
               </button>

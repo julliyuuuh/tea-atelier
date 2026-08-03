@@ -24,14 +24,13 @@ export default function CartPage() {
 
             <Link
               href="/shop"
-              className="inline-block bg-sage text-cream font-bod`y text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
+              className="inline-block rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
             >
               Continue Shopping
             </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {/* Items */}
             <div className="md:col-span-2 space-y-8">
               {items.map((item) => (
                 <motion.div
@@ -40,7 +39,7 @@ export default function CartPage() {
                   animate={{ opacity: 1 }}
                   className="flex gap-6 border-b border-charcoal/10 pb-8"
                 >
-                  <div className="w-28 h-32 bg-sand overflow-hidden shrink-0">
+                  <div className="w-28 h-32 rounded-2xl bg-sand overflow-hidden shrink-0">
                     <img
                       src={item.product.image}
                       alt={item.product.name}
@@ -59,7 +58,7 @@ export default function CartPage() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center border border-charcoal/20">
+                      <div className="flex items-center rounded-full border border-charcoal/20 overflow-hidden">
                         <button
                           onClick={() =>
                             updateQuantity(item.product.id, item.quantity - 1)
@@ -93,8 +92,7 @@ export default function CartPage() {
               ))}
             </div>
 
-            {/* Summary */}
-            <div className="bg-sand/40 p-8 h-fit">
+            <div className="bg-sand/40 rounded-2xl p-8 h-fit">
               <h2 className="font-display text-xl text-charcoal mb-6">
                 Order Summary
               </h2>
@@ -113,7 +111,7 @@ export default function CartPage() {
 
               <Link
                 href="/checkout"
-                className="block text-center bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
+                className="block text-center rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
               >
                 Checkout
               </Link>

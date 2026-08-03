@@ -22,7 +22,9 @@ export default function ProductDetailsPage() {
 
     async function loadProduct() {
       try {
-        const res = await fetch(`/api/products/${id}`, { signal: controller.signal });
+        const res = await fetch(`/api/products/${id}`, {
+          signal: controller.signal,
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Product not found.");
         setProduct(data.product as Product);
@@ -61,7 +63,6 @@ export default function ProductDetailsPage() {
     <main className="min-h-screen">
       <Navbar />
 
-      {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-8 pt-8">
         <span className="font-body text-xs text-charcoal/50">
           <Link href="/shop" className="hover:text-charcoal transition-colors">
@@ -72,13 +73,12 @@ export default function ProductDetailsPage() {
         </span>
       </div>
 
-      {/* Product Layout */}
       <div className="max-w-7xl mx-auto px-8 py-12 grid grid-cols-1 md:grid-cols-2 gap-16">
         <motion.div
           initial={{ opacity: 0, scale: 1.03 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="relative aspect-[3/4] overflow-hidden bg-sand"
+          className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-sand"
         >
           <img
             src={product.image}
@@ -96,7 +96,7 @@ export default function ProductDetailsPage() {
           <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-4">
             {product.category}
           </span>
-          <h1 className="font-display text-4xl text-charcoal mb-4"> 
+          <h1 className="font-display text-4xl text-charcoal mb-4">
             {product.name}
           </h1>
           <span className="font-body text-2xl text-charcoal/80 mb-6">
@@ -116,8 +116,8 @@ export default function ProductDetailsPage() {
             )}
           </span>
 
-          <div className="flex items-center gap-6">
-            <div className="flex items-center border border-charcoal/20">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center rounded-full border border-charcoal/20 overflow-hidden">
               <button
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 className="px-4 py-3 font-body text-charcoal hover:bg-sand transition-colors"
@@ -136,7 +136,7 @@ export default function ProductDetailsPage() {
             </div>
             <button
               onClick={() => addToCart(product, quantity)}
-              className="flex-1 bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
+              className="flex-1 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
             >
               Add to Cart
             </button>

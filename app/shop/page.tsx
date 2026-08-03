@@ -70,7 +70,6 @@ export default function ShopPage() {
     <main className="min-h-screen">
       <Navbar />
 
-      {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-8 pt-8">
         <span className="font-body text-xs text-charcoal/50">
           Home <span className="mx-2">/</span>
@@ -78,15 +77,15 @@ export default function ShopPage() {
         </span>
       </div>
 
-      {/* Page Header */}
       <div className="max-w-7xl mx-auto px-8 pt-6 pb-10">
         <h1 className="font-display text-4xl text-charcoal mb-2">Shop All</h1>
         <p className="font-body text-sm text-charcoal/60">
-          {isLoading ? "Loading products..." : `${filteredProducts.length} products`}
+          {isLoading
+            ? "Loading products..."
+            : `${filteredProducts.length} products`}
         </p>
       </div>
 
-      {/* Search Bar */}
       <div className="max-w-7xl mx-auto px-8 pb-6">
         <div className="relative max-w-sm">
           <input
@@ -94,12 +93,12 @@ export default function ShopPage() {
             placeholder="Search products..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+            className="w-full rounded-full border border-charcoal/20 px-5 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-charcoal/40 hover:text-charcoal text-sm"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-charcoal/40 hover:text-charcoal text-sm"
             >
               ✕
             </button>
@@ -107,7 +106,6 @@ export default function ShopPage() {
         </div>
       </div>
 
-      {/* Filters Bar */}
       <div className="max-w-7xl mx-auto px-8 pb-10 flex flex-wrap items-center justify-between gap-6 border-y border-charcoal/10 py-5">
         <div className="flex items-center gap-6">
           {categories.map((cat) => (
@@ -128,7 +126,7 @@ export default function ShopPage() {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortOption)}
-          className="font-body text-xs tracking-wide uppercase bg-transparent border border-charcoal/20 px-4 py-2 text-charcoal focus:outline-none"
+          className="font-body text-xs tracking-wide uppercase bg-transparent rounded-full border border-charcoal/20 px-4 py-2 text-charcoal focus:outline-none"
         >
           <option>Newest</option>
           <option>Price: Low to High</option>
@@ -136,7 +134,6 @@ export default function ShopPage() {
         </select>
       </div>
 
-      {/* Product Grid */}
       <div className="max-w-7xl mx-auto px-8 pb-24">
         {errorMessage && (
           <p className="font-body text-sm text-red-600 mb-8">{errorMessage}</p>
@@ -165,20 +162,20 @@ export default function ShopPage() {
               key={product.id}
               className="group block"
             >
-              <div className="relative aspect-[3/4] overflow-hidden bg-sand mb-4">
+              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-sand mb-4">
                 <img
                   src={product.image}
                   alt={product.name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                <span className="absolute top-4 left-4 bg-cream/90 px-3 py-1 font-body text-[10px] tracking-[0.15em] uppercase text-charcoal">
+                <span className="absolute top-4 left-4 bg-cream/90 rounded-full px-3 py-1 font-body text-[10px] tracking-[0.15em] uppercase text-charcoal">
                   {product.category}
                 </span>
                 <button
                   onClick={(e) => {
                     e.preventDefault();
                   }}
-                  className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-cream text-charcoal font-body text-[10px] tracking-wide uppercase px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-cream text-charcoal rounded-full font-body text-[10px] tracking-wide uppercase px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   Quick View
                 </button>

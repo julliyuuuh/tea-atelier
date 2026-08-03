@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 export default function AdminLoginPage() {
@@ -41,7 +42,7 @@ export default function AdminLoginPage() {
       window.location.href = "/admin";
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Something went wrong."
+        error instanceof Error ? error.message : "Something went wrong.",
       );
     } finally {
       setIsLoading(false);
@@ -49,25 +50,37 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-charcoal px-8">
+    <main className="min-h-screen flex items-center justify-center bg-charcoal px-8 relative overflow-hidden">
+      {/* subtle radial glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(161,188,152,0.15),transparent_60%)]" />
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="w-full max-w-sm"
+        className="relative w-full max-w-sm bg-charcoal/60 backdrop-blur rounded-3xl border border-cream/10 p-10 shadow-2xl"
       >
-        <a
-          href="/"
-          className="font-display text-2xl text-cream block text-center mb-10"
-        >
-          Tea Atelier
-        </a>
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-12 h-12 rounded-full bg-sage/20 flex items-center justify-center mb-4">
+            <ShieldCheck
+              size={22}
+              strokeWidth={1.5}
+              className="text-sage-light"
+            />
+          </div>
+          <a href="/" className="font-display text-2xl text-cream mb-1">
+            Tea Atelier
+          </a>
+          <span className="font-body text-[10px] tracking-[0.25em] uppercase text-sage-light">
+            Admin Portal
+          </span>
+        </div>
 
-        <h1 className="font-display text-3xl text-cream text-center mb-2">
-          Admin Sign In
+        <h1 className="font-body text-lg font-medium text-cream text-center mb-1">
+          Restricted Access
         </h1>
-        <p className="font-body text-sm text-cream/60 text-center mb-10">
-          Restricted access — staff only
+        <p className="font-body text-sm text-cream/50 text-center mb-8">
+          Staff sign-in only
         </p>
 
         {errorMessage && (
@@ -76,9 +89,9 @@ export default function AdminLoginPage() {
           </p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="font-body text-xs tracking-wide uppercase text-cream/60 block mb-2">
+            <label className="font-body text-xs tracking-wide uppercase text-cream/50 block mb-2">
               Email
             </label>
             <input
@@ -86,12 +99,12 @@ export default function AdminLoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-transparent border-b border-cream/30 py-2 font-body text-sm text-cream focus:outline-none focus:border-sage transition-colors"
+              className="w-full rounded-xl border border-cream/15 bg-cream/5 px-4 py-3 font-body text-sm text-cream focus:outline-none focus:border-sage transition-colors"
             />
           </div>
 
           <div>
-            <label className="font-body text-xs tracking-wide uppercase text-cream/60 block mb-2">
+            <label className="font-body text-xs tracking-wide uppercase text-cream/50 block mb-2">
               Password
             </label>
             <input
@@ -99,27 +112,27 @@ export default function AdminLoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-transparent border-b border-cream/30 py-2 font-body text-sm text-cream focus:outline-none focus:border-sage transition-colors"
+              className="w-full rounded-xl border border-cream/15 bg-cream/5 px-4 py-3 font-body text-sm text-cream focus:outline-none focus:border-sage transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-cream hover:text-charcoal transition-colors disabled:opacity-50"
+            className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-cream hover:text-charcoal transition-colors disabled:opacity-50"
           >
             {isLoading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
-        <p className="font-body text-xs text-cream/40 text-center mt-4">
-        Customer?{" "}
-        <a
+        <p className="font-body text-xs text-cream/40 text-center mt-6">
+          Customer?{" "}
+          <a
             href="/login"
-            className="text-sage hover:text-cream transition-colors"
-        >
+            className="text-sage-light hover:text-cream transition-colors"
+          >
             Click here
-        </a>
+          </a>
         </p>
       </motion.div>
     </main>
