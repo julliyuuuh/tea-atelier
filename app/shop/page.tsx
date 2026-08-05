@@ -118,7 +118,7 @@ export default function ShopPage() {
             transition={{ duration: 0.5 }}
           >
             <h1 className="font-display text-3xl text-charcoal mb-1">
-              Welcome back, {user.firstName || "there"}
+              Welcome back, {user.name || "there"}
             </h1>
             <p className="font-body text-sm text-charcoal/60">
               Here's what's fresh in the atelier today.
