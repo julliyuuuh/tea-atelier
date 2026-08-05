@@ -234,7 +234,7 @@ export default function AdminProductsPage() {
         </div>
         <button
           onClick={openAddModal}
-          className="bg-charcoal text-cream font-body text-sm px-5 py-2.5 hover:bg-sage transition-colors"
+          className="bg-charcoal text-cream font-body text-sm px-5 py-2.5 hover:bg-sage transition-colors rounded-full"
         >
           + Add Product
         </button>
@@ -249,10 +249,10 @@ export default function AdminProductsPage() {
         placeholder="Search products..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full max-w-sm border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal mb-6 focus:outline-none focus:border-sage transition-colors"
+        className="w-full max-w-sm border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal mb-6 focus:outline-none focus:border-sage transition-colors rounded-full"
       />
 
-      <div className="bg-white border border-charcoal/10">
+      <div className="bg-white border border-charcoal/10 rounded-xl overflow-hidden">
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-charcoal/10">
@@ -313,14 +313,23 @@ export default function AdminProductsPage() {
                 </td>
                 <td className="px-5 py-3">
                   <span
-                    className={`font-body text-xs px-2 py-1 ${
+                    className={`inline-flex items-center gap-1.5 font-body text-xs px-3 py-1 rounded-full ${
                       product.stockQuantity === 0
-                        ? "bg-charcoal/10 text-charcoal/50"
+                        ? "bg-red-50 text-red-600"
                         : product.stockQuantity <= 10
-                          ? "bg-amber-100 text-amber-700"
+                          ? "bg-amber-50 text-amber-700"
                           : "bg-sage/15 text-sage"
                     }`}
                   >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        product.stockQuantity === 0
+                          ? "bg-red-500"
+                          : product.stockQuantity <= 10
+                            ? "bg-amber-500"
+                            : "bg-sage"
+                      }`}
+                    />
                     {product.stockQuantity === 0
                       ? "Out of Stock"
                       : product.stockQuantity <= 10
@@ -360,7 +369,7 @@ export default function AdminProductsPage() {
           </button>
 
           {showArchived && (
-            <div className="bg-white border border-charcoal/10 mt-4">
+            <div className="bg-white border border-charcoal/10 rounded-x1 overflow-hidden mt-4">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-charcoal/10">
@@ -420,7 +429,7 @@ export default function AdminProductsPage() {
       {/*Modal to edit or add product*/}
       {modalOpen && (
         <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-50 p-6">
-          <div className="bg-white w-full max-w-md p-8 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white w-full max-w-md p-8 max-h-[90vh] overflow-y-auto rounded-2x1">
             <h2 className="font-body text-lg font-medium text-charcoal mb-6">
               {editingId ? "Edit Product" : "Add Product"}
             </h2>
@@ -436,7 +445,7 @@ export default function AdminProductsPage() {
                   value={form.name}
                   onChange={handleChange}
                   required
-                  className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
+                  className="w-full rounded-x1 border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
                 />
               </div>
 
@@ -589,14 +598,14 @@ export default function AdminProductsPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-charcoal text-cream font-body text-sm py-2.5 hover:bg-sage transition-colors"
+                  className="flex-1 bg-charcoal text-cream font-body text-sm py-2.5 hover:bg-sage transition-colors rounded-full"
                 >
                   {editingId ? "Save Changes" : "Add Product"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-2.5 hover:bg-sand/30 transition-colors"
+                  className="flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-2.5 hover:bg-sand/30 transition-colors rounded-full"
                 >
                   Cancel
                 </button>
