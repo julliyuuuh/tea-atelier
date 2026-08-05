@@ -1,15 +1,42 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
 import type { Product } from "@/lib/products";
-import Link from "next/link";
 
 const categories = ["All", "Leaf Tea", "Matcha", "Accessories"] as const;
 type Category = (typeof categories)[number];
 type SortOption = "Newest" | "Price: Low to High" | "Price: High to Low";
+
+const collectionsTeaser = [
+  {
+    name: "Morning Ritual",
+    image: "/images/category-leaf.jpg",
+    href: "/collections",
+  },
+  {
+    name: "Matcha Moments",
+    image: "/images/category-matcha.jpg",
+    href: "/collections",
+  },
+  {
+    name: "The Atelier Essentials",
+    image: "/images/category-accessories.jpg",
+    href: "/collections",
+  },
+];
+
+type RecentOrder = {
+  id: number;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+};
 
 export default function ShopPage() {
   const [activeCategory, setActiveCategory] = useState<Category>("All");
@@ -19,6 +46,9 @@ export default function ShopPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const { addToCart } = useCart();
+  const { user } = useAuth();
+
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -41,6 +71,13 @@ export default function ShopPage() {
     loadProducts();
     return () => controller.abort();
   }, []);
+
+  // Placeholder recent orders — replace with a real /api/orders?limit=3 call once available
+  useEffect(() => {
+    if (user) {
+      setRecentOrders([]);
+    }
+  }, [user]);
 
   const filteredProducts = useMemo(() => {
     let list =
@@ -66,19 +103,145 @@ export default function ShopPage() {
     return list;
   }, [products, activeCategory, sortBy, search]);
 
+  // Simple placeholder "recommended" — first 4 products until real personalization exists
+  const recommended = products.slice(0, 4);
+
   return (
     <main className="min-h-screen">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-8 pt-8">
-        <span className="font-body text-xs text-charcoal/50">
-          Home <span className="mx-2">/</span>
-          <span className="text-charcoal">Shop</span>
-        </span>
-      </div>
+      {user ? (
+        <div className="max-w-7xl mx-auto px-8 pt-12 pb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h1 className="font-display text-3xl text-charcoal mb-1">
+              Welcome back, {user.firstName || "there"}
+            </h1>
+            <p className="font-body text-sm text-charcoal/60">
+              Here's what's fresh in the atelier today.
+            </p>
+          </motion.div>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto px-8 pt-8">
+          <span className="font-body text-xs text-charcoal/50">
+            Home <span className="mx-2">/</span>
+            <span className="text-charcoal">Shop</span>
+          </span>
+        </div>
+      )}
 
-      <div className="max-w-7xl mx-auto px-8 pt-6 pb-10">
-        <h1 className="font-display text-4xl text-charcoal mb-2">Shop All</h1>
+      {/* Recently Viewed / Recommended — logged in only */}
+      {user && recommended.length > 0 && (
+        <div className="max-w-7xl mx-auto px-8 py-8 border-b border-charcoal/10">
+          <h2 className="font-body text-sm font-medium text-charcoal mb-4">
+            Recommended For You
+          </h2>
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {recommended.map((product) => (
+              <Link
+                key={product.id}
+                href={`/shop/${product.id}`}
+                className="shrink-0 w-40 group"
+              >
+                <div className="relative w-40 h-48 rounded-2xl overflow-hidden bg-sand mb-2">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                </div>
+                <p className="font-body text-sm text-charcoal truncate">
+                  {product.name}
+                </p>
+                <p className="font-body text-xs text-charcoal/60">
+                  ₱{product.price}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* My Recent Orders — logged in only */}
+      {user && (
+        <div className="max-w-7xl mx-auto px-8 py-8 border-b border-charcoal/10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-body text-sm font-medium text-charcoal">
+              My Recent Orders
+            </h2>
+            <Link
+              href="/orders"
+              className="font-body text-xs uppercase tracking-wide text-sage hover:text-charcoal transition-colors"
+            >
+              View All
+            </Link>
+          </div>
+
+          {recentOrders.length === 0 ? (
+            <p className="font-body text-xs text-charcoal/40">
+              No orders yet — your first cup awaits.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {recentOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="flex items-center justify-between bg-sand/30 rounded-xl px-5 py-3"
+                >
+                  <span className="font-body text-sm text-charcoal">
+                    Order #TA-{order.id}
+                  </span>
+                  <span className="font-body text-xs text-charcoal/60 uppercase tracking-wide">
+                    {order.status}
+                  </span>
+                  <span className="font-body text-sm text-charcoal">
+                    ₱{order.totalAmount.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Collections Teaser — logged in only */}
+      {user && (
+        <div className="max-w-7xl mx-auto px-8 py-8 border-b border-charcoal/10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-body text-sm font-medium text-charcoal">
+              Explore Collections
+            </h2>
+            <Link
+              href="/collections"
+              className="font-body text-xs uppercase tracking-wide text-sage hover:text-charcoal transition-colors"
+            >
+              View All
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {collectionsTeaser.map((col) => (
+              <Link key={col.name} href={col.href} className="group block">
+                <div className="relative h-40 rounded-2xl overflow-hidden bg-sand mb-2">
+                  <img
+                    src={col.image}
+                    alt={col.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                </div>
+                <p className="font-body text-sm text-charcoal">{col.name}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Shop All heading */}
+      <div className="max-w-7xl mx-auto px-8 pt-10 pb-6">
+        <h2 className="font-display text-3xl text-charcoal mb-2">Shop All</h2>
         <p className="font-body text-sm text-charcoal/60">
           {isLoading
             ? "Loading products..."
@@ -86,6 +249,7 @@ export default function ShopPage() {
         </p>
       </div>
 
+      {/* Search Bar */}
       <div className="max-w-7xl mx-auto px-8 pb-6">
         <div className="relative max-w-sm">
           <input
@@ -106,6 +270,7 @@ export default function ShopPage() {
         </div>
       </div>
 
+      {/* Filters Bar */}
       <div className="max-w-7xl mx-auto px-8 pb-10 flex flex-wrap items-center justify-between gap-6 border-y border-charcoal/10 py-5">
         <div className="flex items-center gap-6">
           {categories.map((cat) => (
@@ -134,6 +299,7 @@ export default function ShopPage() {
         </select>
       </div>
 
+      {/* Product Grid */}
       <div className="max-w-7xl mx-auto px-8 pb-24">
         {errorMessage && (
           <p className="font-body text-sm text-red-600 mb-8">{errorMessage}</p>
@@ -172,9 +338,7 @@ export default function ShopPage() {
                   {product.category}
                 </span>
                 <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                  }}
+                  onClick={(e) => e.preventDefault()}
                   className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-cream text-charcoal rounded-full font-body text-[10px] tracking-wide uppercase px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   Quick View
