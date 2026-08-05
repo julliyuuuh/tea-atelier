@@ -10,13 +10,6 @@ import { useAuth } from "@/lib/auth-context";
 import type { Product } from "@/lib/products";
 import { categoryTree, type MainCategory } from "@/lib/categories";
 
-const [expandedCategory, setExpandedCategory] = useState<MainCategory | null>(
-  null,
-);
-const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(
-  null,
-);
-
 type SortOption = "Newest" | "Price: Low to High" | "Price: High to Low";
 
 const collectionsTeaser = [
@@ -45,6 +38,12 @@ type RecentOrder = {
 };
 
 export default function ShopPage() {
+  const [expandedCategory, setExpandedCategory] = useState<MainCategory | null>(
+    null,
+  );
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(
+    null,
+  );
   const [sortBy, setSortBy] = useState<SortOption>("Newest");
   const [search, setSearch] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
