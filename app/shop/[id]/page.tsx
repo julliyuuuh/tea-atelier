@@ -144,7 +144,6 @@ export default function ProductDetailsPage() {
         </motion.div>
       </div>
 
-      <Footer />
       {/* Accordion + Reviews Section */}
       <div className="max-w-7xl mx-auto px-8 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
@@ -250,6 +249,8 @@ export default function ProductDetailsPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </main>
   );
   function AccordionRow({
