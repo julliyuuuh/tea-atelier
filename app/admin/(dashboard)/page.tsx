@@ -191,24 +191,25 @@ export default function AdminOverviewPage() {
                 margin={{ top: 10, left: 10, right: 10, bottom: 10 }}
                 className="[&_*:focus]:outline-none"
               >
-                <CartesianGrid vertical={false} stroke="#3a3a3a26" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval={0}
-                  tickMargin={16}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(value) =>
-                    value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`
-                  }
-                  width={40}
-                />
+              <CartesianGrid vertical={false} stroke="#3a3a3a26" />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
+                axisLine={{ stroke: "#3a3a3a", strokeWidth: 1.5 }}
+                tickLine={false}
+                interval={0}
+                tickMargin={16}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
+                axisLine={{ stroke: "#3a3a3a", strokeWidth: 1.5 }}
+                tickLine={false}
+                tickFormatter={(value) =>
+                  value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`
+                }
+                tickMargin={12}
+                width={50}
+              />
                 <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={55}>
                   {topProducts.map((entry, index) => (
                     <Cell
