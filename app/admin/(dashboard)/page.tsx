@@ -136,7 +136,7 @@ export default function AdminOverviewPage() {
   ];
 
   return (
-    <div className="p-10">
+    <div className="p-4 sm:p-6 lg:p-10">
       <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
         Overview
       </h1>
@@ -184,42 +184,75 @@ export default function AdminOverviewPage() {
             </span>
           )}
 
+          {/* Mobile / tablet: simple ranked list */}
           {!isLoading && topProducts.length > 0 && (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart
-                data={topProducts}
-                margin={{ top: 10, left: -10, right: 10, bottom: 10 }}
-                className="[&_*:focus]:outline-none"
-              >
-                <CartesianGrid vertical={false} stroke="#3a3a3a26" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
-                  axisLine={{ stroke: "#3a3a3a", strokeWidth: 1.5 }}
-                  tickLine={false}
-                  interval={0}
-                  tickMargin={16}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
-                  axisLine={{ stroke: "#3a3a3a", strokeWidth: 1.5 }}
-                  tickLine={false}
-                  tickFormatter={(value) =>
-                    value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`
-                  }
-                  tickMargin={12}
-                  width={45}
-                />
-                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={40}>
-                  {topProducts.map((entry, index) => (
-                    <Cell
-                      key={entry.id}
-                      fill={index === 0 ? "#7a9b76" : "#7a9b7655"}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="lg:hidden space-y-1">
+              {topProducts.map((product, index) => (
+                <div
+                  key={product.id}
+                  className="flex items-center justify-between border-b-2 border-charcoal/10 last:border-0 px-2 -mx-2 py-3 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`font-display text-sm w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                        index === 0 ? "bg-sage text-white" : "bg-sage/10 text-sage"
+                      }`}
+                    >
+                      {index + 1}
+                    </span>
+                    <span className="font-body text-sm text-charcoal">
+                      {product.name}
+                    </span>
+                  </div>
+                  <span className="font-body text-sm text-charcoal/70 shrink-0">
+                    ₱{product.revenue.toLocaleString("en-PH", {
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Desktop: bar chart */}
+          {!isLoading && topProducts.length > 0 && (
+            <div className="hidden lg:block">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={topProducts}
+                  margin={{ top: 10, left: -10, right: 10, bottom: 10 }}
+                  className="[&_*:focus]:outline-none"
+                >
+                  <CartesianGrid vertical={false} stroke="#3a3a3a26" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
+                    axisLine={{ stroke: "#3a3a3a", strokeWidth: 1.5 }}
+                    tickLine={false}
+                    interval={0}
+                    tickMargin={16}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
+                    axisLine={{ stroke: "#3a3a3a", strokeWidth: 1.5 }}
+                    tickLine={false}
+                    tickFormatter={(value) =>
+                      value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`
+                    }
+                    tickMargin={12}
+                    width={45}
+                  />
+                  <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={40}>
+                    {topProducts.map((entry, index) => (
+                      <Cell
+                        key={entry.id}
+                        fill={index === 0 ? "#7a9b76" : "#7a9b7655"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </div>
 
