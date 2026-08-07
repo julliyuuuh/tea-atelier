@@ -6,6 +6,15 @@ export async function GET(req: Request) {
   const { error } = requireAdmin(req);
   if (error) return error;
 
+  // Bottom 5 products by stock quantity (active only aka not deleted/archived)
+  const lowStockResult = await pool.query(`
+    SELECT product_id, product_name, stock_quantity
+    FROM products
+    WHERE is_archived = false
+    ORDER BY stock_quantity ASC
+    LIMIT 5
+  `);
+
   const statsResult = await pool.query(`
     SELECT
       (SELECT COUNT(*) FROM orders) AS total_orders,
@@ -42,6 +51,11 @@ export async function GET(req: Request) {
       name: row.product_name,
       revenue: parseFloat(row.revenue),
       unitsSold: parseInt(row.units_sold, 10),
+    })),
+    lowStock: lowStockResult.rows.map((row) => ({
+      id: row.product_id,
+      name: row.product_name,
+      stockQuantity: parseInt(row.stock_quantity, 10),
     })),
   });
 }

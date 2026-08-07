@@ -19,6 +19,12 @@ type TopProduct = {
   unitsSold: number;
 };
 
+type LowStockProduct = {
+  id: number;
+  name: string;
+  stockQuantity: number;
+};
+
 type Stats = {
   totalOrders: number;
   revenue: number;
@@ -58,9 +64,20 @@ function useCountUp(target: number | null, duration = 800) {
   return value;
 }
 
+function stockBadge(qty: number) {
+  if (qty === 0) {
+    return { label: "Out of Stock", bg: "bg-red-50", text: "text-red-600", dot: "bg-red-500" };
+  }
+  if (qty <= 10) {
+    return { label: "Low Stock", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" };
+  }
+  return { label: "In Stock", bg: "bg-sage/15", text: "text-sage", dot: "bg-sage" };
+}
+
 export default function AdminOverviewPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [lowStock, setLowStock] = useState<LowStockProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -74,6 +91,7 @@ export default function AdminOverviewPage() {
         if (res.ok) {
           setStats(data.stats);
           setTopProducts(data.topProducts);
+          setLowStock(data.lowStock);
         }
       } catch {
         // fail silently
@@ -168,7 +186,7 @@ export default function AdminOverviewPage() {
 
           {!isLoading && topProducts.length > 0 && (
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={topProducts} margin={{ top: 10 }}>
+              <BarChart data={topProducts} margin={{ top: 10, left: 10, right: 10 }}>
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 11, fill: "#3a3a3a99" }}
@@ -199,6 +217,46 @@ export default function AdminOverviewPage() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+          )}
+        </div>
+
+        <div className="bg-white border border-charcoal/10 rounded-xl p-6">
+          <h2 className="font-body text-sm font-medium text-charcoal mb-4">
+            Low Stock
+          </h2>
+
+          {isLoading && (
+            <span className="font-body text-xs text-charcoal/40">Loading...</span>
+          )}
+
+          {!isLoading && lowStock.length === 0 && (
+            <span className="font-body text-xs text-charcoal/40">
+              No products found.
+            </span>
+          )}
+
+          {!isLoading && lowStock.length > 0 && (
+            <div className="space-y-1">
+              {lowStock.map((product) => {
+                const badge = stockBadge(product.stockQuantity);
+                return (
+                  <div
+                    key={product.id}
+                    className="flex items-center justify-between border-b border-charcoal/5 last:border-0 px-2 -mx-2 py-3 rounded-lg transition-colors duration-150 hover:bg-sand/20"
+                  >
+                    <span className="font-body text-sm text-charcoal">
+                      {product.name}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1.5 font-body text-xs px-3 py-1 rounded-full ${badge.bg} ${badge.text}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                      {product.stockQuantity} left
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
