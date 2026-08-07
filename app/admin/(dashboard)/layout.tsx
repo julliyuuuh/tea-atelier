@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -9,6 +9,8 @@ import {
   ShoppingBag,
   Users,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -27,6 +29,7 @@ export default function AdminLayout({
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     document.title = "Tea Atelier — Admin";
@@ -43,6 +46,11 @@ export default function AdminLayout({
     }
   }, [user, isLoading, router]);
 
+  // Close the mobile drawer whenever the route changes
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
   if (isLoading || !user || user.role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F4F4F2]">
@@ -58,12 +66,48 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen flex bg-[#F4F4F2]">
-      <aside className="w-64 bg-charcoal text-cream flex flex-col shrink-0">
-        <div className="px-6 py-6 border-b border-cream/10">
-          <span className="font-display text-xl block">Tea Atelier</span>
-          <span className="font-body text-[10px] tracking-[0.2em] uppercase text-sage-light">
-            Admin
-          </span>
+      {/* Mobile top bar — visible below lg, hidden at lg+ */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-charcoal text-cream flex items-center justify-between px-4 py-3">
+        <span className="font-display text-lg">Tea Atelier</span>
+        <button
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Open menu"
+          className="p-2 -mr-2"
+        >
+          <Menu size={22} />
+        </button>
+      </div>
+
+      {/* Backdrop — only rendered/visible when mobile drawer is open */}
+      {mobileNavOpen && (
+        <div
+          onClick={() => setMobileNavOpen(false)}
+          className="lg:hidden fixed inset-0 bg-charcoal/50 z-40"
+        />
+      )}
+
+      <aside
+        className={`
+          w-64 bg-charcoal text-cream flex flex-col shrink-0
+          fixed inset-y-0 left-0 z-50 transition-transform duration-300
+          lg:static lg:translate-x-0
+          ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
+      >
+        <div className="px-6 py-6 border-b border-cream/10 flex items-center justify-between">
+          <div>
+            <span className="font-display text-xl block">Tea Atelier</span>
+            <span className="font-body text-[10px] tracking-[0.2em] uppercase text-sage-light">
+              Admin
+            </span>
+          </div>
+          <button
+            onClick={() => setMobileNavOpen(false)}
+            aria-label="Close menu"
+            className="lg:hidden p-1 text-cream/60 hover:text-cream"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <nav className="flex-1 px-3 py-6 space-y-1">
@@ -105,7 +149,7 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">{children}</main>
     </div>
   );
 }
