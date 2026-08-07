@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, ShoppingBag } from "lucide-react";
+import { User, ShoppingBag, Settings, LogOut } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 
@@ -19,6 +19,8 @@ export default function Navbar() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
 
@@ -26,6 +28,16 @@ export default function Navbar() {
     const onScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
@@ -85,14 +97,44 @@ export default function Navbar() {
           {/* Desktop Icons */}
           <div className="hidden md:flex items-center gap-3">
             {user ? (
-              <button
-                onClick={logout}
-                className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors"
-                aria-label="Log Out"
-                title="Log Out"
-              >
-                <User size={18} strokeWidth={1.5} />
-              </button>
+              <div className="relative" ref={accountMenuRef}>
+                <button
+                  onClick={() => setAccountMenuOpen((prev) => !prev)}
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors"
+                  aria-label="Account"
+                >
+                  <User size={18} strokeWidth={1.5} />
+                </button>
+
+                <AnimatePresence>
+                  {accountMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
+                    >
+                      <Link
+                        href="/account"
+                        onClick={() => setAccountMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                      >
+                        <Settings size={16} strokeWidth={1.5} /> Settings
+                      </Link>
+                      <button
+                        onClick={() => {
+                          logout();
+                          setAccountMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                      >
+                        <LogOut size={16} strokeWidth={1.5} /> Log Out
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             ) : (
               <Link
                 href="/login"
@@ -168,6 +210,17 @@ export default function Navbar() {
                       className="font-display text-xl text-charcoal"
                     >
                       My Orders
+                    </Link>
+                  </li>
+                )}
+                {user && (
+                  <li>
+                    <Link
+                      href="/account"
+                      onClick={() => setMenuOpen(false)}
+                      className="font-display text-xl text-charcoal"
+                    >
+                      Settings
                     </Link>
                   </li>
                 )}
