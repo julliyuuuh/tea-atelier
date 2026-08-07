@@ -150,53 +150,57 @@ export default function AdminOverviewPage() {
         })}
       </div>
 
-      <div className="mt-10 bg-white border border-charcoal/10 rounded-xl p-6">
-        <h2 className="font-body text-sm font-medium text-charcoal mb-4">
-          Top Products by Revenue
-        </h2>
+      <div className="mt-10 grid grid-cols-2 gap-4">
+        <div className="bg-white border border-charcoal/10 rounded-xl p-6">
+          <h2 className="font-body text-sm font-medium text-charcoal mb-4">
+            Top Products by Revenue
+          </h2>
 
-        {isLoading && (
-          <span className="font-body text-xs text-charcoal/40">Loading...</span>
-        )}
+          {isLoading && (
+            <span className="font-body text-xs text-charcoal/40">Loading...</span>
+          )}
 
-        {!isLoading && topProducts.length === 0 && (
-          <span className="font-body text-xs text-charcoal/40">
-            Not enough sales data yet.
-          </span>
-        )}
+          {!isLoading && topProducts.length === 0 && (
+            <span className="font-body text-xs text-charcoal/40">
+              Not enough sales data yet.
+            </span>
+          )}
 
-        {!isLoading && topProducts.length > 0 && (
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={topProducts} layout="vertical" margin={{ left: 20 }}>
-              <XAxis type="number" hide />
-              <YAxis
-                type="category"
-                dataKey="name"
-                width={140}
-                tick={{ fontSize: 12, fill: "#3a3a3a99" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                formatter={(value) => [
-                  `₱${Number(value).toLocaleString("en-PH", {
-                    minimumFractionDigits: 2,
-                  })}`,
-                  "Revenue",
-                ]}
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
-              />
-              <Bar dataKey="revenue" radius={[0, 6, 6, 0]} barSize={18}>
-                {topProducts.map((entry, index) => (
-                  <Cell
-                    key={entry.id}
-                    fill={index === 0 ? "#7a9b76" : "#7a9b7655"}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+          {!isLoading && topProducts.length > 0 && (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={topProducts} margin={{ top: 10 }}>
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: "#3a3a3a99" }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={0}
+                  angle={-20}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis hide />
+                <Tooltip
+                  formatter={(value) => [
+                    `₱${Number(value).toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                    })}`,
+                    "Revenue",
+                  ]}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={36}>
+                  {topProducts.map((entry, index) => (
+                    <Cell
+                      key={entry.id}
+                      fill={index === 0 ? "#7a9b76" : "#7a9b7655"}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
     </div>
   );
