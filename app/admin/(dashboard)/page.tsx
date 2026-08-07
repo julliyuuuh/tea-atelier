@@ -169,7 +169,7 @@ export default function AdminOverviewPage() {
       </div>
 
       <div className="mt-10 grid grid-cols-[65%_1fr] gap-4">
-        <div className="bg-white border border-charcoal/10 rounded-xl p-6">
+        <div className="bg-white border border-charcoal/10 rounded-xl p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-charcoal/5 hover:border-sage/30">
           <h2 className="font-body text-sm font-medium text-charcoal mb-4">
             Top Products by Revenue
           </h2>
@@ -197,6 +197,7 @@ export default function AdminOverviewPage() {
                 />
                 <YAxis hide />
                 <Tooltip
+                  cursor={false}
                   formatter={(value) => [
                     `₱${Number(value).toLocaleString("en-PH", {
                       minimumFractionDigits: 2,
@@ -218,7 +219,7 @@ export default function AdminOverviewPage() {
           )}
         </div>
 
-        <div className="bg-white border border-charcoal/10 rounded-xl p-6">
+        <div className="bg-white border border-charcoal/10 rounded-xl p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-charcoal/5 hover:border-sage/30">
           <h2 className="font-body text-sm font-medium text-charcoal mb-4">
             Low Stock
           </h2>
@@ -240,7 +241,7 @@ export default function AdminOverviewPage() {
                 return (
                   <div
                     key={product.id}
-                    className="flex items-center justify-between border-b-2 border-charcoal/10 last:border-0 px-2 -mx-2 py-3 rounded-lg transition-colors duration-150 hover:bg-sand/20"
+                    className="flex items-center justify-between border-b-2 border-charcoal/10 last:border-0 px-2 -mx-2 py-3 rounded-lg"
                   >
                     <span className="font-body text-sm text-charcoal">
                       {product.name}
