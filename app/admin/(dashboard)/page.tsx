@@ -74,13 +74,13 @@ export default function AdminOverviewPage() {
           return (
             <div
               key={stat.label}
-              className="bg-white border border-charcoal/10 rounded-xl p-5"
+              className="bg-white border border-charcoal/10 rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-charcoal/5 hover:border-sage/30 cursor-default"
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="font-body text-xs text-charcoal/50">
                   {stat.label}
                 </span>
-                <div className="w-8 h-8 rounded-full bg-sage/10 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-sage/10 flex items-center justify-center transition-colors duration-200 group-hover:bg-sage/20">
                   <Icon size={14} className="text-sage" strokeWidth={1.75} />
                 </div>
               </div>
@@ -108,11 +108,11 @@ export default function AdminOverviewPage() {
         )}
 
         {!isLoading && recentOrders.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-1">
             {recentOrders.map((order) => (
               <div
                 key={order.id}
-                className="flex items-center justify-between border-b border-charcoal/5 last:border-0 pb-3 last:pb-0"
+                className="flex items-center justify-between border-b border-charcoal/5 last:border-0 px-2 -mx-2 py-3 rounded-lg transition-colors duration-150 hover:bg-sage/5 cursor-pointer"
               >
                 <div>
                   <p className="font-body text-sm text-charcoal">
