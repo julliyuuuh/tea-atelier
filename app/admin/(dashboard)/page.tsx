@@ -168,8 +168,8 @@ export default function AdminOverviewPage() {
         })}
       </div>
 
-      <div className="mt-10 grid grid-cols-5 gap-4">
-        <div className="col-span-3 bg-white border border-charcoal/10 rounded-xl p-6">
+      <div className="mt-10 grid grid-cols-[2fr_1fr] gap-4">
+        <div className="bg-white border border-charcoal/10 rounded-xl p-6">
           <h2 className="font-body text-sm font-medium text-charcoal mb-4">
             Top Products by Revenue
           </h2>
@@ -185,14 +185,15 @@ export default function AdminOverviewPage() {
           )}
 
           {!isLoading && topProducts.length > 0 && (
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={topProducts} margin={{ top: 10, left: 10, right: 10 }}>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={topProducts} margin={{ top: 10, left: 10, right: 10, bottom: 10 }}>
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 11, fill: "#3a3a3a99" }}
                   axisLine={false}
                   tickLine={false}
                   interval={0}
+                  tickMargin={16}
                 />
                 <YAxis hide />
                 <Tooltip
@@ -217,7 +218,7 @@ export default function AdminOverviewPage() {
           )}
         </div>
 
-        <div className="col-span-2 bg-white border border-charcoal/10 rounded-xl p-6">
+        <div className="bg-white border border-charcoal/10 rounded-xl p-6">
           <h2 className="font-body text-sm font-medium text-charcoal mb-4">
             Low Stock
           </h2>
@@ -239,7 +240,7 @@ export default function AdminOverviewPage() {
                 return (
                   <div
                     key={product.id}
-                    className="flex items-center justify-between border-b border-charcoal/5 last:border-0 px-2 -mx-2 py-3 rounded-lg transition-colors duration-150 hover:bg-sand/20"
+                    className="flex items-center justify-between border-b-2 border-charcoal/10 last:border-0 px-2 -mx-2 py-3 rounded-lg transition-colors duration-150 hover:bg-sand/20"
                   >
                     <span className="font-body text-sm text-charcoal">
                       {product.name}
