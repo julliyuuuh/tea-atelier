@@ -9,7 +9,7 @@ import {
   YAxis,
   ResponsiveContainer,
   Cell,
-  LabelList,
+  CartesianGrid,
 } from "recharts";
 
 type TopProduct = {
@@ -191,16 +191,17 @@ export default function AdminOverviewPage() {
                 margin={{ top: 10, left: 10, right: 10, bottom: 10 }}
                 className="[&_*:focus]:outline-none"
               >
+                <CartesianGrid vertical={false} stroke="#3a3a3a1a" />
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 11, fill: "#3a3a3a99" }}
+                  tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                   interval={0}
                   tickMargin={16}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: "#3a3a3a99" }}
+                  tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(value) =>
