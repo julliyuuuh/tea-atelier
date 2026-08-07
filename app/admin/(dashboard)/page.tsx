@@ -170,7 +170,7 @@ export default function AdminOverviewPage() {
 
       <div className="mt-10 grid grid-cols-[65%_1fr] gap-4">
         <div className="bg-white border border-charcoal/10 rounded-xl p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-charcoal/5 hover:border-sage/30">
-          <h2 className="font-body text-sm font-medium text-charcoal mb-4">
+          <h2 className="font-body text-sm font-medium text-charcoal mb-6">
             Top Products by Revenue
           </h2>
 
@@ -191,7 +191,7 @@ export default function AdminOverviewPage() {
                 margin={{ top: 10, left: 10, right: 10, bottom: 10 }}
                 className="[&_*:focus]:outline-none"
               >
-                <CartesianGrid vertical={false} stroke="#3a3a3a1a" />
+                <CartesianGrid vertical={false} stroke="#3a3a3a33" />
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
