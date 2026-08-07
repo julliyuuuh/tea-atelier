@@ -14,11 +14,17 @@ export async function GET(req: Request) {
       (SELECT COUNT(*) FROM users WHERE role = 'customer') AS total_customers
   `);
 
-  // Gets the 5 most recent orders
-  const recentOrdersResult = await pool.query(`
-    SELECT order_id, recipient_name, total_amount, order_status, created_at
-    FROM orders
-    ORDER BY created_at DESC
+  // Top 5 products by revenue (quantity * price per line item)
+  const topProductsResult = await pool.query(`
+    SELECT
+      p.id AS product_id,
+      p.name AS product_name,
+      SUM(oi.quantity) AS units_sold,
+      SUM(oi.quantity * oi.price) AS revenue
+    FROM order_items oi
+    JOIN products p ON p.id = oi.product_id
+    GROUP BY p.id, p.name
+    ORDER BY revenue DESC
     LIMIT 5
   `);
 
@@ -31,12 +37,11 @@ export async function GET(req: Request) {
       totalProducts: parseInt(stats.total_products, 10),
       totalCustomers: parseInt(stats.total_customers, 10),
     },
-    recentOrders: recentOrdersResult.rows.map((row) => ({
-      id: row.order_id,
-      recipientName: row.recipient_name,
-      totalAmount: parseFloat(row.total_amount),
-      status: row.order_status,
-      createdAt: row.created_at,
+    topProducts: topProductsResult.rows.map((row) => ({
+      id: row.product_id,
+      name: row.product_name,
+      revenue: parseFloat(row.revenue),
+      unitsSold: parseInt(row.units_sold, 10),
     })),
   });
 }

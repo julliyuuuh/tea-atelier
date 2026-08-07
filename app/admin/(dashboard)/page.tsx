@@ -2,13 +2,21 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ShoppingBag, DollarSign, Package, Users } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
-type RecentOrder = {
+type TopProduct = {
   id: number;
-  recipientName: string | null;
-  totalAmount: number;
-  status: string;
-  createdAt: string;
+  name: string;
+  revenue: number;
+  unitsSold: number;
 };
 
 type Stats = {
@@ -25,7 +33,7 @@ function useCountUp(target: number | null, duration = 800) {
   useEffect(() => {
     if (target === null) return;
 
-    const targetValue = target; 
+    const targetValue = target;
     const startTime = performance.now();
     const startValue = 0;
 
@@ -52,7 +60,7 @@ function useCountUp(target: number | null, duration = 800) {
 
 export default function AdminOverviewPage() {
   const [stats, setStats] = useState<Stats | null>(null);
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -65,7 +73,7 @@ export default function AdminOverviewPage() {
         const data = await res.json();
         if (res.ok) {
           setStats(data.stats);
-          setRecentOrders(data.recentOrders);
+          setTopProducts(data.topProducts);
         }
       } catch {
         // fail silently
@@ -144,49 +152,50 @@ export default function AdminOverviewPage() {
 
       <div className="mt-10 bg-white border border-charcoal/10 rounded-xl p-6">
         <h2 className="font-body text-sm font-medium text-charcoal mb-4">
-          Recent Orders
+          Top Products by Revenue
         </h2>
 
         {isLoading && (
           <span className="font-body text-xs text-charcoal/40">Loading...</span>
         )}
 
-        {!isLoading && recentOrders.length === 0 && (
+        {!isLoading && topProducts.length === 0 && (
           <span className="font-body text-xs text-charcoal/40">
-            No orders yet.
+            Not enough sales data yet.
           </span>
         )}
 
-        {!isLoading && recentOrders.length > 0 && (
-          <div className="space-y-1">
-            {recentOrders.map((order) => (
-              <div
-                key={order.id}
-                className="flex items-center justify-between border-b border-charcoal/5 last:border-0 px-2 -mx-2 py-3 rounded-lg transition-colors duration-150 hover:bg-sage/5 cursor-pointer"
-              >
-                <div>
-                  <p className="font-body text-sm text-charcoal">
-                    Order #TA-{order.id}
-                  </p>
-                  <p className="font-body text-xs text-charcoal/50 mt-0.5">
-                    {order.recipientName || "—"} ·{" "}
-                    {new Date(order.createdAt).toLocaleDateString("en-PH", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-body text-sm text-charcoal">
-                    ₱{order.totalAmount.toFixed(2)}
-                  </p>
-                  <span className="font-body text-xs text-charcoal/50 uppercase tracking-wide">
-                    {order.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+        {!isLoading && topProducts.length > 0 && (
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={topProducts} layout="vertical" margin={{ left: 20 }}>
+              <XAxis type="number" hide />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={140}
+                tick={{ fontSize: 12, fill: "#3a3a3a99" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                formatter={(value: number) => [
+                  `₱${value.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                  })}`,
+                  "Revenue",
+                ]}
+                contentStyle={{ fontSize: 12, borderRadius: 8 }}
+              />
+              <Bar dataKey="revenue" radius={[0, 6, 6, 0]} barSize={18}>
+                {topProducts.map((entry, index) => (
+                  <Cell
+                    key={entry.id}
+                    fill={index === 0 ? "#7a9b76" : "#7a9b7655"}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         )}
       </div>
     </div>
