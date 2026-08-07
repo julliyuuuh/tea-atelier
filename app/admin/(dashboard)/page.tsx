@@ -225,7 +225,7 @@ export default function AdminOverviewPage() {
 
         <div className="bg-white border border-charcoal/10 rounded-xl p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-charcoal/5 hover:border-sage/30">
           <h2 className="font-body text-sm font-medium text-charcoal mb-4">
-            Low Stock
+            Concerning Stock
           </h2>
 
           {isLoading && (
