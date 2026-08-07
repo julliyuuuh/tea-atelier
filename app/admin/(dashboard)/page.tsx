@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ShoppingBag, DollarSign, Package, Users } from "lucide-react";
 
 type RecentOrder = {
@@ -17,6 +17,38 @@ type Stats = {
   totalProducts: number;
   totalCustomers: number;
 };
+
+function useCountUp(target: number | null, duration = 800) {
+  const [value, setValue] = useState(0);
+  const frameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (target === null) return;
+
+    const startTime = performance.now();
+    const startValue = 0;
+
+    function tick(now: number) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out for a nicer finish
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(startValue + (target - startValue) * eased);
+
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(tick);
+      }
+    }
+
+    frameRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    };
+  }, [target, duration]);
+
+  return value;
+}
 
 export default function AdminOverviewPage() {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -44,19 +76,32 @@ export default function AdminOverviewPage() {
     loadOverview();
   }, []);
 
+  const animatedOrders = useCountUp(stats ? stats.totalOrders : null);
+  const animatedRevenue = useCountUp(stats ? stats.revenue : null);
+  const animatedProducts = useCountUp(stats ? stats.totalProducts : null);
+  const animatedCustomers = useCountUp(stats ? stats.totalCustomers : null);
+
   const statCards = [
     {
       label: "Total Orders",
-      value: stats?.totalOrders ?? "—",
+      value: stats ? Math.round(animatedOrders) : "—",
       icon: ShoppingBag,
     },
     {
       label: "Revenue",
-      value: stats ? `₱${stats.revenue.toFixed(2)}` : "—",
+      value: stats ? `₱${animatedRevenue.toFixed(2)}` : "—",
       icon: DollarSign,
     },
-    { label: "Products", value: stats?.totalProducts ?? "—", icon: Package },
-    { label: "Customers", value: stats?.totalCustomers ?? "—", icon: Users },
+    {
+      label: "Products",
+      value: stats ? Math.round(animatedProducts) : "—",
+      icon: Package,
+    },
+    {
+      label: "Customers",
+      value: stats ? Math.round(animatedCustomers) : "—",
+      icon: Users,
+    },
   ];
 
   return (
@@ -80,7 +125,7 @@ export default function AdminOverviewPage() {
                 <span className="font-body text-xs text-charcoal/50">
                   {stat.label}
                 </span>
-                <div className="w-8 h-8 rounded-full bg-sage/10 flex items-center justify-center transition-colors duration-200 group-hover:bg-sage/20">
+                <div className="w-8 h-8 rounded-full bg-sage/10 flex items-center justify-center">
                   <Icon size={14} className="text-sage" strokeWidth={1.75} />
                 </div>
               </div>
