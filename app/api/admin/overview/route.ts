@@ -17,13 +17,13 @@ export async function GET(req: Request) {
   // Top 5 products by revenue (quantity * price per line item)
   const topProductsResult = await pool.query(`
     SELECT
-      p.id AS product_id,
-      p.name AS product_name,
+      p.product_id AS product_id,
+      p.product_name AS product_name,
       SUM(oi.quantity) AS units_sold,
       SUM(oi.quantity * oi.price) AS revenue
     FROM order_items oi
-    JOIN products p ON p.id = oi.product_id
-    GROUP BY p.id, p.name
+    JOIN products p ON p.product_id = oi.product_id
+    GROUP BY p.product_id, p.product_name
     ORDER BY revenue DESC
     LIMIT 5
   `);
