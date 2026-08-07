@@ -7,9 +7,9 @@ import {
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
   ResponsiveContainer,
   Cell,
+  LabelList,
 } from "recharts";
 
 type TopProduct = {
@@ -188,8 +188,7 @@ export default function AdminOverviewPage() {
             <ResponsiveContainer width="100%" height={260}>
               <BarChart
                 data={topProducts}
-                margin={{ top: 10, left: 10, right: 10, bottom: 10 }}
-                className="[&_*:focus]:outline-none"
+                margin={{ top: 30, left: 10, right: 10, bottom: 10 }}
               >
                 <XAxis
                   dataKey="name"
@@ -200,17 +199,17 @@ export default function AdminOverviewPage() {
                   tickMargin={16}
                 />
                 <YAxis hide />
-                <Tooltip
-                  cursor={false}
-                  formatter={(value) => [
-                    `₱${Number(value).toLocaleString("en-PH", {
-                      minimumFractionDigits: 2,
-                    })}`,
-                    "Revenue",
-                  ]}
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                />
-                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={40}>
+                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={55}>
+                  <LabelList
+                    dataKey="revenue"
+                    position="top"
+                    formatter={(value: number) =>
+                      `₱${value.toLocaleString("en-PH", {
+                        maximumFractionDigits: 0,
+                      })}`
+                    }
+                    style={{ fontSize: 11, fill: "#3a3a3a", fontFamily: "inherit" }}
+                  />
                   {topProducts.map((entry, index) => (
                     <Cell
                       key={entry.id}
