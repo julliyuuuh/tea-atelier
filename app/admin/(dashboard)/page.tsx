@@ -25,15 +25,15 @@ function useCountUp(target: number | null, duration = 800) {
   useEffect(() => {
     if (target === null) return;
 
+    const targetValue = target; 
     const startTime = performance.now();
     const startValue = 0;
 
     function tick(now: number) {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // ease-out for a nicer finish
       const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(startValue + (target - startValue) * eased);
+      setValue(startValue + (targetValue - startValue) * eased);
 
       if (progress < 1) {
         frameRef.current = requestAnimationFrame(tick);
