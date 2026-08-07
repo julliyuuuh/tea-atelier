@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import type { Product } from "@/lib/products";
+import { categoryTree, type MainCategory } from "@/lib/categories";
 
 const emptyForm = {
   name: "",
   category: "Leaf Tea" as Product["category"],
+  subCategory: "",
+  type: "",
   price: "",
   image: "",
   description: "",
@@ -37,7 +40,9 @@ export default function AdminProductsPage() {
       if (!res.ok) throw new Error(data.error || "Unable to load products.");
       setProducts(data.products);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +66,7 @@ export default function AdminProductsPage() {
       });
       if (!res.ok) throw new Error("Unable to remove product.");
       setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, isArchived: true } : p))
+        prev.map((p) => (p.id === id ? { ...p, isArchived: true } : p)),
       );
     } catch (error) {
       alert(error instanceof Error ? error.message : "Something went wrong.");
@@ -77,7 +82,7 @@ export default function AdminProductsPage() {
       });
       if (!res.ok) throw new Error("Unable to restore product.");
       setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, isArchived: false } : p))
+        prev.map((p) => (p.id === id ? { ...p, isArchived: false } : p)),
       );
     } catch (error) {
       alert(error instanceof Error ? error.message : "Something went wrong.");
@@ -96,6 +101,8 @@ export default function AdminProductsPage() {
     setForm({
       name: product.name,
       category: product.category,
+      subCategory: (product as any).subCategory || "",
+      type: (product as any).type || "",
       price: product.price.toString(),
       image: product.image,
       description: product.description,
@@ -105,8 +112,28 @@ export default function AdminProductsPage() {
     setModalOpen(true);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
     const { name, value } = e.target;
+
+    if (name === "category") {
+      setForm((prev) => ({
+        ...prev,
+        category: value as Product["category"],
+        subCategory: "",
+        type: "",
+      }));
+      return;
+    }
+
+    if (name === "subCategory") {
+      setForm((prev) => ({ ...prev, subCategory: value, type: "" }));
+      return;
+    }
+
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -142,6 +169,8 @@ export default function AdminProductsPage() {
     const payload = {
       name: form.name,
       category: form.category,
+      subCategory: form.subCategory,
+      type: form.type,
       price: parseFloat(form.price),
       image: imageUrl,
       description: form.description,
@@ -160,7 +189,13 @@ export default function AdminProductsPage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to update product.");
-        setProducts((prev) => prev.map((p) => (p.id === editingId ? { ...data.product, isArchived: p.isArchived } : p)));
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === editingId
+              ? { ...data.product, isArchived: p.isArchived }
+              : p,
+          ),
+        );
       } else {
         const res = await fetch("/api/admin/products", {
           method: "POST",
@@ -172,7 +207,10 @@ export default function AdminProductsPage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to add product.");
-        setProducts((prev) => [...prev, { ...data.product, isArchived: false }]);
+        setProducts((prev) => [
+          ...prev,
+          { ...data.product, isArchived: false },
+        ]);
       }
 
       setModalOpen(false);
@@ -189,12 +227,14 @@ export default function AdminProductsPage() {
             Products
           </h1>
           <p className="font-body text-sm text-charcoal/60">
-            {isLoading ? "Loading..." : `${activeProducts.length} products total`}
+            {isLoading
+              ? "Loading..."
+              : `${activeProducts.length} products total`}
           </p>
         </div>
         <button
           onClick={openAddModal}
-          className="bg-charcoal text-cream font-body text-sm px-5 py-2.5 hover:bg-sage transition-colors"
+          className="bg-charcoal text-cream font-body text-sm px-5 py-2.5 hover:bg-sage transition-colors rounded-full"
         >
           + Add Product
         </button>
@@ -209,10 +249,10 @@ export default function AdminProductsPage() {
         placeholder="Search products..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full max-w-sm border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal mb-6 focus:outline-none focus:border-sage transition-colors"
+        className="w-full max-w-sm border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal mb-6 focus:outline-none focus:border-sage transition-colors rounded-full"
       />
 
-      <div className="bg-white border border-charcoal/10">
+      <div className="bg-white border border-charcoal/10 rounded-xl overflow-hidden">
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-charcoal/10">
@@ -273,19 +313,28 @@ export default function AdminProductsPage() {
                 </td>
                 <td className="px-5 py-3">
                   <span
-                    className={`font-body text-xs px-2 py-1 ${
+                    className={`inline-flex items-center gap-1.5 font-body text-xs px-3 py-1 rounded-full ${
                       product.stockQuantity === 0
-                        ? "bg-charcoal/10 text-charcoal/50"
+                        ? "bg-red-50 text-red-600"
                         : product.stockQuantity <= 10
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-sage/15 text-sage"
+                          ? "bg-amber-50 text-amber-700"
+                          : "bg-sage/15 text-sage"
                     }`}
                   >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        product.stockQuantity === 0
+                          ? "bg-red-500"
+                          : product.stockQuantity <= 10
+                            ? "bg-amber-500"
+                            : "bg-sage"
+                      }`}
+                    />
                     {product.stockQuantity === 0
                       ? "Out of Stock"
                       : product.stockQuantity <= 10
-                      ? "Low Stock"
-                      : "In Stock"}
+                        ? "Low Stock"
+                        : "In Stock"}
                   </span>
                 </td>
                 <td className="px-5 py-3 text-right">
@@ -315,11 +364,12 @@ export default function AdminProductsPage() {
             onClick={() => setShowArchived((prev) => !prev)}
             className="font-body text-xs text-charcoal/50 hover:text-charcoal underline"
           >
-            {showArchived ? "Hide" : "Show"} Archived Products ({archivedProducts.length})
+            {showArchived ? "Hide" : "Show"} Archived Products (
+            {archivedProducts.length})
           </button>
 
           {showArchived && (
-            <div className="bg-white border border-charcoal/10 mt-4">
+            <div className="bg-white border border-charcoal/10 rounded-x1 overflow-hidden mt-4">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-charcoal/10">
@@ -336,7 +386,10 @@ export default function AdminProductsPage() {
                 </thead>
                 <tbody>
                   {archivedProducts.map((product) => (
-                    <tr key={product.id} className="border-b border-charcoal/5 last:border-0">
+                    <tr
+                      key={product.id}
+                      className="border-b border-charcoal/5 last:border-0"
+                    >
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-sand overflow-hidden shrink-0 opacity-50">
@@ -376,7 +429,7 @@ export default function AdminProductsPage() {
       {/*Modal to edit or add product*/}
       {modalOpen && (
         <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-50 p-6">
-          <div className="bg-white w-full max-w-md p-8 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white w-full max-w-md p-8 max-h-[90vh] overflow-y-auto rounded-2x1">
             <h2 className="font-body text-lg font-medium text-charcoal mb-6">
               {editingId ? "Edit Product" : "Add Product"}
             </h2>
@@ -392,7 +445,7 @@ export default function AdminProductsPage() {
                   value={form.name}
                   onChange={handleChange}
                   required
-                  className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
+                  className="w-full rounded-x1 border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
                 />
               </div>
 
@@ -408,9 +461,57 @@ export default function AdminProductsPage() {
                 >
                   <option>Leaf Tea</option>
                   <option>Matcha</option>
-                  <option>Accessories</option>
+                  <option>Tea Accessories</option>
                 </select>
               </div>
+
+              {categoryTree[form.category as MainCategory] && (
+                <div>
+                  <label className="font-body text-xs text-charcoal/60 block mb-1.5">
+                    Subcategory
+                  </label>
+                  <select
+                    name="subCategory"
+                    value={form.subCategory}
+                    onChange={handleChange}
+                    required
+                    className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
+                  >
+                    <option value="">Select subcategory...</option>
+                    {Object.keys(
+                      categoryTree[form.category as MainCategory],
+                    ).map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {form.subCategory && (
+                <div>
+                  <label className="font-body text-xs text-charcoal/60 block mb-1.5">
+                    Type
+                  </label>
+                  <select
+                    name="type"
+                    value={form.type}
+                    onChange={handleChange}
+                    required
+                    className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
+                  >
+                    <option value="">Select type...</option>
+                    {(categoryTree[form.category as MainCategory] as any)[
+                      form.subCategory
+                    ].map((t: string) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="font-body text-xs text-charcoal/60 block mb-1.5">
@@ -458,7 +559,9 @@ export default function AdminProductsPage() {
                   <span className="truncate">
                     {imageFile ? imageFile.name : "Choose File"}
                   </span>
-                  <span className="text-charcoal/40 text-xs shrink-0 ml-2">Browse</span>
+                  <span className="text-charcoal/40 text-xs shrink-0 ml-2">
+                    Browse
+                  </span>
                 </label>
 
                 <input
@@ -470,7 +573,11 @@ export default function AdminProductsPage() {
                 />
 
                 {form.image && !imageFile && (
-                  <img src={form.image} alt="Current" className="w-16 h-16 object-cover mt-2" />
+                  <img
+                    src={form.image}
+                    alt="Current"
+                    className="w-16 h-16 object-cover mt-2"
+                  />
                 )}
               </div>
 
@@ -491,14 +598,14 @@ export default function AdminProductsPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-charcoal text-cream font-body text-sm py-2.5 hover:bg-sage transition-colors"
+                  className="flex-1 bg-charcoal text-cream font-body text-sm py-2.5 hover:bg-sage transition-colors rounded-full"
                 >
                   {editingId ? "Save Changes" : "Add Product"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-2.5 hover:bg-sand/30 transition-colors"
+                  className="flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-2.5 hover:bg-sand/30 transition-colors rounded-full"
                 >
                   Cancel
                 </button>

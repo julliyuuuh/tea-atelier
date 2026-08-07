@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ShoppingBag, DollarSign, Package, Users } from "lucide-react";
 
 type RecentOrder = {
   id: number;
@@ -35,20 +36,27 @@ export default function AdminOverviewPage() {
           setRecentOrders(data.recentOrders);
         }
       } catch {
-        // fail silently, dashboard just shows loading/empty state
+        // fail silently
       } finally {
         setIsLoading(false);
       }
     }
-
     loadOverview();
   }, []);
 
   const statCards = [
-    { label: "Total Orders", value: stats?.totalOrders ?? "—" },
-    { label: "Revenue", value: stats ? `₱${stats.revenue.toFixed(2)}` : "—" },
-    { label: "Products", value: stats?.totalProducts ?? "—" },
-    { label: "Customers", value: stats?.totalCustomers ?? "—" },
+    {
+      label: "Total Orders",
+      value: stats?.totalOrders ?? "—",
+      icon: ShoppingBag,
+    },
+    {
+      label: "Revenue",
+      value: stats ? `₱${stats.revenue.toFixed(2)}` : "—",
+      icon: DollarSign,
+    },
+    { label: "Products", value: stats?.totalProducts ?? "—", icon: Package },
+    { label: "Customers", value: stats?.totalCustomers ?? "—", icon: Users },
   ];
 
   return (
@@ -57,26 +65,34 @@ export default function AdminOverviewPage() {
         Overview
       </h1>
       <p className="font-body text-sm text-charcoal/60 mb-8">
-        Welcome back, here's what's happening with Tea Atelier.
+        Welcome back — here's what's happening with Tea Atelier.
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {statCards.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-white border border-charcoal/10 p-5"
-          >
-            <span className="font-body text-xs text-charcoal/50 block mb-2">
-              {stat.label}
-            </span>
-            <span className="font-display text-2xl text-charcoal">
-              {isLoading ? "…" : stat.value}
-            </span>
-          </div>
-        ))}
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div
+              key={stat.label}
+              className="bg-white border border-charcoal/10 rounded-xl p-5"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-body text-xs text-charcoal/50">
+                  {stat.label}
+                </span>
+                <div className="w-8 h-8 rounded-full bg-sage/10 flex items-center justify-center">
+                  <Icon size={14} className="text-sage" strokeWidth={1.75} />
+                </div>
+              </div>
+              <span className="font-display text-2xl text-charcoal">
+                {isLoading ? "…" : stat.value}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="mt-10 bg-white border border-charcoal/10 p-6">
+      <div className="mt-10 bg-white border border-charcoal/10 rounded-xl p-6">
         <h2 className="font-body text-sm font-medium text-charcoal mb-4">
           Recent Orders
         </h2>
