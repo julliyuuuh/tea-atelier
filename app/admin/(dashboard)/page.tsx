@@ -191,7 +191,7 @@ export default function AdminOverviewPage() {
                 margin={{ top: 10, left: 10, right: 10, bottom: 10 }}
                 className="[&_*:focus]:outline-none"
               >
-                <CartesianGrid vertical={false} stroke="#3a3a3a33" />
+                <CartesianGrid vertical={false} stroke="#3a3a3a26" />
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
