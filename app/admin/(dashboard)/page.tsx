@@ -168,7 +168,7 @@ export default function AdminOverviewPage() {
         })}
       </div>
 
-      <div className="mt-10 grid grid-cols-[65%_1fr] gap-4">
+      <div className="mt-10 grid grid-cols-1 lg:grid-cols-[65%_1fr] gap-4">
         <div className="bg-white border border-charcoal/10 rounded-xl p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-charcoal/5 hover:border-sage/30">
           <h2 className="font-body text-sm font-medium text-charcoal mb-6">
             Top Products by Revenue
@@ -210,7 +210,7 @@ export default function AdminOverviewPage() {
                   tickMargin={12}
                   width={45}
                 />
-                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={55}>
+                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={40}>
                   {topProducts.map((entry, index) => (
                     <Cell
                       key={entry.id}
