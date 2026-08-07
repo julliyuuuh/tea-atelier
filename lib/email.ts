@@ -1,0 +1,25 @@
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function sendVerificationEmail(to: string, token: string) {
+  const verifyUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/verify-email?token=${token}`;
+
+  await resend.emails.send({
+    from: "Tea Atelier <onboarding@resend.dev>",
+    to,
+    subject: "Verify your Tea Atelier account",
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <h2>Welcome to Tea Atelier</h2>
+        <p>Please confirm your email address to finish setting up your account.</p>
+        <a href="${verifyUrl}" style="display: inline-block; background: #8a9a7e; color: #fff; padding: 12px 24px; text-decoration: none; margin-top: 16px;">
+          Verify Email
+        </a>
+        <p style="color: #888; font-size: 12px; margin-top: 24px;">
+          This link expires in 24 hours. If you didn't create this account, you can ignore this email.
+        </p>
+      </div>
+    `,
+  });
+}

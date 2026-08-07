@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { hashPassword, signToken } from "@/lib/auth-server";
+import { sendVerificationEmail } from "@/lib/email";
+import crypto from "crypto";
 
 export async function POST(req: Request) {
   try {
@@ -14,13 +16,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
     }
 
-    // Check email if it exists
     const existing = await pool.query("SELECT user_id FROM users WHERE email = $1", [email]);
     if (existing.rows.length > 0) {
       return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
     }
 
-    // Check phonenum if it exists
     if (phoneNumber) {
       const existingPhone = await pool.query(
         "SELECT user_id FROM users WHERE phone_number = $1",
@@ -32,16 +32,25 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await hashPassword(password);
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
     const result = await pool.query(
-      `INSERT INTO users (first_name, last_name, email, phone_number, password_hash, role)
-       VALUES ($1, $2, $3, $4, $5, 'customer')
+      `INSERT INTO users (first_name, last_name, email, phone_number, password_hash, role, verification_token, verification_token_expires)
+       VALUES ($1, $2, $3, $4, $5, 'customer', $6, $7)
        RETURNING user_id, first_name, last_name, email, role`,
-      [firstName, lastName, email, phoneNumber || null, passwordHash]
+      [firstName, lastName, email, phoneNumber || null, passwordHash, verificationToken, tokenExpires]
     );
 
     const user = result.rows[0];
     const token = signToken({ userId: user.user_id, email: user.email, role: user.role });
+
+    try {
+      await sendVerificationEmail(user.email, verificationToken);
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError);
+      // Don't fail the whole signup just because the email didn't send
+    }
 
     return NextResponse.json({
       token,
