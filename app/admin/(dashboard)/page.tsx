@@ -242,7 +242,7 @@ export default function AdminOverviewPage() {
                     tickMargin={12}
                     width={45}
                   />
-                  <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={40}>
+                  <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={55}>
                     {topProducts.map((entry, index) => (
                       <Cell
                         key={entry.id}
