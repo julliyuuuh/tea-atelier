@@ -89,7 +89,12 @@ export default function AdminOverviewPage() {
     },
     {
       label: "Revenue",
-      value: stats ? `₱${animatedRevenue.toFixed(2)}` : "—",
+      value: stats
+        ? `₱${animatedRevenue.toLocaleString("en-PH", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`
+        : "—",
       icon: DollarSign,
     },
     {
