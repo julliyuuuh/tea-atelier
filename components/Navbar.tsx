@@ -213,28 +213,51 @@ export default function Navbar() {
                     </Link>
                   </li>
                 )}
-                {user && (
-                  <li>
-                    <Link
-                      href="/settings"
-                      onClick={() => setMenuOpen(false)}
-                      className="font-display text-xl text-charcoal"
-                    >
-                      Settings
-                    </Link>
-                  </li>
-                )}
-                <li className="pt-3 border-t border-charcoal/10 flex items-center gap-4">
+                <li className="pt-3 border-t border-charcoal/10">
                   {user ? (
-                    <button
-                      onClick={() => {
-                        logout();
-                        setMenuOpen(false);
-                      }}
-                      className="flex items-center gap-2 font-body text-sm text-charcoal/80"
-                    >
-                      <User size={16} strokeWidth={1.5} /> Log Out
-                    </button>
+                    <div>
+                      <button
+                        onClick={() => setAccountMenuOpen((prev) => !prev)}
+                        className="flex items-center gap-2 font-body text-sm text-charcoal/80"
+                      >
+                        <User size={16} strokeWidth={1.5} /> Account
+                      </button>
+
+                      <AnimatePresence>
+                        {accountMenuOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="flex flex-col gap-3 mt-3 pl-6">
+                              <Link
+                                href="/settings"
+                                onClick={() => {
+                                  setAccountMenuOpen(false);
+                                  setMenuOpen(false);
+                                }}
+                                className="flex items-center gap-2 font-body text-sm text-charcoal/70"
+                              >
+                                <Settings size={16} strokeWidth={1.5} /> Settings
+                              </Link>
+                              <button
+                                onClick={() => {
+                                  logout();
+                                  setAccountMenuOpen(false);
+                                  setMenuOpen(false);
+                                }}
+                                className="flex items-center gap-2 font-body text-sm text-charcoal/70"
+                              >
+                                <LogOut size={16} strokeWidth={1.5} /> Log Out
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   ) : (
                     <Link
                       href="/login"
@@ -244,13 +267,14 @@ export default function Navbar() {
                       <User size={16} strokeWidth={1.5} /> Account
                     </Link>
                   )}
+                </li>
+                <li>
                   <Link
                     href="/cart"
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2 font-body text-sm text-charcoal/80"
                   >
-                    <ShoppingBag size={16} strokeWidth={1.5} /> Cart (
-                    {totalItems})
+                    <ShoppingBag size={16} strokeWidth={1.5} /> Cart ({totalItems})
                   </Link>
                 </li>
               </ul>
