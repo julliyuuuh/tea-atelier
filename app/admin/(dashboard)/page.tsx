@@ -203,8 +203,8 @@ export default function AdminOverviewPage() {
                   <LabelList
                     dataKey="revenue"
                     position="top"
-                    formatter={(value: number) =>
-                      `₱${value.toLocaleString("en-PH", {
+                    formatter={(value) =>
+                      `₱${Number(value).toLocaleString("en-PH", {
                         maximumFractionDigits: 0,
                       })}`
                     }
