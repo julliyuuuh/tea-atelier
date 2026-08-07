@@ -168,7 +168,7 @@ export default function AdminOverviewPage() {
         })}
       </div>
 
-      <div className="mt-10 grid grid-cols-[2fr_1fr] gap-4">
+      <div className="mt-10 grid grid-cols-[65%_1fr] gap-4">
         <div className="bg-white border border-charcoal/10 rounded-xl p-6">
           <h2 className="font-body text-sm font-medium text-charcoal mb-4">
             Top Products by Revenue
@@ -205,7 +205,7 @@ export default function AdminOverviewPage() {
                   ]}
                   contentStyle={{ fontSize: 12, borderRadius: 8 }}
                 />
-                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={40}>
+                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={55}>
                   {topProducts.map((entry, index) => (
                     <Cell
                       key={entry.id}
