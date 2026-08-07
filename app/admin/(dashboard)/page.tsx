@@ -186,7 +186,11 @@ export default function AdminOverviewPage() {
 
           {!isLoading && topProducts.length > 0 && (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={topProducts} margin={{ top: 10, left: 10, right: 10, bottom: 10 }}>
+              <BarChart
+                data={topProducts}
+                margin={{ top: 10, left: 10, right: 10, bottom: 10 }}
+                className="[&_*:focus]:outline-none"
+              >
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 11, fill: "#3a3a3a99" }}
@@ -206,7 +210,7 @@ export default function AdminOverviewPage() {
                   ]}
                   contentStyle={{ fontSize: 12, borderRadius: 8 }}
                 />
-                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={55}>
+                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={40}>
                   {topProducts.map((entry, index) => (
                     <Cell
                       key={entry.id}
