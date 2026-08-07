@@ -177,15 +177,15 @@ export default function AdminOverviewPage() {
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip
-                formatter={(value: number) => [
-                  `₱${value.toLocaleString("en-PH", {
-                    minimumFractionDigits: 2,
-                  })}`,
-                  "Revenue",
-                ]}
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
-              />
+                <Tooltip
+                  formatter={(value: number | string) => [
+                    `₱${Number(value).toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                    })}`,
+                    "Revenue",
+                  ]}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
               <Bar dataKey="revenue" radius={[0, 6, 6, 0]} barSize={18}>
                 {topProducts.map((entry, index) => (
                   <Cell
