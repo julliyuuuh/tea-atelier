@@ -116,7 +116,7 @@ export default function Navbar() {
                       className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
                     >
                       <Link
-                        href="/account"
+                        href="/settings"
                         onClick={() => setAccountMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
                       >
@@ -216,7 +216,7 @@ export default function Navbar() {
                 {user && (
                   <li>
                     <Link
-                      href="/account"
+                      href="/settings"
                       onClick={() => setMenuOpen(false)}
                       className="font-display text-xl text-charcoal"
                     >
