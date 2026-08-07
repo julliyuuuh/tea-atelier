@@ -168,8 +168,8 @@ export default function AdminOverviewPage() {
         })}
       </div>
 
-      <div className="mt-10 grid grid-cols-2 gap-4">
-        <div className="bg-white border border-charcoal/10 rounded-xl p-6">
+      <div className="mt-10 grid grid-cols-5 gap-4">
+        <div className="col-span-3 bg-white border border-charcoal/10 rounded-xl p-6">
           <h2 className="font-body text-sm font-medium text-charcoal mb-4">
             Top Products by Revenue
           </h2>
@@ -193,9 +193,6 @@ export default function AdminOverviewPage() {
                   axisLine={false}
                   tickLine={false}
                   interval={0}
-                  angle={-20}
-                  textAnchor="end"
-                  height={60}
                 />
                 <YAxis hide />
                 <Tooltip
@@ -207,7 +204,7 @@ export default function AdminOverviewPage() {
                   ]}
                   contentStyle={{ fontSize: 12, borderRadius: 8 }}
                 />
-                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={36}>
+                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={40}>
                   {topProducts.map((entry, index) => (
                     <Cell
                       key={entry.id}
@@ -220,7 +217,7 @@ export default function AdminOverviewPage() {
           )}
         </div>
 
-        <div className="bg-white border border-charcoal/10 rounded-xl p-6">
+        <div className="col-span-2 bg-white border border-charcoal/10 rounded-xl p-6">
           <h2 className="font-body text-sm font-medium text-charcoal mb-4">
             Low Stock
           </h2>
