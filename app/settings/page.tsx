@@ -166,26 +166,37 @@ export default function SettingsPage() {
           <p className="font-body text-sm text-red-600 mb-6">{errorMessage}</p>
         )}
 
-        {!user.isVerified && (
-          <div className="border border-amber-200 bg-amber-50 p-6 md:p-8 mb-6">
-            <h2 className="font-display text-xl text-charcoal mb-2">
-              Verify Your Email
-            </h2>
-            <p className="font-body text-sm text-charcoal/60 mb-4">
-              Your email address hasn't been verified yet. Check your inbox, or request a new link below.
-            </p>
-            <button
-              onClick={() => setShowResendConfirm(true)}
-              disabled={resendLoading}
-              className="bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors disabled:opacity-50"
-            >
-              {resendLoading ? "Sending..." : "Resend Verification Email"}
-            </button>
-            {resendMessage && (
-              <p className="font-body text-sm text-charcoal/70 mt-3">{resendMessage}</p>
-            )}
-          </div>
-        )}
+        <div
+          className={`border p-6 md:p-8 mb-6 ${
+            user.isVerified
+              ? "border-sage/20 bg-sage/10"
+              : "border-amber-200 bg-amber-50"
+          }`}
+        >
+          <h2 className="font-display text-xl text-charcoal mb-2">
+            Email Verification
+          </h2>
+
+          {user.isVerified ? (
+            <p className="font-body text-sm text-sage">✓ Your email is verified</p>
+          ) : (
+            <>
+              <p className="font-body text-sm text-charcoal/60 mb-4">
+                Your email address hasn't been verified yet. Check your inbox, or request a new link below.
+              </p>
+              <button
+                onClick={() => setShowResendConfirm(true)}
+                disabled={resendLoading}
+                className="bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors disabled:opacity-50"
+              >
+                {resendLoading ? "Sending..." : "Resend Verification Email"}
+              </button>
+              {resendMessage && (
+                <p className="font-body text-sm text-charcoal/70 mt-3">{resendMessage}</p>
+              )}
+            </>
+          )}
+        </div>
 
         <div className="border border-amber-200 bg-amber-50 p-6 md:p-8">
           <h2 className="font-display text-xl text-charcoal mb-2">
