@@ -18,6 +18,8 @@ type CartContextType = {
   loading: boolean;
   stockError: string | null;
   clearStockError: () => void;
+  lastAdded: Product | null;
+  clearLastAdded: () => void;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -35,6 +37,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [stockError, setStockError] = useState<string | null>(null);
   const clearStockError = () => setStockError(null);
+  const [lastAdded, setLastAdded] = useState<Product | null>(null);
+  const clearLastAdded = () => setLastAdded(null);
 
   useEffect(() => {
     if (authLoading) return; // wait for auth to resolve first
@@ -90,7 +94,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ productId: product.id, quantity }),
       });
       if (!res.ok) {
-        // Server rejected it (e.g. stock changed between check and now) — roll back
         setItems((prev) =>
           existing
             ? prev.map((i) =>
@@ -102,6 +105,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
         const data = await res.json();
         alert(data.error || "Unable to add to cart.");
+      } else {
+        setLastAdded(product);
       }
     } catch {
       // network failure
@@ -176,6 +181,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         loading,
         stockError,
         clearStockError,
+        lastAdded,
+        clearLastAdded,
       }}
     >
       {children}

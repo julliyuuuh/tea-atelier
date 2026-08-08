@@ -4,7 +4,9 @@ import "./globals.css";
 import { CartProvider } from "@/lib/cart-context";
 import { AuthProvider } from "@/lib/auth-context";
 import StockErrorModal from "@/components/StockErrorModal";
+import AddedToCartModal from "@/components/AddedToCartModal";
 import Script from "next/script";
+
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -37,6 +39,7 @@ export default function RootLayout({
           <CartProvider>
             {children}
             <StockErrorModal />
+            <AddedToCartModal />
           </CartProvider>
         </AuthProvider>
       </body>
