@@ -21,6 +21,7 @@ export default function SettingsPage() {
 
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
+  const [showResendConfirm, setShowResendConfirm] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -48,6 +49,7 @@ export default function SettingsPage() {
   }, [user]);
 
   const handleResendVerification = async () => {
+    setShowResendConfirm(false);
     setResendLoading(true);
     setResendMessage("");
     const token = localStorage.getItem("token");
@@ -173,7 +175,7 @@ export default function SettingsPage() {
               Your email address hasn't been verified yet. Check your inbox, or request a new link below.
             </p>
             <button
-              onClick={handleResendVerification}
+              onClick={() => setShowResendConfirm(true)}
               disabled={resendLoading}
               className="bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors disabled:opacity-50"
             >
@@ -254,6 +256,30 @@ export default function SettingsPage() {
           ) : null}
         </div>
       </section>
+
+      {showResendConfirm && (
+        <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6">
+          <div className="bg-cream border border-charcoal/10 rounded-lg p-8 max-w-sm w-full text-center">
+            <p className="font-body text-sm text-charcoal mb-6">
+              Send a new verification email?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResendConfirm(false)}
+                className="flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResendVerification}
+                className="flex-1 bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </main>
