@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     const decoded = verifyToken(token);
 
     const result = await pool.query(
-      "SELECT user_id, first_name, last_name, email, role, phone_number FROM users WHERE user_id = $1",
+      "SELECT user_id, first_name, last_name, email, role, phone_number, is_verified FROM users WHERE user_id = $1",
       [decoded.userId]
     );
 
@@ -29,6 +29,7 @@ export async function GET(req: Request) {
         email: user.email,
         role: user.role,
         phone: user.phone_number,
+        isVerified: user.is_verified,
       },
     });
   } catch {

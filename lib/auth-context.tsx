@@ -2,7 +2,13 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-type User = { name: string; email: string; role: "admin" | "customer"; phone: string | null } | null;
+type User = {
+  name: string;
+  email: string;
+  role: "admin" | "customer";
+  phone: string | null;
+  isVerified: boolean;
+} | null;
 
 type AuthContextType = {
   user: User;

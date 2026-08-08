@@ -19,6 +19,9 @@ export default function SettingsPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
@@ -43,6 +46,26 @@ export default function SettingsPage() {
 
     if (user) loadStatus();
   }, [user]);
+
+  const handleResendVerification = async () => {
+    setResendLoading(true);
+    setResendMessage("");
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch("/api/resend-verification", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to resend email.");
+      setResendMessage("A new verification email has been sent.");
+    } catch (error) {
+      setResendMessage(error instanceof Error ? error.message : "Something went wrong.");
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
   const startSetup = async () => {
     setErrorMessage("");
@@ -139,6 +162,27 @@ export default function SettingsPage() {
         )}
         {errorMessage && (
           <p className="font-body text-sm text-red-600 mb-6">{errorMessage}</p>
+        )}
+
+        {!user.isVerified && (
+          <div className="border border-amber-200 bg-amber-50 p-6 md:p-8 mb-6">
+            <h2 className="font-display text-xl text-charcoal mb-2">
+              Verify Your Email
+            </h2>
+            <p className="font-body text-sm text-charcoal/60 mb-4">
+              Your email address hasn't been verified yet. Check your inbox, or request a new link below.
+            </p>
+            <button
+              onClick={handleResendVerification}
+              disabled={resendLoading}
+              className="bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors disabled:opacity-50"
+            >
+              {resendLoading ? "Sending..." : "Resend Verification Email"}
+            </button>
+            {resendMessage && (
+              <p className="font-body text-sm text-charcoal/70 mt-3">{resendMessage}</p>
+            )}
+          </div>
         )}
 
         <div className="border border-charcoal/10 p-6 md:p-8">

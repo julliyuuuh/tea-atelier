@@ -24,6 +24,15 @@ export default function Navbar() {
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const confirmLogout = () => {
+    logout();
+    setShowLogoutConfirm(false);
+    setAccountMenuOpen(false);
+    setMenuOpen(false);
+  };
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", onScroll);
@@ -124,7 +133,7 @@ export default function Navbar() {
                       </Link>
                       <button
                         onClick={() => {
-                          logout();
+                          setShowLogoutConfirm(true);
                           setAccountMenuOpen(false);
                         }}
                         className="w-full flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
@@ -282,6 +291,29 @@ export default function Navbar() {
           )}
         </AnimatePresence>
       </header>
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6">
+          <div className="bg-cream border border-charcoal/10 rounded-lg p-8 max-w-sm w-full text-center">
+            <p className="font-body text-sm text-charcoal mb-6">
+              Are you sure you want to log out?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmLogout}
+                className="flex-1 bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
