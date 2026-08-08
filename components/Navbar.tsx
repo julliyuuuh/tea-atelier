@@ -254,7 +254,7 @@ export default function Navbar() {
                               </Link>
                               <button
                                 onClick={() => {
-                                  logout();
+                                  setShowLogoutConfirm(true);
                                   setAccountMenuOpen(false);
                                   setMenuOpen(false);
                                 }}
