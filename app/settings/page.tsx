@@ -185,7 +185,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <div className="border border-charcoal/10 p-6 md:p-8">
+        <div className="border border-amber-200 bg-amber-50 p-6 md:p-8">
           <h2 className="font-display text-xl text-charcoal mb-2">
             Two-Factor Authentication
           </h2>
@@ -208,7 +208,7 @@ export default function SettingsPage() {
           ) : setupStep === "idle" ? (
             <button
               onClick={startSetup}
-              className="bg-sage text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-charcoal transition-colors"
+              className="bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors"
             >
               Enable 2FA
             </button>
@@ -234,7 +234,7 @@ export default function SettingsPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting || confirmCode.length !== 6}
-                    className="flex-1 bg-sage text-cream font-body text-sm tracking-wide uppercase py-3 hover:bg-charcoal transition-colors disabled:opacity-50"
+                    className="flex-1 bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-3 hover:bg-sage transition-colors disabled:opacity-50"
                   >
                     {isSubmitting ? "Verifying..." : "Confirm"}
                   </button>
