@@ -8,7 +8,6 @@ const EASE_OUT: Transition["ease"] = "easeOut";
 export default function Hero(): React.JSX.Element {
   return (
     <section className="max-w-7xl mx-auto px-8">
-      {/* Masthead line — reads like a magazine running head */}
       <div className="flex items-baseline justify-between border-t border-b border-charcoal/20 py-3 font-body text-[11px] tracking-[0.25em] uppercase text-charcoal/60">
         <span>Tea Atelier</span>
         <span>Vol. 01 — Spring Harvest</span>
