@@ -111,6 +111,7 @@ export default function ShopPage() {
     return list;
   }, [products, expandedCategory, sortBy, search]);
 
+  // Simple placeholder "recommended" — first 4 products until real personalization exists
   const recommended = products.slice(0, 4);
 
   return (
@@ -385,140 +386,55 @@ export default function ShopPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-16">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredProducts.map((product) => (
-              <Link
-                href={`/shop/${product.id}`}
+              <div
                 key={product.id}
-                className="group block"
+                className="bg-white rounded-3xl p-3 border border-charcoal/10 hover:shadow-lg transition-shadow"
               >
-                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-sand mb-4">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <span className="absolute top-4 left-4 bg-cream/90 rounded-full px-3 py-1 font-body text-[10px] tracking-[0.15em] uppercase text-charcoal">
-                    {product.category}
-                  </span>
-                  <button
-                    onClick={(e) => e.preventDefault()}
-                    className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-cream text-charcoal rounded-full font-body text-[10px] tracking-wide uppercase px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    Quick View
-                  </button>
-                </div>
+                <Link href={`/shop/${product.id}`} className="group block">
+                  <div className="relative aspect-square rounded-2xl overflow-hidden bg-sand mb-3">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <span className="absolute top-3 left-3 bg-cream/90 rounded-full px-2.5 py-1 font-body text-[9px] tracking-[0.1em] uppercase text-charcoal">
+                      {product.category}
+                    </span>
+                  </div>
 
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-display text-xl text-charcoal mb-1">
+                  <div className="px-1">
+                    <h3 className="font-body text-sm font-medium text-charcoal mb-0.5 truncate">
                       {product.name}
                     </h3>
-                    <span className="font-body text-sm text-charcoal/70">
-                      ₱{product.price}
-                    </span>
-                    <p className="font-body text-xs mt-1">
-                      {product.stockQuantity === 0 ? (
-                        <span className="text-charcoal/40">Out of Stock</span>
-                      ) : product.stockQuantity <= 10 ? (
-                        <span className="text-amber-600">Low Stock</span>
-                      ) : (
-                        <span className="text-sage">In Stock</span>
-                      )}
-                    </p>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-display text-base text-charcoal">
+                        ₱{product.price}
+                      </span>
+                      <span className="font-body text-[10px]">
+                        {product.stockQuantity === 0 ? (
+                          <span className="text-charcoal/40">Out of Stock</span>
+                        ) : product.stockQuantity <= 10 ? (
+                          <span className="text-amber-600">Low Stock</span>
+                        ) : (
+                          <span className="text-sage">In Stock</span>
+                        )}
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addToCart(product);
-                    }}
-                    className="font-body text-xs tracking-wide uppercase border-b border-charcoal/40 pb-0.5 text-charcoal/80 hover:border-sage hover:text-sage transition-colors px-1"
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </Link>
+                </Link>
+
+                <button
+                  onClick={() => addToCart(product)}
+                  disabled={product.stockQuantity === 0}
+                  className="w-full rounded-full bg-charcoal text-cream font-body text-xs tracking-wide uppercase py-2.5 hover:bg-sage transition-colors disabled:bg-charcoal/20 disabled:cursor-not-allowed"
+                >
+                  {product.stockQuantity === 0 ? "Out of Stock" : "Add to Cart"}
+                </button>
+              </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Product Grid */}
-      <div className="max-w-7xl mx-auto px-8 pb-24">
-        {errorMessage && (
-          <p className="font-body text-sm text-red-600 mb-8">{errorMessage}</p>
-        )}
-
-        {!isLoading && filteredProducts.length === 0 && !errorMessage && (
-          <div className="text-center py-12">
-            <p className="font-body text-sm text-charcoal/60 mb-3">
-              {search ? `No results for "${search}"` : "No products found."}
-            </p>
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="font-body text-xs uppercase tracking-wide text-sage hover:text-charcoal transition-colors"
-              >
-                Clear search
-              </button>
-            )}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-16">
-          {filteredProducts.map((product) => (
-            <Link
-              href={`/shop/${product.id}`}
-              key={product.id}
-              className="group block"
-            >
-              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-sand mb-4">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <span className="absolute top-4 left-4 bg-cream/90 rounded-full px-3 py-1 font-body text-[10px] tracking-[0.15em] uppercase text-charcoal">
-                  {product.category}
-                </span>
-                <button
-                  onClick={(e) => e.preventDefault()}
-                  className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-cream text-charcoal rounded-full font-body text-[10px] tracking-wide uppercase px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  Quick View
-                </button>
-              </div>
-
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-display text-xl text-charcoal mb-1">
-                    {product.name}
-                  </h3>
-                  <span className="font-body text-sm text-charcoal/70">
-                    ₱{product.price}
-                  </span>
-                  <p className="font-body text-xs mt-1">
-                    {product.stockQuantity === 0 ? (
-                      <span className="text-charcoal/40">Out of Stock</span>
-                    ) : product.stockQuantity <= 10 ? (
-                      <span className="text-amber-600">Low Stock</span>
-                    ) : (
-                      <span className="text-sage">In Stock</span>
-                    )}
-                  </p>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    addToCart(product);
-                  }}
-                  className="font-body text-xs tracking-wide uppercase border-b border-charcoal/40 pb-0.5 text-charcoal/80 hover:border-sage hover:text-sage transition-colors px-1"
-                >
-                  Add to Cart
-                </button>
-              </div>
-            </Link>
-          ))}
         </div>
       </div>
 
