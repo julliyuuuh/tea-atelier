@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const categories = [
   { name: "Leaf Tea", image: "/images/leaf-tea-ph.png" },
-  { name: "Matcha", image: "/images/matcha.png" },
+  { name: "Matcha", image: "/images/matcha-ph.png" },
   { name: "Tea Accessories", image: "/images/tea-accessories-ph.png" },
 ];
 const MotionLink = motion(Link);
