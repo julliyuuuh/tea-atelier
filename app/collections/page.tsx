@@ -9,13 +9,13 @@ const collections = [
   {
     name: "Morning Ritual",
     description: "Bright, energizing teas to start the day right.",
-    image: "/images/category-leaf.jpg",
+    image: "/images/mr-collections.png",
     href: "/shop?category=Leaf Tea",
   },
   {
     name: "Matcha Moments",
     description: "Stone-ground matcha for ceremony, lattes, and baking.",
-    image: "/images/category-matcha.jpg",
+    image: "/images/mm-collections.png",
     href: "/shop?category=Matcha",
   },
   {
