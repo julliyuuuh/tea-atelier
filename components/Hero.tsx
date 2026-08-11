@@ -1,149 +1,83 @@
 "use client";
 
-import { motion, type Variants, type Transition } from "framer-motion";
+import { motion, type Transition } from "framer-motion";
 import Link from "next/link";
 
-const headlineLines: readonly string[] = ["Where Every Leaf", "Tells a Story"];
-
-// Pinning the easing to Framer Motion's own Transition["ease"] type stops it
-// from widening to `string`, which is what breaks the Variants assignment.
 const EASE_OUT: Transition["ease"] = "easeOut";
-
-const lineVariants: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.7,
-      ease: EASE_OUT,
-      delay: 0.2 + i * 0.15,
-    },
-  }),
-};
-
-/** Three soft blurred wisps rising and fading — a quiet nod to steeping tea. */
-function Steam(): React.JSX.Element {
-  return (
-    <div
-      className="absolute -top-9 left-0 flex gap-2 pointer-events-none"
-      aria-hidden="true"
-    >
-      {[0, 1, 2].map((i) => (
-        <motion.span
-          key={i}
-          className="block w-1.5 h-8 rounded-full bg-sage/30 blur-[3px]"
-          animate={{
-            y: [0, -16, -30],
-            opacity: [0, 0.55, 0],
-            scaleY: [0.6, 1, 1.3],
-          }}
-          transition={{
-            duration: 3.2,
-            repeat: Infinity,
-            ease: EASE_OUT,
-            delay: i * 0.9,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
 
 export default function Hero(): React.JSX.Element {
   return (
-    <section className="max-w-7xl mx-auto px-8 py-16 md:py-24">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-y-16 md:gap-x-6">
-        {/* Left: headline + CTA */}
-        <div className="md:col-span-5 flex flex-col justify-center relative z-10 md:pr-4">
-          <span className="relative font-body text-xs tracking-[0.2em] uppercase text-sage mb-4 w-fit">
-            <Steam />
-            Tea Atelier
+    <section className="max-w-7xl mx-auto px-8">
+      {/* Masthead line — reads like a magazine running head */}
+      <div className="flex items-baseline justify-between border-t border-b border-charcoal/20 py-3 font-body text-[11px] tracking-[0.25em] uppercase text-charcoal/60">
+        <span>Tea Atelier</span>
+        <span>Vol. 01 — Spring Harvest</span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-12 md:divide-x md:divide-charcoal/20">
+        {/* Left: editorial column */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: EASE_OUT }}
+          className="md:col-span-5 flex flex-col justify-center py-16 md:py-24 md:pr-10"
+        >
+          <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-6">
+            No. 01
           </span>
 
-          <h1 className="font-display text-5xl md:text-6xl leading-[1.05] text-charcoal mb-8">
-            {headlineLines.map((line: string, i: number) => (
-              <span key={line} className="block overflow-hidden">
-                <motion.span
-                  custom={i}
-                  initial="hidden"
-                  animate="visible"
-                  variants={lineVariants}
-                  className="block"
-                >
-                  {line}
-                </motion.span>
-              </span>
-            ))}
+          <h1
+            className="font-display text-4xl md:text-5xl leading-[1.15] text-charcoal mb-8
+                      first-letter:text-7xl md:first-letter:text-8xl first-letter:font-display
+                      first-letter:float-left first-letter:leading-[0.8] first-letter:pr-2
+                      first-letter:text-sage"
+          >
+            Where every leaf tells a story of the mountain it grew on.
           </h1>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-            className="font-body text-sm text-charcoal/60 mb-8 max-w-xs"
-          >
+          <p className="font-body text-sm leading-relaxed text-charcoal/60 mb-10 max-w-sm">
             Single-origin leaves, hand-picked in Wuyishan and steeped in small
-            batches.
-          </motion.p>
+            batches — a quiet ritual, bottled for the everyday.
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.85 }}
+          <Link
+            href="/shop"
+            className="group inline-flex items-center gap-2 w-fit font-body text-sm tracking-wide uppercase text-charcoal border-b border-charcoal pb-1"
           >
-            <Link
-              href="/shop"
-              className="group relative inline-block w-fit overflow-hidden bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4"
-            >
-              <span className="absolute inset-0 -translate-x-full bg-charcoal transition-transform duration-500 ease-out group-hover:translate-x-0" />
-              <span className="relative">Shop Now</span>
-            </Link>
-          </motion.div>
-        </div>
+            Shop the Collection
+            <span className="transition-transform duration-300 group-hover:translate-x-1">
+              →
+            </span>
+          </Link>
+        </motion.div>
 
-        {/* Right: layered bleed image */}
-        <div className="md:col-span-7 relative">
-          <motion.div
-            initial={{ opacity: 0, scale: 1.05 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, ease: EASE_OUT }}
-            className="relative aspect-[4/3] md:aspect-auto md:h-[600px] overflow-hidden bg-sand"
-          >
+        {/* Right: full-bleed image with print-style caption */}
+        <motion.div
+          initial={{ opacity: 0, scale: 1.04 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, ease: EASE_OUT }}
+          className="md:col-span-7 relative py-10 md:py-16 md:pl-10"
+        >
+          <div className="relative aspect-[4/3] md:aspect-auto md:h-[540px] overflow-hidden bg-sand">
             <img
               src="/images/hero.jpg"
               alt="Loose tea leaves and ceramic ware, Tea Atelier"
               className="w-full h-full object-cover"
             />
 
-            {/* vertical edge label */}
-            <span
-              className="hidden md:block absolute top-8 right-6 font-body text-[10px] tracking-[0.3em] uppercase text-cream/80"
-              style={{ writingMode: "vertical-rl" }}
-            >
-              Est. 2019 — Wuyishan
+            {/* folio number, corner-stamped like a page number */}
+            <span className="absolute top-4 right-4 font-body text-xs tracking-widest text-cream/90">
+              01
             </span>
-          </motion.div>
+          </div>
 
-          {/* overlapping foreground detail image — breaks the grid on purpose */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: EASE_OUT }}
-            className="hidden md:block absolute -bottom-10 -left-10 w-48 h-60 overflow-hidden shadow-xl ring-1 ring-cream"
-          >
-            <img
-              src="/images/hero-detail.jpg"
-              alt="Close-up of steeped tea in a ceramic cup"
-              className="w-full h-full object-cover"
-            />
-          </motion.div>
-
-          <p className="mt-4 md:mt-14 md:ml-2 font-body text-[11px] tracking-wide text-charcoal/40">
-            Photographed at our atelier, spring harvest
+          <p className="mt-3 font-body text-[11px] tracking-wide text-charcoal/40 uppercase">
+            Fig. 01 — Loose leaf, hand-picked spring harvest
           </p>
-        </div>
+        </motion.div>
       </div>
+
+      <div className="border-b border-charcoal/20" />
     </section>
   );
 }
