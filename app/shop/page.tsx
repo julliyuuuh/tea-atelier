@@ -15,17 +15,17 @@ type SortOption = "Newest" | "Price: Low to High" | "Price: High to Low";
 const collectionsTeaser = [
   {
     name: "Morning Ritual",
-    image: "/images/category-leaf.jpg",
+    image: "/images/morning-ritual.png",
     href: "/collections",
   },
   {
     name: "Matcha Moments",
-    image: "/images/category-matcha.jpg",
+    image: "/images/matcha-moments.png",
     href: "/collections",
   },
   {
     name: "The Atelier Essentials",
-    image: "/images/category-accessories.jpg",
+    image: "/images/tea-acc.png",
     href: "/collections",
   },
 ];
