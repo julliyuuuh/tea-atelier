@@ -41,7 +41,10 @@ export default function Navbar() {
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
+      if (
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(e.target as Node)
+      ) {
         setAccountMenuOpen(false);
       }
     }
@@ -250,7 +253,8 @@ export default function Navbar() {
                                 }}
                                 className="flex items-center gap-2 font-body text-sm text-charcoal/70"
                               >
-                                <Settings size={16} strokeWidth={1.5} /> Settings
+                                <Settings size={16} strokeWidth={1.5} />{" "}
+                                Settings
                               </Link>
                               <button
                                 onClick={() => {
@@ -283,7 +287,8 @@ export default function Navbar() {
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2 font-body text-sm text-charcoal/80"
                   >
-                    <ShoppingBag size={16} strokeWidth={1.5} /> Cart ({totalItems})
+                    <ShoppingBag size={16} strokeWidth={1.5} /> Cart (
+                    {totalItems})
                   </Link>
                 </li>
               </ul>
@@ -300,13 +305,13 @@ export default function Navbar() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
+                className="flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors rounded-full"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmLogout}
-                className="flex-1 bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors"
+                className="flex-1 bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors rounded-full"
               >
                 Log Out
               </button>
