@@ -30,13 +30,6 @@ const collectionsTeaser = [
   },
 ];
 
-type RecentOrder = {
-  id: number;
-  totalAmount: number;
-  status: string;
-  createdAt: string;
-};
-
 export default function ShopPage() {
   const [expandedCategory, setExpandedCategory] = useState<MainCategory | null>(
     null,
@@ -51,8 +44,6 @@ export default function ShopPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const { addToCart } = useCart();
   const { user } = useAuth();
-
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -75,13 +66,6 @@ export default function ShopPage() {
     loadProducts();
     return () => controller.abort();
   }, []);
-
-  // Placeholder recent orders — replace with a real /api/orders?limit=3 call once available
-  useEffect(() => {
-    if (user) {
-      setRecentOrders([]);
-    }
-  }, [user]);
 
   const filteredProducts = useMemo(() => {
     let list = !expandedCategory
@@ -111,9 +95,6 @@ export default function ShopPage() {
     return list;
   }, [products, expandedCategory, sortBy, search]);
 
-  // Simple placeholder "recommended" — first 4 products until real personalization exists
-  const recommended = products.slice(0, 4);
-
   return (
     <main className="min-h-screen">
       <Navbar />
@@ -139,80 +120,6 @@ export default function ShopPage() {
             Home <span className="mx-2">/</span>
             <span className="text-charcoal">Shop</span>
           </span>
-        </div>
-      )}
-
-      {/* Recently Viewed / Recommended — logged in only */}
-      {user && recommended.length > 0 && (
-        <div className="max-w-7xl mx-auto px-8 py-8 border-b border-charcoal/10">
-          <h2 className="font-body text-sm font-medium text-charcoal mb-4">
-            Recommended For You
-          </h2>
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {recommended.map((product) => (
-              <Link
-                key={product.id}
-                href={`/shop/${product.id}`}
-                className="shrink-0 w-40 group"
-              >
-                <div className="relative w-40 h-48 rounded-2xl overflow-hidden bg-sand mb-2">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <p className="font-body text-sm text-charcoal truncate">
-                  {product.name}
-                </p>
-                <p className="font-body text-xs text-charcoal/60">
-                  ₱{product.price}
-                </p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* My Recent Orders — logged in only */}
-      {user && (
-        <div className="max-w-7xl mx-auto px-8 py-8 border-b border-charcoal/10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-body text-sm font-medium text-charcoal">
-              My Recent Orders
-            </h2>
-            <Link
-              href="/orders"
-              className="font-body text-xs uppercase tracking-wide text-sage hover:text-charcoal transition-colors"
-            >
-              View All
-            </Link>
-          </div>
-
-          {recentOrders.length === 0 ? (
-            <p className="font-body text-xs text-charcoal/40">
-              No orders yet — your first cup awaits.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {recentOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="flex items-center justify-between bg-sand/30 rounded-xl px-5 py-3"
-                >
-                  <span className="font-body text-sm text-charcoal">
-                    Order #TA-{order.id}
-                  </span>
-                  <span className="font-body text-xs text-charcoal/60 uppercase tracking-wide">
-                    {order.status}
-                  </span>
-                  <span className="font-body text-sm text-charcoal">
-                    ₱{order.totalAmount.toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
