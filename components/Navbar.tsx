@@ -128,6 +128,13 @@ export default function Navbar() {
                       className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
                     >
                       <Link
+                        href="/profile"
+                        onClick={() => setAccountMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                      >
+                        <User size={16} strokeWidth={1.5} /> Profile
+                      </Link>
+                      <Link
                         href="/settings"
                         onClick={() => setAccountMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
@@ -246,6 +253,16 @@ export default function Navbar() {
                           >
                             <div className="flex flex-col gap-3 mt-3 pl-6">
                               <Link
+                                href="/profile"
+                                onClick={() => {
+                                  setAccountMenuOpen(false);
+                                  setMenuOpen(false);
+                                }}
+                                className="flex items-center gap-2 font-body text-sm text-charcoal/70"
+                              >
+                                <User size={16} strokeWidth={1.5} /> Profile
+                              </Link>
+                              <Link
                                 href="/settings"
                                 onClick={() => {
                                   setAccountMenuOpen(false);
@@ -298,7 +315,7 @@ export default function Navbar() {
       </header>
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6">
-          <div className="bg-cream border border-charcoal/10 rounded-lg p-8 max-w-sm w-full text-center">
+          <div className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center">
             <p className="font-body text-sm text-charcoal mb-6">
               Are you sure you want to log out?
             </p>

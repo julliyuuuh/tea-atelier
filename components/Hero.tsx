@@ -1,13 +1,15 @@
 "use client";
 
 import { motion, type Transition } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 
 const EASE_OUT: Transition["ease"] = "easeOut";
 
 export default function Hero(): React.JSX.Element {
   return (
-    <section className="max-w-7xl mx-auto px-8">
+    <section className="max-w-7xl mx-auto px-8 pt-10 md:pt-14">
+      {/* Masthead line — reads like a magazine running head */}
       <div className="flex items-baseline justify-between border-t border-b border-charcoal/20 py-3 font-body text-[11px] tracking-[0.25em] uppercase text-charcoal/60">
         <span>Tea Atelier</span>
         <span>Vol. 01 — Spring Harvest</span>
@@ -58,10 +60,13 @@ export default function Hero(): React.JSX.Element {
           className="md:col-span-7 relative py-10 md:py-16 md:pl-10"
         >
           <div className="relative aspect-[4/3] md:aspect-auto md:h-[540px] overflow-hidden bg-sand">
-            <img
+            <Image
               src="/images/hero.jpg"
               alt="Loose tea leaves and ceramic ware, Tea Atelier"
-              className="w-full h-full object-cover"
+              fill
+              priority
+              sizes="(min-width: 768px) 60vw, 100vw"
+              className="object-cover"
             />
 
             {/* folio number, corner-stamped like a page number */}
