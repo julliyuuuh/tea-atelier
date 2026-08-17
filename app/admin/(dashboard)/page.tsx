@@ -127,6 +127,8 @@ export default function AdminOverviewPage() {
       label: "Total Orders",
       value: stats ? Math.round(animatedOrders) : "—",
       icon: ShoppingBag,
+      bg: "bg-sage/15",
+      iconColor: "text-sage",
     },
     {
       label: "Revenue",
@@ -137,16 +139,22 @@ export default function AdminOverviewPage() {
           })}`
         : "—",
       icon: DollarSign,
+      bg: "bg-green-100",
+      iconColor: "text-green-700",
     },
     {
       label: "Products",
       value: stats ? Math.round(animatedProducts) : "—",
       icon: Package,
+      bg: "bg-amber-100",
+      iconColor: "text-amber-700",
     },
     {
       label: "Customers",
       value: stats ? Math.round(animatedCustomers) : "—",
       icon: Users,
+      bg: "bg-sand",
+      iconColor: "text-charcoal/70",
     },
   ];
 
@@ -171,8 +179,14 @@ export default function AdminOverviewPage() {
                 <span className="font-body text-xs text-charcoal/50">
                   {stat.label}
                 </span>
-                <div className="w-8 h-8 rounded-full bg-sage/10 flex items-center justify-center">
-                  <Icon size={14} className="text-sage" strokeWidth={1.75} />
+                <div
+                  className={`w-8 h-8 rounded-full ${stat.bg} flex items-center justify-center`}
+                >
+                  <Icon
+                    size={14}
+                    className={stat.iconColor}
+                    strokeWidth={1.75}
+                  />
                 </div>
               </div>
               <span className="font-display text-2xl text-charcoal">
