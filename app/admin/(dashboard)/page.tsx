@@ -66,12 +66,27 @@ function useCountUp(target: number | null, duration = 800) {
 
 function stockBadge(qty: number) {
   if (qty === 0) {
-    return { label: "Out of Stock", bg: "bg-red-50", text: "text-red-600", dot: "bg-red-500" };
+    return {
+      label: "Out of Stock",
+      bg: "bg-red-50",
+      text: "text-red-600",
+      dot: "bg-red-500",
+    };
   }
   if (qty <= 10) {
-    return { label: "Low Stock", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" };
+    return {
+      label: "Low Stock",
+      bg: "bg-amber-50",
+      text: "text-amber-700",
+      dot: "bg-amber-500",
+    };
   }
-  return { label: "In Stock", bg: "bg-sage/15", text: "text-sage", dot: "bg-sage" };
+  return {
+    label: "In Stock",
+    bg: "bg-green-100",
+    text: "text-green-700",
+    dot: "bg-green-500",
+  };
 }
 
 export default function AdminOverviewPage() {
@@ -175,7 +190,9 @@ export default function AdminOverviewPage() {
           </h2>
 
           {isLoading && (
-            <span className="font-body text-xs text-charcoal/40">Loading...</span>
+            <span className="font-body text-xs text-charcoal/40">
+              Loading...
+            </span>
           )}
 
           {!isLoading && topProducts.length === 0 && (
@@ -195,7 +212,9 @@ export default function AdminOverviewPage() {
                   <div className="flex items-center gap-3">
                     <span
                       className={`font-display text-sm w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                        index === 0 ? "bg-sage text-white" : "bg-sage/10 text-sage"
+                        index === 0
+                          ? "bg-sage text-white"
+                          : "bg-sage/10 text-sage"
                       }`}
                     >
                       {index + 1}
@@ -205,7 +224,8 @@ export default function AdminOverviewPage() {
                     </span>
                   </div>
                   <span className="font-body text-sm text-charcoal/70 shrink-0">
-                    ₱{product.revenue.toLocaleString("en-PH", {
+                    ₱
+                    {product.revenue.toLocaleString("en-PH", {
                       maximumFractionDigits: 0,
                     })}
                   </span>
@@ -237,7 +257,9 @@ export default function AdminOverviewPage() {
                     axisLine={{ stroke: "#3a3a3a", strokeWidth: 1.5 }}
                     tickLine={false}
                     tickFormatter={(value) =>
-                      value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`
+                      value >= 1000
+                        ? `${Math.round(value / 1000)}k`
+                        : `${value}`
                     }
                     tickMargin={12}
                     width={45}
@@ -262,7 +284,9 @@ export default function AdminOverviewPage() {
           </h2>
 
           {isLoading && (
-            <span className="font-body text-xs text-charcoal/40">Loading...</span>
+            <span className="font-body text-xs text-charcoal/40">
+              Loading...
+            </span>
           )}
 
           {!isLoading && lowStock.length === 0 && (
@@ -286,7 +310,9 @@ export default function AdminOverviewPage() {
                     <span
                       className={`inline-flex items-center gap-1.5 font-body text-xs px-3 py-1 rounded-full ${badge.bg} ${badge.text}`}
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${badge.dot}`}
+                      />
                       {product.stockQuantity} left
                     </span>
                   </div>

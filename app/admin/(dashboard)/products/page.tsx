@@ -20,6 +20,10 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState<MainCategory | "All">(
+    "All",
+  );
+  const [filterSubCategory, setFilterSubCategory] = useState<string>("All");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -51,9 +55,17 @@ export default function AdminProductsPage() {
   const activeProducts = products.filter((p) => !p.isArchived);
   const archivedProducts = products.filter((p) => p.isArchived);
 
-  const filtered = activeProducts.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = activeProducts.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory =
+      filterCategory === "All" ||
+      p.category === filterCategory ||
+      (filterCategory === "Tea Accessories" && p.category === "Accessories");
+    const matchesSubCategory =
+      filterSubCategory === "All" ||
+      (p as any).subCategory === filterSubCategory;
+    return matchesSearch && matchesCategory && matchesSubCategory;
+  });
 
   const handleDelete = async (id: string) => {
     if (!confirm("Remove this product?")) return;
@@ -229,7 +241,7 @@ export default function AdminProductsPage() {
           <p className="font-body text-sm text-charcoal/60">
             {isLoading
               ? "Loading..."
-              : `${activeProducts.length} products total`}
+              : `${filtered.length} of ${activeProducts.length} products`}
           </p>
         </div>
         <button
@@ -244,13 +256,47 @@ export default function AdminProductsPage() {
         <p className="font-body text-sm text-red-600 mb-4">{errorMessage}</p>
       )}
 
-      <input
-        type="text"
-        placeholder="Search products..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full max-w-sm border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal mb-6 focus:outline-none focus:border-sage transition-colors rounded-full"
-      />
+      {/* Search + Category/Subcategory filters */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 min-w-[200px] max-w-sm border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors rounded-full"
+        />
+
+        <select
+          value={filterCategory}
+          onChange={(e) => {
+            setFilterCategory(e.target.value as MainCategory | "All");
+            setFilterSubCategory("All");
+          }}
+          className="border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors rounded-full"
+        >
+          <option value="All">All Categories</option>
+          {(Object.keys(categoryTree) as MainCategory[]).map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
+
+        {filterCategory !== "All" && categoryTree[filterCategory] && (
+          <select
+            value={filterSubCategory}
+            onChange={(e) => setFilterSubCategory(e.target.value)}
+            className="border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors rounded-full"
+          >
+            <option value="All">All Subcategories</option>
+            {Object.keys(categoryTree[filterCategory]).map((sub) => (
+              <option key={sub} value={sub}>
+                {sub}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       <div className="bg-white border border-charcoal/10 rounded-xl overflow-hidden">
         <table className="w-full text-left">
@@ -284,7 +330,7 @@ export default function AdminProductsPage() {
               >
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-sand overflow-hidden shrink-0">
+                    <div className="w-10 h-10 rounded-lg bg-sand overflow-hidden shrink-0">
                       <img
                         src={product.image}
                         alt={product.name}
@@ -318,7 +364,7 @@ export default function AdminProductsPage() {
                         ? "bg-red-50 text-red-600"
                         : product.stockQuantity <= 10
                           ? "bg-amber-50 text-amber-700"
-                          : "bg-sage/15 text-sage"
+                          : "bg-green-100 text-green-700"
                     }`}
                   >
                     <span
@@ -327,7 +373,7 @@ export default function AdminProductsPage() {
                           ? "bg-red-500"
                           : product.stockQuantity <= 10
                             ? "bg-amber-500"
-                            : "bg-sage"
+                            : "bg-green-500"
                       }`}
                     />
                     {product.stockQuantity === 0
@@ -353,6 +399,16 @@ export default function AdminProductsPage() {
                 </td>
               </tr>
             ))}
+
+            {!isLoading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-5 py-10 text-center">
+                  <span className="font-body text-sm text-charcoal/40">
+                    No products match your filters.
+                  </span>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -369,7 +425,7 @@ export default function AdminProductsPage() {
           </button>
 
           {showArchived && (
-            <div className="bg-white border border-charcoal/10 rounded-x1 overflow-hidden mt-4">
+            <div className="bg-white border border-charcoal/10 rounded-xl overflow-hidden mt-4">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-charcoal/10">
@@ -392,7 +448,7 @@ export default function AdminProductsPage() {
                     >
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-sand overflow-hidden shrink-0 opacity-50">
+                          <div className="w-10 h-10 rounded-lg bg-sand overflow-hidden shrink-0 opacity-50">
                             <img
                               src={product.image}
                               alt={product.name}
@@ -426,10 +482,10 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/*Modal to edit or add product*/}
+      {/* Modal to edit or add product */}
       {modalOpen && (
         <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-50 p-6">
-          <div className="bg-white w-full max-w-md p-8 max-h-[90vh] overflow-y-auto rounded-2x1">
+          <div className="bg-white w-full max-w-md p-8 max-h-[90vh] overflow-y-auto rounded-2xl">
             <h2 className="font-body text-lg font-medium text-charcoal mb-6">
               {editingId ? "Edit Product" : "Add Product"}
             </h2>
@@ -445,7 +501,7 @@ export default function AdminProductsPage() {
                   value={form.name}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-x1 border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
+                  className="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
                 />
               </div>
 
@@ -457,7 +513,7 @@ export default function AdminProductsPage() {
                   name="category"
                   value={form.category}
                   onChange={handleChange}
-                  className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
+                  className="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
                 >
                   <option>Leaf Tea</option>
                   <option>Matcha</option>
@@ -475,7 +531,7 @@ export default function AdminProductsPage() {
                     value={form.subCategory}
                     onChange={handleChange}
                     required
-                    className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
+                    className="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
                   >
                     <option value="">Select subcategory...</option>
                     {Object.keys(
@@ -499,7 +555,7 @@ export default function AdminProductsPage() {
                     value={form.type}
                     onChange={handleChange}
                     required
-                    className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
+                    className="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
                   >
                     <option value="">Select type...</option>
                     {(categoryTree[form.category as MainCategory] as any)[
@@ -513,39 +569,41 @@ export default function AdminProductsPage() {
                 </div>
               )}
 
-              <div>
-                <label className="font-body text-xs text-charcoal/60 block mb-1.5">
-                  Price (₱)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="price"
-                  value={form.price}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
-                />
-              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="font-body text-xs text-charcoal/60 block mb-1.5">
+                    Price (₱)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="price"
+                    value={form.price}
+                    onChange={handleChange}
+                    required
+                    className="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
+                  />
+                </div>
 
-              <div>
-                <label className="font-body text-xs text-charcoal/60 block mb-1.5">
-                  Stock Quantity
-                </label>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  name="stockQuantity"
-                  value={form.stockQuantity}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
-                />
-                <p className="font-body text-xs text-charcoal/40 mt-1">
-                  Availability is automatically set based on inputted number.
-                </p>
+                <div>
+                  <label className="font-body text-xs text-charcoal/60 block mb-1.5">
+                    Stock Quantity
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    name="stockQuantity"
+                    value={form.stockQuantity}
+                    onChange={handleChange}
+                    required
+                    className="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
+                  />
+                </div>
               </div>
+              <p className="font-body text-xs text-charcoal/40 -mt-2">
+                Availability is automatically set based on stock quantity.
+              </p>
 
               <div>
                 <label className="font-body text-xs text-charcoal/60 block mb-1.5">
@@ -554,7 +612,7 @@ export default function AdminProductsPage() {
 
                 <label
                   htmlFor="product-image-upload"
-                  className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal cursor-pointer flex items-center justify-between hover:border-sage transition-colors"
+                  className="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal cursor-pointer flex items-center justify-between hover:border-sage transition-colors"
                 >
                   <span className="truncate">
                     {imageFile ? imageFile.name : "Choose File"}
@@ -576,7 +634,7 @@ export default function AdminProductsPage() {
                   <img
                     src={form.image}
                     alt="Current"
-                    className="w-16 h-16 object-cover mt-2"
+                    className="w-16 h-16 rounded-lg object-cover mt-2"
                   />
                 )}
               </div>
@@ -591,7 +649,7 @@ export default function AdminProductsPage() {
                   onChange={handleChange}
                   rows={3}
                   required
-                  className="w-full border border-charcoal/20 px-3 py-2 font-body text-sm text-charcoal focus:outline-none focus:border-sage"
+                  className="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
                 />
               </div>
 
