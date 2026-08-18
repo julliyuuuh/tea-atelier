@@ -124,20 +124,42 @@ function AccountPageInner() {
         </div>
 
         {/* Panel */}
-        <div className="bg-white border border-charcoal/10 rounded-2xl p-8 min-h-[420px]">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.15 }}
+        <div className="relative bg-white border border-charcoal/10 rounded-2xl p-8 min-h-[420px] overflow-hidden">
+          {/* Each tab stays mounted once visited — a CSS opacity crossfade
+              swaps which one is visible, instead of conditionally rendering
+              or remounting, so switching tabs never loses in-progress edits
+              or forces a refetch. */}
+          <div
+            className={`transition-opacity duration-200 ${
+              activeTab === "profile"
+                ? "relative opacity-100"
+                : "absolute inset-8 opacity-0 pointer-events-none"
+            }`}
+          >
+            <ProfileTab />
+          </div>
+          {visited.has("orders") && (
+            <div
+              className={`transition-opacity duration-200 ${
+                activeTab === "orders"
+                  ? "relative opacity-100"
+                  : "absolute inset-8 opacity-0 pointer-events-none"
+              }`}
             >
-              {activeTab === "profile" && <ProfileTab />}
-              {activeTab === "orders" && visited.has("orders") && <OrdersTab />}
-              {activeTab === "settings" && visited.has("settings") && <SettingsTab />}
-            </motion.div>
-          </AnimatePresence>
+              <OrdersTab />
+            </div>
+          )}
+          {visited.has("settings") && (
+            <div
+              className={`transition-opacity duration-200 ${
+                activeTab === "settings"
+                  ? "relative opacity-100"
+                  : "absolute inset-8 opacity-0 pointer-events-none"
+              }`}
+            >
+              <SettingsTab />
+            </div>
+          )}
         </div>
       </div>
 
