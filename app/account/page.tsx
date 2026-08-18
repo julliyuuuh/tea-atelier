@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
@@ -32,6 +32,20 @@ function isTabKey(value: string | null): value is TabKey {
 // ================================================================
 
 export default function AccountPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen flex items-center justify-center">
+          <p className="font-body text-charcoal/60">Loading...</p>
+        </main>
+      }
+    >
+      <AccountPageInner />
+    </Suspense>
+  );
+}
+
+function AccountPageInner() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
