@@ -235,7 +235,7 @@ export default function Navbar() {
                                 }}
                                 className="flex items-center gap-2 font-body text-sm text-charcoal/70"
                               >
-                                <Settings size={16} strokeWidth={1.5} /> Account Settings
+                                <Settings size={16} strokeWidth={1.5} /> Account
                               </Link>
                               <button
                                 onClick={() => {
