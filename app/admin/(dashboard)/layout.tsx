@@ -65,7 +65,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-[#F4F4F2]">
+    <div className="h-screen flex bg-[#F4F4F2] overflow-hidden">
       {/* Mobile top bar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-charcoal/10 flex items-center justify-between px-4 py-3">
         <span className="font-display text-lg text-charcoal">Tea Atelier</span>
@@ -89,7 +89,7 @@ export default function AdminLayout({
         className={`
           w-64 bg-white border-r border-charcoal/10 flex flex-col shrink-0
           fixed inset-y-0 left-0 z-50 transition-transform duration-300
-          lg:static lg:translate-x-0
+          lg:static lg:translate-x-0 h-screen
           ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
@@ -114,7 +114,7 @@ export default function AdminLayout({
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-4 space-y-1.5">
+        <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -135,7 +135,7 @@ export default function AdminLayout({
           })}
         </nav>
 
-        <div className="px-6 py-5 border-t border-charcoal/10">
+        <div className="px-6 py-5 border-t border-charcoal/10 shrink-0">
           <p className="font-body text-xs text-charcoal/50 truncate mb-3">
             {user.email}
           </p>
