@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -22,18 +23,30 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "settings", label: "Settings" },
 ];
 
+function isTabKey(value: string | null): value is TabKey {
+  return value === "profile" || value === "orders" || value === "settings";
+}
+
 // ================================================================
 // Page shell
 // ================================================================
 
 export default function AccountPage() {
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabKey>("profile");
+  const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // ?tab= sets which tab opens on load (e.g. navbar linking straight to
+  // Orders). Switching tabs afterward stays client-side, no URL change.
+  const requestedTab = searchParams.get("tab");
+  const initialTab: TabKey = isTabKey(requestedTab) ? requestedTab : "profile";
+
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
 
   // Tracks which tabs have been opened at least once, so Orders/Settings
   // only mount (and fetch) the first time they're selected, then stay
   // mounted so switching back doesn't refetch.
-  const [visited, setVisited] = useState<Set<TabKey>>(new Set(["profile"]));
+  const [visited, setVisited] = useState<Set<TabKey>>(new Set([initialTab]));
 
   useEffect(() => {
     setVisited((prev) => {
@@ -44,12 +57,19 @@ export default function AccountPage() {
     });
   }, [activeTab]);
 
-  if (!user) {
+  // Once auth has resolved, bounce unauthenticated visits (including
+  // right after logout) straight to the login page instead of showing
+  // an in-page message.
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="font-body text-charcoal/60">
-          Please log in to view your account.
-        </p>
+        <p className="font-body text-charcoal/60">Loading...</p>
       </main>
     );
   }
