@@ -97,7 +97,7 @@ export default function Navbar() {
             {user && (
               <li>
                 <Link
-                  href="/orders"
+                  href="/account?tab=orders"
                   className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
                 >
                   My Orders
@@ -128,14 +128,14 @@ export default function Navbar() {
                       className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
                     >
                       <Link
-                        href="/profile"
+                        href="/account?tab=profile"
                         onClick={() => setAccountMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
                       >
                         <User size={16} strokeWidth={1.5} /> Profile
                       </Link>
                       <Link
-                        href="/settings"
+                        href="/account?tab=settings"
                         onClick={() => setAccountMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
                       >
@@ -224,7 +224,7 @@ export default function Navbar() {
                 {user && (
                   <li>
                     <Link
-                      href="/orders"
+                      href="/account?tab=orders"
                       onClick={() => setMenuOpen(false)}
                       className="font-display text-xl text-charcoal"
                     >
@@ -253,7 +253,7 @@ export default function Navbar() {
                           >
                             <div className="flex flex-col gap-3 mt-3 pl-6">
                               <Link
-                                href="/profile"
+                                href="/account?tab=profile"
                                 onClick={() => {
                                   setAccountMenuOpen(false);
                                   setMenuOpen(false);
@@ -263,7 +263,7 @@ export default function Navbar() {
                                 <User size={16} strokeWidth={1.5} /> Profile
                               </Link>
                               <Link
-                                href="/settings"
+                                href="/account?tab=settings"
                                 onClick={() => {
                                   setAccountMenuOpen(false);
                                   setMenuOpen(false);
