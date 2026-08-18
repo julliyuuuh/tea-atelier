@@ -135,6 +135,8 @@ function AccountPageInner() {
                 ? "relative opacity-100"
                 : "absolute inset-8 opacity-0 pointer-events-none"
             }`}
+            aria-hidden={activeTab !== "profile"}
+            inert={activeTab !== "profile" ? true : undefined}
           >
             <ProfileTab />
           </div>
@@ -145,6 +147,8 @@ function AccountPageInner() {
                   ? "relative opacity-100"
                   : "absolute inset-8 opacity-0 pointer-events-none"
               }`}
+              aria-hidden={activeTab !== "orders"}
+              inert={activeTab !== "orders" ? true : undefined}
             >
               <OrdersTab />
             </div>
@@ -156,6 +160,8 @@ function AccountPageInner() {
                   ? "relative opacity-100"
                   : "absolute inset-8 opacity-0 pointer-events-none"
               }`}
+              aria-hidden={activeTab !== "settings"}
+              inert={activeTab !== "settings" ? true : undefined}
             >
               <SettingsTab />
             </div>
