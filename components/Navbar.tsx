@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, ShoppingBag, Settings, LogOut } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
@@ -23,6 +24,7 @@ export default function Navbar() {
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
+  const router = useRouter();
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -31,6 +33,7 @@ export default function Navbar() {
     setShowLogoutConfirm(false);
     setAccountMenuOpen(false);
     setMenuOpen(false);
+    router.push("/login");
   };
 
   useEffect(() => {
@@ -122,7 +125,7 @@ export default function Navbar() {
                         onClick={() => setAccountMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
                       >
-                        <Settings size={16} strokeWidth={1.5} /> Account
+                        <Settings size={16} strokeWidth={1.5} /> Account Settings
                       </Link>
                       <button
                         onClick={() => {
