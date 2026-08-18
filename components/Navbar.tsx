@@ -122,7 +122,7 @@ export default function Navbar() {
                         onClick={() => setAccountMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
                       >
-                        <Settings size={16} strokeWidth={1.5} /> Account Settings
+                        <Settings size={16} strokeWidth={1.5} /> Account
                       </Link>
                       <button
                         onClick={() => {
