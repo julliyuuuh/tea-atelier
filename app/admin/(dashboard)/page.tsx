@@ -164,7 +164,7 @@ export default function AdminOverviewPage() {
         Overview
       </h1>
       <p className="font-body text-sm text-charcoal/60 mb-8">
-        Welcome back — here's what's happening with Tea Atelier.
+        Welcome back! here's what's happening with Tea Atelier.
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
