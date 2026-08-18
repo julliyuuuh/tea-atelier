@@ -496,6 +496,8 @@ function formatPaymentMethod(method: string): string {
 }
 
 function OrdersTab() {
+  const { logout } = useAuth();
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -519,6 +521,16 @@ function OrdersTab() {
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         });
+
+        if (res.status === 401) {
+          // Session expired or token invalid — clear client auth state
+          // and send the user to log back in, instead of showing a
+          // confusing generic error on a page that still looks "logged in".
+          logout();
+          router.push("/login");
+          return;
+        }
+
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to load orders.");
         setOrders(data.orders);
@@ -534,6 +546,9 @@ function OrdersTab() {
 
     loadOrders();
     return () => controller.abort();
+    // logout/router intentionally omitted — including them can change
+    // identity across renders and would refetch orders on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   if (isLoading) {
@@ -646,7 +661,8 @@ function OrdersTab() {
 // ================================================================
 
 function SettingsTab() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const router = useRouter();
 
   const [totpEnabled, setTotpEnabled] = useState(false);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
@@ -661,6 +677,14 @@ function SettingsTab() {
   const [resendMessage, setResendMessage] = useState("");
   const [showResendConfirm, setShowResendConfirm] = useState(false);
 
+  const handleUnauthorized = () => {
+    // Session expired or token invalid — clear client auth state and
+    // send the user to log back in, instead of showing a confusing
+    // generic error on a page that still looks "logged in".
+    logout();
+    router.push("/login");
+  };
+
   useEffect(() => {
     async function loadStatus() {
       const token = localStorage.getItem("token");
@@ -668,6 +692,12 @@ function SettingsTab() {
         const res = await fetch("/api/2fa/status", {
           headers: { Authorization: `Bearer ${token}` },
         });
+
+        if (res.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
         const data = await res.json();
         if (res.ok) setTotpEnabled(data.enabled);
       } catch {
@@ -678,6 +708,9 @@ function SettingsTab() {
     }
 
     loadStatus();
+    // handleUnauthorized intentionally omitted — logout/router can change
+    // identity across renders and would refetch status on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleResendVerification = async () => {
@@ -691,6 +724,12 @@ function SettingsTab() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to resend email.");
       setResendMessage("A new verification email has been sent.");
@@ -710,6 +749,12 @@ function SettingsTab() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to start setup.");
 
@@ -736,6 +781,12 @@ function SettingsTab() {
         },
         body: JSON.stringify({ code: confirmCode }),
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Invalid code.");
 
@@ -761,6 +812,12 @@ function SettingsTab() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to disable 2FA.");
 
