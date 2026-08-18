@@ -94,16 +94,6 @@ export default function Navbar() {
                 )}
               </li>
             ))}
-            {user && (
-              <li>
-                <Link
-                  href="/account?tab=orders"
-                  className="font-body text-sm tracking-wide uppercase text-charcoal/80 hover:text-charcoal transition-colors"
-                >
-                  My Orders
-                </Link>
-              </li>
-            )}
           </ul>
 
           {/* Desktop Icons */}
@@ -128,18 +118,11 @@ export default function Navbar() {
                       className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
                     >
                       <Link
-                        href="/account?tab=profile"
+                        href="/account"
                         onClick={() => setAccountMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
                       >
-                        <User size={16} strokeWidth={1.5} /> Profile
-                      </Link>
-                      <Link
-                        href="/account?tab=settings"
-                        onClick={() => setAccountMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                      >
-                        <Settings size={16} strokeWidth={1.5} /> Settings
+                        <Settings size={16} strokeWidth={1.5} /> Account Settings
                       </Link>
                       <button
                         onClick={() => {
@@ -221,17 +204,6 @@ export default function Navbar() {
                     </Link>
                   </li>
                 ))}
-                {user && (
-                  <li>
-                    <Link
-                      href="/account?tab=orders"
-                      onClick={() => setMenuOpen(false)}
-                      className="font-display text-xl text-charcoal"
-                    >
-                      My Orders
-                    </Link>
-                  </li>
-                )}
                 <li className="pt-3 border-t border-charcoal/10">
                   {user ? (
                     <div>
@@ -253,25 +225,14 @@ export default function Navbar() {
                           >
                             <div className="flex flex-col gap-3 mt-3 pl-6">
                               <Link
-                                href="/account?tab=profile"
+                                href="/account"
                                 onClick={() => {
                                   setAccountMenuOpen(false);
                                   setMenuOpen(false);
                                 }}
                                 className="flex items-center gap-2 font-body text-sm text-charcoal/70"
                               >
-                                <User size={16} strokeWidth={1.5} /> Profile
-                              </Link>
-                              <Link
-                                href="/account?tab=settings"
-                                onClick={() => {
-                                  setAccountMenuOpen(false);
-                                  setMenuOpen(false);
-                                }}
-                                className="flex items-center gap-2 font-body text-sm text-charcoal/70"
-                              >
-                                <Settings size={16} strokeWidth={1.5} />{" "}
-                                Settings
+                                <Settings size={16} strokeWidth={1.5} /> Account Settings
                               </Link>
                               <button
                                 onClick={() => {
