@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -23,44 +23,24 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "settings", label: "Settings" },
 ];
 
-function isTabKey(value: string | null): value is TabKey {
-  return value === "profile" || value === "orders" || value === "settings";
-}
-
 // ================================================================
 // Page shell
 // ================================================================
 
 export default function AccountPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen flex items-center justify-center">
-          <p className="font-body text-charcoal/60">Loading...</p>
-        </main>
-      }
-    >
-      <AccountPageInner />
-    </Suspense>
-  );
+  return <AccountPageInner />;
 }
 
 function AccountPageInner() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  // ?tab= sets which tab opens on load (e.g. navbar linking straight to
-  // Orders). Switching tabs afterward stays client-side, no URL change.
-  const requestedTab = searchParams.get("tab");
-  const initialTab: TabKey = isTabKey(requestedTab) ? requestedTab : "profile";
-
-  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+  const [activeTab, setActiveTab] = useState<TabKey>("profile");
 
   // Tracks which tabs have been opened at least once, so Orders/Settings
   // only mount (and fetch) the first time they're selected, then stay
   // mounted so switching back doesn't refetch.
-  const [visited, setVisited] = useState<Set<TabKey>>(new Set([initialTab]));
+  const [visited, setVisited] = useState<Set<TabKey>>(new Set(["profile"]));
 
   useEffect(() => {
     setVisited((prev) => {
@@ -79,6 +59,35 @@ function AccountPageInner() {
       router.push("/login");
     }
   }, [authLoading, user, router]);
+
+  // Refs to each tab button so arrow-key navigation can move focus
+  // directly, matching the native <select>/menu keyboard pattern.
+  const tabRefs = useRef<Partial<Record<TabKey, HTMLButtonElement | null>>>({});
+
+  const handleTabKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>, currentKey: TabKey) => {
+      const currentIndex = TABS.findIndex((t) => t.key === currentKey);
+      let nextIndex: number | null = null;
+
+      if (e.key === "ArrowRight") {
+        nextIndex = (currentIndex + 1) % TABS.length;
+      } else if (e.key === "ArrowLeft") {
+        nextIndex = (currentIndex - 1 + TABS.length) % TABS.length;
+      } else if (e.key === "Home") {
+        nextIndex = 0;
+      } else if (e.key === "End") {
+        nextIndex = TABS.length - 1;
+      }
+
+      if (nextIndex === null) return;
+
+      e.preventDefault();
+      const nextKey = TABS[nextIndex].key;
+      setActiveTab(nextKey);
+      tabRefs.current[nextKey]?.focus();
+    },
+    []
+  );
 
   if (authLoading || !user) {
     return (
@@ -99,14 +108,27 @@ function AccountPageInner() {
         </p>
 
         {/* Tabs */}
-        <div className="flex items-center gap-8 border-b border-charcoal/10 mb-8">
+        <div
+          role="tablist"
+          aria-label="Account sections"
+          className="flex items-center gap-8 border-b border-charcoal/10 mb-8"
+        >
           {TABS.map((tab) => {
             const isActive = tab.key === activeTab;
             return (
               <button
                 key={tab.key}
+                ref={(el) => {
+                  tabRefs.current[tab.key] = el;
+                }}
+                id={`account-tab-${tab.key}`}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`account-panel-${tab.key}`}
+                tabIndex={isActive ? 0 : -1}
                 onClick={() => setActiveTab(tab.key)}
-                className="relative pb-4 font-display text-lg transition-colors"
+                onKeyDown={(e) => handleTabKeyDown(e, tab.key)}
+                className="relative pb-4 font-display text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage focus-visible:ring-offset-2 focus-visible:ring-offset-cream rounded-sm"
               >
                 <span className={isActive ? "text-charcoal" : "text-charcoal/40 hover:text-charcoal/70"}>
                   {tab.label}
@@ -130,6 +152,10 @@ function AccountPageInner() {
               or remounting, so switching tabs never loses in-progress edits
               or forces a refetch. */}
           <div
+            id="account-panel-profile"
+            role="tabpanel"
+            aria-labelledby="account-tab-profile"
+            tabIndex={0}
             className={`transition-opacity duration-200 ${
               activeTab === "profile"
                 ? "relative opacity-100"
@@ -142,6 +168,10 @@ function AccountPageInner() {
           </div>
           {visited.has("orders") && (
             <div
+              id="account-panel-orders"
+              role="tabpanel"
+              aria-labelledby="account-tab-orders"
+              tabIndex={0}
               className={`transition-opacity duration-200 ${
                 activeTab === "orders"
                   ? "relative opacity-100"
@@ -155,6 +185,10 @@ function AccountPageInner() {
           )}
           {visited.has("settings") && (
             <div
+              id="account-panel-settings"
+              role="tabpanel"
+              aria-labelledby="account-tab-settings"
+              tabIndex={0}
               className={`transition-opacity duration-200 ${
                 activeTab === "settings"
                   ? "relative opacity-100"
@@ -676,6 +710,7 @@ function SettingsTab() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
   const [showResendConfirm, setShowResendConfirm] = useState(false);
+  const [showDisableConfirm, setShowDisableConfirm] = useState(false);
 
   const handleUnauthorized = () => {
     // Session expired or token invalid — clear client auth state and
@@ -802,8 +837,6 @@ function SettingsTab() {
   };
 
   const disable2FA = async () => {
-    if (!confirm("Disable two-factor authentication for your account?")) return;
-
     const token = localStorage.getItem("token");
     setErrorMessage("");
 
@@ -826,6 +859,11 @@ function SettingsTab() {
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
     }
+  };
+
+  const confirmDisable2FA = () => {
+    setShowDisableConfirm(false);
+    disable2FA();
   };
 
   return (
@@ -882,7 +920,7 @@ function SettingsTab() {
             <div className="flex items-center justify-between">
               <span className="font-body text-sm text-sage">Enabled</span>
               <button
-                onClick={disable2FA}
+                onClick={() => setShowDisableConfirm(true)}
                 className="font-body text-xs uppercase tracking-wide text-red-600 hover:text-red-800 transition-colors"
               >
                 Disable
@@ -954,6 +992,30 @@ function SettingsTab() {
                 className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors"
               >
                 Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDisableConfirm && (
+        <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6">
+          <div className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center">
+            <p className="font-body text-sm text-charcoal mb-6">
+              Disable two-factor authentication for your account?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDisableConfirm(false)}
+                className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDisable2FA}
+                className="flex-1 rounded-full bg-red-600 text-cream font-body text-sm py-3 hover:bg-red-700 transition-colors"
+              >
+                Disable
               </button>
             </div>
           </div>
