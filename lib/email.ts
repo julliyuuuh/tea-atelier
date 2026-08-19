@@ -12,7 +12,7 @@ export async function sendVerificationEmail(to: string, token: string) {
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
         <h2>Welcome to Tea Atelier!</h2>
-        <p>One final step — please confirm your email address to finish setting up your account.</p>
+        <p>One final step, please confirm your email address to finish setting up your account.</p>
         <a href="${verifyUrl}" style="display: inline-block; background: #8a9a7e; color: #fff; padding: 12px 24px; text-decoration: none; margin-top: 16px;">
           Verify Email
         </a>
