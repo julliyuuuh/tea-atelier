@@ -37,8 +37,8 @@ export async function POST(req: Request) {
 
     const result = await pool.query(
       `INSERT INTO users (first_name, last_name, email, phone_number, password_hash, role, verification_token, verification_token_expires)
-       VALUES ($1, $2, $3, $4, $5, 'customer', $6, $7)
-       RETURNING user_id, first_name, last_name, email, role`,
+      VALUES ($1, $2, $3, $4, $5, 'customer', $6, $7)
+      RETURNING user_id, first_name, last_name, email, phone_number, role`,
       [firstName, lastName, email, phoneNumber || null, passwordHash, verificationToken, tokenExpires]
     );
 
@@ -54,7 +54,14 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       token,
-      user: { name: `${user.first_name} ${user.last_name}`, email: user.email, role: user.role },
+      user: {
+        name: `${user.first_name} ${user.last_name}`,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        phone: user.phone_number,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error("Signup error:", error);

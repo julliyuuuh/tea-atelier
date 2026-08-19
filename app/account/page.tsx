@@ -244,11 +244,10 @@ function ProfileTab() {
 
   useEffect(() => {
     if (user) {
-      const [first, ...rest] = (user.name || "").split(" ");
-      setFirstName((user as any).firstName || first || "");
-      setLastName((user as any).lastName || rest.join(" ") || "");
+      setFirstName(user.firstName || "");
+      setLastName(user.lastName || "");
       setEmail(user.email || "");
-      setPhone((user as any).phone || "");
+      setPhone(user.phone || "");
     }
   }, [user]);
 
