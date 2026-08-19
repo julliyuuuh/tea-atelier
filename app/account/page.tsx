@@ -213,16 +213,18 @@ function AccountPageInner() {
 // ================================================================
 
 type Address = {
-  id: string;
-  label: string;
-  street: string;
-  city: string;
-  province: string;
+  address_id: string;
+  address_line1: string;
+  address_line2: string | null;
+  address_line3: string | null;
+  default_address: boolean;
+  default_billing: boolean;
 };
 
 function ProfileTab() {
   const { user } = useAuth();
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -230,58 +232,119 @@ function ProfileTab() {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [addingAddress, setAddingAddress] = useState(false);
-  const [newAddress, setNewAddress] = useState({ label: "", street: "", city: "", province: "" });
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [newAddress, setNewAddress] = useState({
+    addressLine1: "",
+    addressLine2: "",
+    addressLine3: "",
+  });
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
-      setName(user.name || "");
+      const [first, ...rest] = (user.name || "").split(" ");
+      setFirstName((user as any).firstName || first || "");
+      setLastName((user as any).lastName || rest.join(" ") || "");
       setEmail(user.email || "");
-      setPhone(user.phone || "");
+      setPhone((user as any).phone || "");
     }
+  }, [user]);
+
+  useEffect(() => {
+    async function loadAddresses() {
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch("/api/addresses", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok) setAddresses(data.addresses);
+      } catch {
+        // fail silently, empty list stays
+      } finally {
+        setLoadingAddresses(false);
+      }
+    }
+    if (user) loadAddresses();
   }, [user]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setSaveError(null);
+    const token = localStorage.getItem("token");
+
     try {
-      // TODO: wire up once PATCH /api/user exists
-      // await fetch("/api/user", { method: "PATCH", body: JSON.stringify({ name, phone }) });
+      const res = await fetch("/api/user", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ firstName, lastName, phoneNumber: phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Something went wrong.");
+
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
-    } catch {
-      setSaveError("Something went wrong — try again.");
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Something went wrong — try again.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAddAddress = (e: React.FormEvent) => {
+  const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAddress.label.trim() || !newAddress.street.trim()) return;
-    setAddresses((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        label: newAddress.label.trim(),
-        street: newAddress.street.trim(),
-        city: newAddress.city.trim(),
-        province: newAddress.province.trim(),
-      },
-    ]);
-    setNewAddress({ label: "", street: "", city: "", province: "" });
-    setAddingAddress(false);
+    if (!newAddress.addressLine1.trim()) return;
+
+    setSavingAddress(true);
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch("/api/addresses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newAddress),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to save address.");
+
+      setAddresses((prev) => [...prev, data.address]);
+      setNewAddress({ addressLine1: "", addressLine2: "", addressLine3: "" });
+      setAddingAddress(false);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSavingAddress(false);
+    }
   };
 
-  const handleRemoveAddress = (id: string) => {
-    setAddresses((prev) => prev.filter((a) => a.id !== id));
-    setConfirmingDeleteId(null);
+  const handleRemoveAddress = async (addressId: string) => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`/api/addresses/${addressId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setAddresses((prev) => prev.filter((a) => a.address_id !== addressId));
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setConfirmingDeleteId(null);
+    }
   };
 
   const formatAddressLine = (addr: Address) =>
-    [addr.street, addr.city, addr.province].filter(Boolean).join(", ");
+    [addr.address_line1, addr.address_line2, addr.address_line3].filter(Boolean).join(", ");
 
   return (
     <div className="space-y-10">
@@ -290,17 +353,33 @@ function ProfileTab() {
         <h2 className="font-display text-xl text-charcoal mb-6">Account Information</h2>
 
         <form onSubmit={handleSaveProfile} className="space-y-5">
-          <div>
-            <label htmlFor="name" className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
-              Full Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border border-charcoal/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-            />
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label htmlFor="firstName" className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+                First Name
+              </label>
+              <input
+                id="firstName"
+                type="text"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full rounded-xl border border-charcoal/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+              />
+            </div>
+            <div className="flex-1">
+              <label htmlFor="lastName" className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+                Last Name
+              </label>
+              <input
+                id="lastName"
+                type="text"
+                required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full rounded-xl border border-charcoal/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+              />
+            </div>
           </div>
 
           <div>
@@ -382,116 +461,125 @@ function ProfileTab() {
           </button>
         </div>
 
-        {addresses.length === 0 && !addingAddress && (
-          <p className="font-body text-sm text-charcoal/50">No saved addresses yet.</p>
-        )}
+        {loadingAddresses ? (
+          <p className="font-body text-sm text-charcoal/50">Loading…</p>
+        ) : (
+          <>
+            {addresses.length === 0 && !addingAddress && (
+              <p className="font-body text-sm text-charcoal/50">No saved addresses yet.</p>
+            )}
 
-        <div className="space-y-3 mb-4">
-          <AnimatePresence>
-            {addresses.map((addr) => (
-              <motion.div
-                key={addr.id}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex items-start justify-between bg-sand/30 rounded-xl px-5 py-4 overflow-hidden"
-              >
-                <div className="flex gap-3">
-                  <MapPin size={16} className="text-sage mt-0.5 shrink-0" strokeWidth={1.75} />
-                  <div>
-                    <p className="font-body text-sm text-charcoal font-medium">{addr.label}</p>
-                    <p className="font-body text-xs text-charcoal/60 mt-0.5">{formatAddressLine(addr)}</p>
+            <div className="space-y-3 mb-4">
+              <AnimatePresence>
+                {addresses.map((addr) => (
+                  <motion.div
+                    key={addr.address_id}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex items-start justify-between bg-sand/30 rounded-xl px-5 py-4 overflow-hidden"
+                  >
+                    <div className="flex gap-3">
+                      <MapPin size={16} className="text-sage mt-0.5 shrink-0" strokeWidth={1.75} />
+                      <div>
+                        <p className="font-body text-sm text-charcoal font-medium">
+                          {addr.default_address ? "Default Address" : "Address"}
+                        </p>
+                        <p className="font-body text-xs text-charcoal/60 mt-0.5">
+                          {formatAddressLine(addr)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {confirmingDeleteId === addr.address_id ? (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => handleRemoveAddress(addr.address_id)}
+                          className="font-body text-xs text-red-500 hover:underline"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setConfirmingDeleteId(null)}
+                          className="font-body text-xs text-charcoal/50 hover:underline"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmingDeleteId(addr.address_id)}
+                        aria-label="Delete address"
+                        className="text-charcoal/40 hover:text-red-500 transition-colors shrink-0"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            <AnimatePresence>
+              {addingAddress && (
+                <motion.form
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  onSubmit={handleAddAddress}
+                  className="space-y-4 border-t border-charcoal/10 pt-6 overflow-hidden"
+                >
+                  <div className="grid grid-cols-1 gap-4">
+                    <input
+                      type="text"
+                      placeholder="Address Line 1 (Street, Building, Unit)"
+                      value={newAddress.addressLine1}
+                      onChange={(e) =>
+                        setNewAddress((prev) => ({ ...prev, addressLine1: e.target.value }))
+                      }
+                      required
+                      className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Address Line 2 (Barangay, City)"
+                      value={newAddress.addressLine2}
+                      onChange={(e) =>
+                        setNewAddress((prev) => ({ ...prev, addressLine2: e.target.value }))
+                      }
+                      className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Address Line 3 (Province, Postal Code)"
+                      value={newAddress.addressLine3}
+                      onChange={(e) =>
+                        setNewAddress((prev) => ({ ...prev, addressLine3: e.target.value }))
+                      }
+                      className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    />
                   </div>
-                </div>
-
-                {confirmingDeleteId === addr.id ? (
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex gap-3">
                     <button
-                      onClick={() => handleRemoveAddress(addr.id)}
-                      className="font-body text-xs text-red-500 hover:underline"
+                      type="submit"
+                      disabled={savingAddress}
+                      className="rounded-full bg-sage text-cream font-body text-xs tracking-wide uppercase px-6 py-2.5 hover:bg-charcoal transition-colors disabled:opacity-50"
                     >
-                      Confirm
+                      {savingAddress ? "Saving…" : "Save Address"}
                     </button>
                     <button
-                      onClick={() => setConfirmingDeleteId(null)}
-                      className="font-body text-xs text-charcoal/50 hover:underline"
+                      type="button"
+                      onClick={() => setAddingAddress(false)}
+                      className="rounded-full border border-charcoal/20 text-charcoal font-body text-xs tracking-wide uppercase px-6 py-2.5 hover:bg-sand/30 transition-colors"
                     >
                       Cancel
                     </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmingDeleteId(addr.id)}
-                    aria-label={`Delete ${addr.label} address`}
-                    className="text-charcoal/40 hover:text-red-500 transition-colors shrink-0"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-
-        <AnimatePresence>
-          {addingAddress && (
-            <motion.form
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              onSubmit={handleAddAddress}
-              className="space-y-4 border-t border-charcoal/10 pt-6 overflow-hidden"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Label (e.g. Home, Office)"
-                  value={newAddress.label}
-                  onChange={(e) => setNewAddress((prev) => ({ ...prev, label: e.target.value }))}
-                  required
-                  className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-                />
-                <input
-                  type="text"
-                  placeholder="Street Address"
-                  value={newAddress.street}
-                  onChange={(e) => setNewAddress((prev) => ({ ...prev, street: e.target.value }))}
-                  required
-                  className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-                />
-                <input
-                  type="text"
-                  placeholder="City"
-                  value={newAddress.city}
-                  onChange={(e) => setNewAddress((prev) => ({ ...prev, city: e.target.value }))}
-                  className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-                />
-                <input
-                  type="text"
-                  placeholder="Province"
-                  value={newAddress.province}
-                  onChange={(e) => setNewAddress((prev) => ({ ...prev, province: e.target.value }))}
-                  className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="rounded-full bg-sage text-cream font-body text-xs tracking-wide uppercase px-6 py-2.5 hover:bg-charcoal transition-colors"
-                >
-                  Save Address
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAddingAddress(false)}
-                  className="rounded-full border border-charcoal/20 text-charcoal font-body text-xs tracking-wide uppercase px-6 py-2.5 hover:bg-sand/30 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.form>
-          )}
-        </AnimatePresence>
+                </motion.form>
+              )}
+            </AnimatePresence>
+          </>
+        )}
       </div>
     </div>
   );
