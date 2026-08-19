@@ -6,7 +6,7 @@ export async function sendVerificationEmail(to: string, token: string) {
   const verifyUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/verify-email?token=${token}`;
 
   await resend.emails.send({
-    from: "Tea Atelier <onboarding@resend.dev>",
+    from: `Tea Atelier <${process.env.EMAIL_FROM}>`,
     to,
     subject: "Verify your Tea Atelier account",
     html: `
