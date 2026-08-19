@@ -1,0 +1,31 @@
+import { NextResponse } from "next/server";
+import crypto from "crypto";
+import { pool } from "@/lib/db";
+import { sendPasswordResetEmail } from "@/lib/email";
+
+export async function POST(req: Request) {
+  const { email } = await req.json();
+
+  const genericResponse = NextResponse.json({
+    message: "If an account exists for that email, a reset link has been sent.",
+  });
+
+  const { rows } = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+  if (rows.length === 0) {
+    // Same response either way to not reveal whether the email exists
+    return genericResponse;
+  }
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await pool.query(
+    "UPDATE users SET reset_token_hash = $1, reset_token_expires = $2 WHERE id = $3",
+    [tokenHash, expires, rows[0].id]
+  );
+
+  await sendPasswordResetEmail(email, rawToken);
+
+  return genericResponse;
+}
