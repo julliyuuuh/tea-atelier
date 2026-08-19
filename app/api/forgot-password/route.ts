@@ -11,7 +11,7 @@ export async function POST(req: Request) {
       message: "If an account exists for that email, a reset link has been sent.",
     });
 
-    const { rows } = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+    const { rows } = await pool.query("SELECT user_id FROM users WHERE email = $1", [email]);
     if (rows.length === 0) {
     // Same response either way to not reveal whether the email exists
       return genericResponse;
@@ -22,8 +22,8 @@ export async function POST(req: Request) {
     const expires = new Date(Date.now() + 60 * 60 * 1000);
 
     await pool.query(
-      "UPDATE users SET reset_token_hash = $1, reset_token_expires = $2 WHERE id = $3",
-      [tokenHash, expires, rows[0].id]
+      "UPDATE users SET reset_token_hash = $1, reset_token_expires = $2 WHERE user_id = $3",
+      [tokenHash, expires, rows[0].user_id]
     );
 
     await sendPasswordResetEmail(email, rawToken);

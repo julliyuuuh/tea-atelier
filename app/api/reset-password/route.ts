@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
   const { rows } = await pool.query(
-    "SELECT id, reset_token_expires FROM users WHERE reset_token_hash = $1",
+    "SELECT user_id, reset_token_expires FROM users WHERE reset_token_hash = $1",
     [tokenHash]
   );
 
@@ -24,8 +24,8 @@ export async function POST(req: Request) {
   const passwordHash = await bcrypt.hash(newPassword, 10);
 
   await pool.query(
-    "UPDATE users SET password_hash = $1, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = $2",
-    [passwordHash, rows[0].id]
+    "UPDATE users SET password_hash = $1, reset_token_hash = NULL, reset_token_expires = NULL WHERE user_id = $2",
+    [passwordHash, rows[0].user_id]
   );
 
   return NextResponse.json({ message: "Password updated successfully." });
