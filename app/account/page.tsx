@@ -105,6 +105,11 @@ function AccountPageInner() {
       <Navbar />
 
       <div className="max-w-3xl mx-auto px-8 py-16">
+        <h1 className="font-display text-4xl text-charcoal mb-2">Account Settings</h1>
+        <p className="font-body text-sm text-charcoal/60 mb-10">
+          Manage your profile, orders, and preferences
+        </p>
+
         {/* Tabs */}
         <div
           role="tablist"
@@ -243,6 +248,8 @@ type Address = {
   default_billing: boolean;
 };
 
+type SavedProfile = { firstName: string; lastName: string; phone: string };
+
 function ProfileTab() {
   const { user } = useAuth();
   const [firstName, setFirstName] = useState("");
@@ -252,6 +259,17 @@ function ProfileTab() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // The last known-saved values, used to detect unsaved edits. Reset
+  // whenever `user` loads (or reloads) and again right after a
+  // successful PATCH, so the indicator always compares against what's
+  // actually persisted rather than what was typed a moment ago.
+  const [lastSaved, setLastSaved] = useState<SavedProfile | null>(null);
+  const isDirty =
+    lastSaved !== null &&
+    (firstName !== lastSaved.firstName ||
+      lastName !== lastSaved.lastName ||
+      phone !== lastSaved.phone);
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
@@ -270,6 +288,11 @@ function ProfileTab() {
       setLastName(user.lastName || "");
       setEmail(user.email || "");
       setPhone(user.phone || "");
+      setLastSaved({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        phone: user.phone || "",
+      });
     }
   }, [user]);
 
@@ -310,6 +333,7 @@ function ProfileTab() {
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
 
       setSaved(true);
+      setLastSaved({ firstName, lastName, phone });
       setTimeout(() => setSaved(false), 2500);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Something went wrong, try again.");
@@ -413,6 +437,19 @@ function ProfileTab() {
               {saving ? "Saving…" : "Save Changes"}
             </motion.button>
             <AnimatePresence>
+              {isDirty && !saving && (
+                <motion.span
+                  key="dirty"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center gap-1.5 font-body text-xs uppercase tracking-wide text-charcoal/50"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-sage/70" />
+                  Unsaved changes
+                </motion.span>
+              )}
               {saved && (
                 <motion.span
                   initial={{ opacity: 0, y: -4 }}
