@@ -105,11 +105,6 @@ function AccountPageInner() {
       <Navbar />
 
       <div className="max-w-3xl mx-auto px-8 py-16">
-        <h1 className="font-display text-4xl text-charcoal mb-2">Account Settings</h1>
-        <p className="font-body text-sm text-charcoal/60 mb-10">
-          Manage your profile, orders, and preferences
-        </p>
-
         {/* Tabs */}
         <div
           role="tablist"
