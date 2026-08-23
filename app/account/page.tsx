@@ -251,7 +251,7 @@ type Address = {
 type SavedProfile = { firstName: string; lastName: string; phone: string };
 
 function ProfileTab() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -334,6 +334,10 @@ function ProfileTab() {
 
       setSaved(true);
       setLastSaved({ firstName, lastName, phone });
+      // Keep the shared auth context in sync so a remount elsewhere in
+      // the app (e.g. navigating away and back to /account) reflects
+      // the change immediately, instead of the stale snapshot from login.
+      updateUser({ firstName, lastName, phone });
       setTimeout(() => setSaved(false), 2500);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Something went wrong, try again.");

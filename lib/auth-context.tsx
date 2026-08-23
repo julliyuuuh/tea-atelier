@@ -17,6 +17,11 @@ type AuthContextType = {
   isLoading: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
+  // Merges partial updates into the cached user (e.g. after a profile
+  // PATCH succeeds) so components that read `user` from context reflect
+  // the change immediately, without waiting for verifySession() to run
+  // again on the next full page load.
+  updateUser: (updates: Partial<NonNullable<User>>) => void;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -68,8 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }
 
+  function updateUser(updates: Partial<NonNullable<User>>) {
+    setUser((prev) => (prev ? { ...prev, ...updates } : prev));
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
