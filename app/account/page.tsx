@@ -2,18 +2,19 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/lib/auth-context";
+import ConfirmDialog from "@/components/account/ConfirmDialog";
+import Badge from "@/components/account/Badge";
+import FormField from "@/components/account/FormField";
 import {
-  Plus,
-  Trash2,
-  MapPin,
-  Package,
-  Settings as SettingsIcon,
-  User,
-} from "lucide-react";
+  AddressSkeleton,
+  OrderSkeleton,
+  SecurityPanelSkeleton,
+} from "@/components/account/Skeletons";
+import { Plus, Trash2, MapPin, Package } from "lucide-react";
 
 type TabKey = "profile" | "orders" | "settings";
 
@@ -22,6 +23,8 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "orders", label: "My Orders" },
   { key: "settings", label: "Settings" },
 ];
+
+const PANEL_TRANSITION = { duration: 0.25, ease: [0.16, 1, 0.3, 1] as const };
 
 // ================================================================
 // Page shell
@@ -145,60 +148,69 @@ function AccountPageInner() {
           })}
         </div>
 
-        {/* Panel */}
-        <div className="relative bg-white border border-charcoal/10 rounded-2xl p-8 min-h-[420px] overflow-hidden">
-          {/* Each tab stays mounted once visited — a CSS opacity crossfade
-              swaps which one is visible, instead of conditionally rendering
-              or remounting, so switching tabs never loses in-progress edits
-              or forces a refetch. */}
-          <div
+        {/* Panel, all visited panels stay mounted (a CSS grid stacks them
+            in the same cell) and we animate opacity/y directly off
+            `activeTab` state rather than mounting/unmounting via
+            AnimatePresence, since unmounting Orders/Settings would force
+            a refetch the next time they're selected. */}
+        <div className="relative bg-white border border-charcoal/10 rounded-2xl p-8 min-h-[420px] grid overflow-hidden">
+          <motion.div
             id="account-panel-profile"
             role="tabpanel"
             aria-labelledby="account-tab-profile"
             tabIndex={0}
-            className={`transition-opacity duration-200 ${
-              activeTab === "profile"
-                ? "relative opacity-100"
-                : "absolute inset-8 opacity-0 pointer-events-none"
-            }`}
+            className="col-start-1 row-start-1"
+            initial={false}
+            animate={{
+              opacity: activeTab === "profile" ? 1 : 0,
+              y: activeTab === "profile" ? 0 : 8,
+            }}
+            transition={PANEL_TRANSITION}
+            style={{ pointerEvents: activeTab === "profile" ? "auto" : "none" }}
             aria-hidden={activeTab !== "profile"}
             inert={activeTab !== "profile" ? true : undefined}
           >
             <ProfileTab />
-          </div>
+          </motion.div>
           {visited.has("orders") && (
-            <div
+            <motion.div
               id="account-panel-orders"
               role="tabpanel"
               aria-labelledby="account-tab-orders"
               tabIndex={0}
-              className={`transition-opacity duration-200 ${
-                activeTab === "orders"
-                  ? "relative opacity-100"
-                  : "absolute inset-8 opacity-0 pointer-events-none"
-              }`}
+              className="col-start-1 row-start-1"
+              initial={false}
+              animate={{
+                opacity: activeTab === "orders" ? 1 : 0,
+                y: activeTab === "orders" ? 0 : 8,
+              }}
+              transition={PANEL_TRANSITION}
+              style={{ pointerEvents: activeTab === "orders" ? "auto" : "none" }}
               aria-hidden={activeTab !== "orders"}
               inert={activeTab !== "orders" ? true : undefined}
             >
               <OrdersTab />
-            </div>
+            </motion.div>
           )}
           {visited.has("settings") && (
-            <div
+            <motion.div
               id="account-panel-settings"
               role="tabpanel"
               aria-labelledby="account-tab-settings"
               tabIndex={0}
-              className={`transition-opacity duration-200 ${
-                activeTab === "settings"
-                  ? "relative opacity-100"
-                  : "absolute inset-8 opacity-0 pointer-events-none"
-              }`}
+              className="col-start-1 row-start-1"
+              initial={false}
+              animate={{
+                opacity: activeTab === "settings" ? 1 : 0,
+                y: activeTab === "settings" ? 0 : 8,
+              }}
+              transition={PANEL_TRANSITION}
+              style={{ pointerEvents: activeTab === "settings" ? "auto" : "none" }}
               aria-hidden={activeTab !== "settings"}
               inert={activeTab !== "settings" ? true : undefined}
             >
               <SettingsTab />
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
@@ -207,6 +219,21 @@ function AccountPageInner() {
     </main>
   );
 }
+
+// ================================================================
+// Shared list-stagger variants
+// ================================================================
+
+const listContainerVariants: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+
+const listItemVariants: Variants = {
+  hidden: { opacity: 0, y: 6, height: 0 },
+  show: { opacity: 1, y: 0, height: "auto", transition: { duration: 0.25, ease: "easeOut" } },
+  exit: { opacity: 0, height: 0, transition: { duration: 0.18 } },
+};
 
 // ================================================================
 // Profile tab
@@ -290,7 +317,7 @@ function ProfileTab() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Something went wrong — try again.");
+      setSaveError(error instanceof Error ? error.message : "Something went wrong, try again.");
     } finally {
       setSaving(false);
     }
@@ -345,8 +372,10 @@ function ProfileTab() {
   const formatAddressLine = (addr: Address) =>
     [addr.address_line1, addr.address_line2, addr.address_line3].filter(Boolean).join(", ");
 
+  const pendingDeleteAddress = addresses.find((a) => a.address_id === confirmingDeleteId);
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-12">
       {/* Account Information */}
       <div>
         <h2 className="font-display text-xl text-charcoal mb-6">Account Information</h2>
@@ -354,79 +383,47 @@ function ProfileTab() {
         <form onSubmit={handleSaveProfile} className="space-y-5">
           <div className="flex gap-4">
             <div className="flex-1">
-              <label htmlFor="firstName" className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
-                First Name
-              </label>
-              <input
-                id="firstName"
-                type="text"
-                required
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full rounded-xl border border-charcoal/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-              />
+              <FormField label="First Name" value={firstName} onChange={setFirstName} required />
             </div>
             <div className="flex-1">
-              <label htmlFor="lastName" className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
-                Last Name
-              </label>
-              <input
-                id="lastName"
-                type="text"
-                required
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full rounded-xl border border-charcoal/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-              />
+              <FormField label="Last Name" value={lastName} onChange={setLastName} required />
             </div>
           </div>
 
-          <div>
-            <label htmlFor="email" className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              disabled
-              className="w-full rounded-xl border border-charcoal/20 px-4 py-3 font-body text-sm text-charcoal/50 bg-sand/20 cursor-not-allowed"
-            />
-            <p className="font-body text-xs text-charcoal/40 mt-1.5">
-              Contact support to change your email address.
-            </p>
-          </div>
+          <FormField
+            label="Email"
+            value={email}
+            onChange={() => {}}
+            type="email"
+            disabled
+            hint="Contact support to change your email address."
+          />
 
-          <div>
-            <label htmlFor="phone" className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
-              Phone Number
-            </label>
-            <input
-              id="phone"
-              type="tel"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-              maxLength={11}
-              className="w-full rounded-xl border border-charcoal/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-            />
-          </div>
+          <FormField
+            label="Phone Number"
+            value={phone}
+            onChange={(v) => setPhone(v.replace(/\D/g, ""))}
+            type="tel"
+            inputMode="numeric"
+            maxLength={11}
+          />
 
           <div className="flex items-center gap-4 pt-2">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={saving}
               className="rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? "Saving…" : "Save Changes"}
-            </button>
+            </motion.button>
             <AnimatePresence>
               {saved && (
                 <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2 }}
                   className="font-body text-sm text-sage"
                 >
                   Saved!
@@ -434,9 +431,10 @@ function ProfileTab() {
               )}
               {saveError && (
                 <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2 }}
                   className="font-body text-sm text-red-500"
                 >
                   {saveError}
@@ -451,31 +449,37 @@ function ProfileTab() {
       <div className="border-t border-charcoal/10 pt-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-display text-xl text-charcoal">Saved Addresses</h2>
-          <button
+          <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={() => setAddingAddress((v) => !v)}
             aria-expanded={addingAddress}
             className="flex items-center gap-1.5 rounded-full bg-charcoal text-cream font-body text-xs tracking-wide uppercase px-4 py-2 hover:bg-sage transition-colors"
           >
             <Plus size={14} /> Add Address
-          </button>
+          </motion.button>
         </div>
 
         {loadingAddresses ? (
-          <p className="font-body text-sm text-charcoal/50">Loading…</p>
+          <AddressSkeleton />
         ) : (
           <>
             {addresses.length === 0 && !addingAddress && (
               <p className="font-body text-sm text-charcoal/50">No saved addresses yet.</p>
             )}
 
-            <div className="space-y-3 mb-4">
+            <motion.div
+              variants={listContainerVariants}
+              initial="hidden"
+              animate="show"
+              className="space-y-3 mb-4"
+            >
               <AnimatePresence>
                 {addresses.map((addr) => (
                   <motion.div
                     key={addr.address_id}
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
+                    variants={listItemVariants}
+                    exit="exit"
+                    layout
                     className="flex items-start justify-between bg-sand/30 rounded-xl px-5 py-4 overflow-hidden"
                   >
                     <div className="flex gap-3">
@@ -490,34 +494,17 @@ function ProfileTab() {
                       </div>
                     </div>
 
-                    {confirmingDeleteId === addr.address_id ? (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => handleRemoveAddress(addr.address_id)}
-                          className="font-body text-xs text-red-500 hover:underline"
-                        >
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => setConfirmingDeleteId(null)}
-                          className="font-body text-xs text-charcoal/50 hover:underline"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmingDeleteId(addr.address_id)}
-                        aria-label="Delete address"
-                        className="text-charcoal/40 hover:text-red-500 transition-colors shrink-0"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setConfirmingDeleteId(addr.address_id)}
+                      aria-label="Delete address"
+                      className="text-charcoal/40 hover:text-red-500 transition-colors shrink-0"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </motion.div>
                 ))}
               </AnimatePresence>
-            </div>
+            </motion.div>
 
             <AnimatePresence>
               {addingAddress && (
@@ -559,20 +546,22 @@ function ProfileTab() {
                     />
                   </div>
                   <div className="flex gap-3">
-                    <button
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
                       type="submit"
                       disabled={savingAddress}
                       className="rounded-full bg-sage text-cream font-body text-xs tracking-wide uppercase px-6 py-2.5 hover:bg-charcoal transition-colors disabled:opacity-50"
                     >
                       {savingAddress ? "Saving…" : "Save Address"}
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
                       type="button"
                       onClick={() => setAddingAddress(false)}
                       className="rounded-full border border-charcoal/20 text-charcoal font-body text-xs tracking-wide uppercase px-6 py-2.5 hover:bg-sand/30 transition-colors"
                     >
                       Cancel
-                    </button>
+                    </motion.button>
                   </div>
                 </motion.form>
               )}
@@ -580,12 +569,22 @@ function ProfileTab() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmingDeleteId !== null}
+        title="Remove this address?"
+        description={pendingDeleteAddress ? formatAddressLine(pendingDeleteAddress) : undefined}
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => confirmingDeleteId && handleRemoveAddress(confirmingDeleteId)}
+        onCancel={() => setConfirmingDeleteId(null)}
+      />
     </div>
   );
 }
 
 // ================================================================
-// Orders tab — ported from OrderHistoryPage
+// Orders tab, ported from OrderHistoryPage
 // ================================================================
 
 type OrderItem = {
@@ -644,7 +643,7 @@ function OrdersTab() {
         });
 
         if (res.status === 401) {
-          // Session expired or token invalid — clear client auth state
+          // Session expired or token invalid, clear client auth state
           // and send the user to log back in, instead of showing a
           // confusing generic error on a page that still looks "logged in".
           logout();
@@ -667,19 +666,13 @@ function OrdersTab() {
 
     loadOrders();
     return () => controller.abort();
-    // logout/router intentionally omitted — including them can change
+    // logout/router intentionally omitted, including them can change
     // identity across renders and would refetch orders on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   if (isLoading) {
-    return (
-      <div className="space-y-3 animate-pulse">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="h-24 bg-sand/30 rounded-xl" />
-        ))}
-      </div>
-    );
+    return <OrderSkeleton />;
   }
 
   if (errorMessage) {
@@ -701,9 +694,18 @@ function OrdersTab() {
 
   return (
     <div>
-      <div className="space-y-6">
+      <motion.div
+        variants={listContainerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-6"
+      >
         {orders.map((order) => (
-          <div key={order.id} className="bg-sand/30 rounded-xl p-6">
+          <motion.div
+            key={order.id}
+            variants={listItemVariants}
+            className="bg-sand/30 rounded-xl p-6"
+          >
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-4 border-b border-charcoal/10">
               <div>
                 <p className="font-body text-sm text-charcoal">Order #TA-{order.id}</p>
@@ -720,9 +722,7 @@ function OrdersTab() {
                   </p>
                 )}
               </div>
-              <span className="font-body text-xs uppercase tracking-wide px-3 py-1 rounded-full bg-sage/15 text-sage">
-                {order.status}
-              </span>
+              <Badge tone="sage">{order.status}</Badge>
             </div>
 
             <div className="space-y-3 mb-4">
@@ -748,9 +748,9 @@ function OrdersTab() {
                 ₱{order.totalAmount.toFixed(2)}
               </span>
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4 mt-10">
@@ -778,7 +778,7 @@ function OrdersTab() {
 }
 
 // ================================================================
-// Settings tab — ported from SettingsPage
+// Settings tab, ported from SettingsPage
 // ================================================================
 
 function SettingsTab() {
@@ -800,7 +800,7 @@ function SettingsTab() {
   const [showDisableConfirm, setShowDisableConfirm] = useState(false);
 
   const handleUnauthorized = () => {
-    // Session expired or token invalid — clear client auth state and
+    // Session expired or token invalid, clear client auth state and
     // send the user to log back in, instead of showing a confusing
     // generic error on a page that still looks "logged in".
     logout();
@@ -830,7 +830,7 @@ function SettingsTab() {
     }
 
     loadStatus();
-    // handleUnauthorized intentionally omitted — logout/router can change
+    // handleUnauthorized intentionally omitted, logout/router can change
     // identity across renders and would refetch status on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -957,157 +957,170 @@ function SettingsTab() {
     <div>
       <h2 className="font-display text-xl text-charcoal mb-6">Security</h2>
 
-      {successMessage && (
-        <p className="font-body text-sm text-sage mb-6">{successMessage}</p>
-      )}
-      {errorMessage && (
-        <p className="font-body text-sm text-red-600 mb-6">{errorMessage}</p>
-      )}
+      <AnimatePresence>
+        {successMessage && (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2 }}
+            className="font-body text-sm text-sage mb-6"
+          >
+            {successMessage}
+          </motion.p>
+        )}
+        {errorMessage && (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2 }}
+            className="font-body text-sm text-red-600 mb-6"
+          >
+            {errorMessage}
+          </motion.p>
+        )}
+      </AnimatePresence>
 
-      <div className="space-y-4">
-        {/* Email Verification */}
-        <div
-          className={`rounded-xl p-6 ${
-            user?.isVerified ? "bg-sage/10" : "bg-amber-50"
-          }`}
-        >
-          <h3 className="font-display text-lg text-charcoal mb-2">Email Verification</h3>
-
-          {user?.isVerified ? (
-            <p className="font-body text-sm text-sage">✓ Your email is verified</p>
-          ) : (
-            <>
-              <p className="font-body text-sm text-charcoal/60 mb-4">
-                Your email address hasn't been verified yet. Check your inbox, or request a new link below.
-              </p>
-              <button
-                onClick={() => setShowResendConfirm(true)}
-                disabled={resendLoading}
-                className="rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors disabled:opacity-50"
-              >
-                {resendLoading ? "Sending..." : "Resend Verification Email"}
-              </button>
-              {resendMessage && (
-                <p className="font-body text-sm text-charcoal/70 mt-3">{resendMessage}</p>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Two-Factor Authentication */}
-        <div className="rounded-xl p-6 bg-amber-50">
-          <h3 className="font-display text-lg text-charcoal mb-2">Two-Factor Authentication</h3>
-          <p className="font-body text-sm text-charcoal/60 mb-6">
-            Add an extra layer of security using an authenticator app like Google Authenticator.
-          </p>
-
-          {isLoadingStatus ? (
-            <p className="font-body text-sm text-charcoal/50">Loading...</p>
-          ) : totpEnabled ? (
-            <div className="flex items-center justify-between">
-              <span className="font-body text-sm text-sage">Enabled</span>
-              <button
-                onClick={() => setShowDisableConfirm(true)}
-                className="font-body text-xs uppercase tracking-wide text-red-600 hover:text-red-800 transition-colors"
-              >
-                Disable
-              </button>
+      {isLoadingStatus ? (
+        <SecurityPanelSkeleton />
+      ) : (
+        <div className="space-y-4">
+          {/* Email Verification, same quiet sand/charcoal panel treatment
+              as 2FA below, differentiated only by content, not a louder
+              amber block. */}
+          <div className="rounded-2xl p-6 bg-sand/25 border border-charcoal/5">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-display text-lg text-charcoal">Email Verification</h3>
+              {user?.isVerified && <Badge tone="sage">Verified</Badge>}
             </div>
-          ) : setupStep === "idle" ? (
-            <button
-              onClick={startSetup}
-              className="rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors"
-            >
-              Enable 2FA
-            </button>
-          ) : setupStep === "scanning" ? (
-            <div className="space-y-4">
-              <p className="font-body text-sm text-charcoal/70">
-                Scan this QR code with Google Authenticator (or any compatible app), then enter the 6-digit code it generates.
-              </p>
-              <img src={qrCode} alt="2FA QR Code" className="w-48 h-48 mx-auto rounded-xl border border-charcoal/10" />
 
-              <form onSubmit={confirmSetup} className="space-y-4">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  required
-                  value={confirmCode}
-                  onChange={(e) => setConfirmCode(e.target.value.replace(/\D/g, ""))}
-                  placeholder="000000"
-                  className="w-full text-center tracking-[0.3em] rounded-xl border border-charcoal/20 px-4 py-3 font-body text-lg text-charcoal outline-none focus:border-sage"
-                />
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || confirmCode.length !== 6}
-                    className="flex-1 rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-3 hover:bg-sage transition-colors disabled:opacity-50"
-                  >
-                    {isSubmitting ? "Verifying..." : "Confirm"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSetupStep("idle");
-                      setConfirmCode("");
-                    }}
-                    className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {showResendConfirm && (
-        <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6">
-          <div className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center">
-            <p className="font-body text-sm text-charcoal mb-6">Send a new verification email?</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowResendConfirm(false)}
-                className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleResendVerification}
-                className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors"
-              >
-                Send
-              </button>
-            </div>
+            {!user?.isVerified && (
+              <>
+                <p className="font-body text-sm text-charcoal/60 mb-4">
+                  Your email address hasn't been verified yet. Check your inbox, or request a new link below.
+                </p>
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowResendConfirm(true)}
+                  disabled={resendLoading}
+                  className="rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors disabled:opacity-50"
+                >
+                  {resendLoading ? "Sending..." : "Resend Verification Email"}
+                </motion.button>
+                <AnimatePresence>
+                  {resendMessage && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.2 }}
+                      className="font-body text-sm text-charcoal/70 mt-3"
+                    >
+                      {resendMessage}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
           </div>
-        </div>
-      )}
 
-      {showDisableConfirm && (
-        <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6">
-          <div className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center">
-            <p className="font-body text-sm text-charcoal mb-6">
-              Disable two-factor authentication for your account?
+          {/* Two-Factor Authentication */}
+          <div className="rounded-2xl p-6 bg-sand/25 border border-charcoal/5">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-display text-lg text-charcoal">Two-Factor Authentication</h3>
+              {totpEnabled && <Badge tone="sage">Enabled</Badge>}
+            </div>
+            <p className="font-body text-sm text-charcoal/60 mb-6">
+              Add an extra layer of security using an authenticator app like Google Authenticator.
             </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDisableConfirm(false)}
-                className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
+
+            {totpEnabled ? (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowDisableConfirm(true)}
+                  className="font-body text-xs uppercase tracking-wide text-red-600 hover:text-red-800 transition-colors"
+                >
+                  Disable
+                </button>
+              </div>
+            ) : setupStep === "idle" ? (
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={startSetup}
+                className="rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors"
               >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDisable2FA}
-                className="flex-1 rounded-full bg-red-600 text-cream font-body text-sm py-3 hover:bg-red-700 transition-colors"
-              >
-                Disable
-              </button>
-            </div>
+                Enable 2FA
+              </motion.button>
+            ) : setupStep === "scanning" ? (
+              <div className="space-y-4">
+                <p className="font-body text-sm text-charcoal/70">
+                  Scan this QR code with Google Authenticator (or any compatible app), then enter the 6-digit code it generates.
+                </p>
+                <motion.img
+                  key={qrCode}
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  src={qrCode}
+                  alt="2FA QR Code"
+                  className="w-48 h-48 mx-auto rounded-xl border border-charcoal/10"
+                />
+
+                <form onSubmit={confirmSetup} className="space-y-4">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    required
+                    value={confirmCode}
+                    onChange={(e) => setConfirmCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="000000"
+                    className="w-full text-center tracking-[0.3em] rounded-xl border border-charcoal/20 px-4 py-3 font-body text-lg text-charcoal outline-none focus:border-sage transition-colors"
+                  />
+                  <div className="flex gap-3">
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      disabled={isSubmitting || confirmCode.length !== 6}
+                      className="flex-1 rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-3 hover:bg-sage transition-colors disabled:opacity-50"
+                    >
+                      {isSubmitting ? "Verifying..." : "Confirm"}
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      type="button"
+                      onClick={() => {
+                        setSetupStep("idle");
+                        setConfirmCode("");
+                      }}
+                      className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
+                    >
+                      Cancel
+                    </motion.button>
+                  </div>
+                </form>
+              </div>
+            ) : null}
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showResendConfirm}
+        title="Send a new verification email?"
+        onConfirm={handleResendVerification}
+        onCancel={() => setShowResendConfirm(false)}
+      />
+
+      <ConfirmDialog
+        open={showDisableConfirm}
+        title="Disable two-factor authentication for your account?"
+        confirmLabel="Disable"
+        destructive
+        onConfirm={confirmDisable2FA}
+        onCancel={() => setShowDisableConfirm(false)}
+      />
     </div>
   );
 }

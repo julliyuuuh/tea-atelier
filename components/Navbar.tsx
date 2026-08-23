@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, ShoppingBag, Settings, LogOut } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import ConfirmDialog from "@/components/account/ConfirmDialog";
 
 const links = [
   { label: "Home", href: "/" },
@@ -277,29 +278,14 @@ export default function Navbar() {
           )}
         </AnimatePresence>
       </header>
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6">
-          <div className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center">
-            <p className="font-body text-sm text-charcoal mb-6">
-              Are you sure you want to log out?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors rounded-full"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmLogout}
-                className="flex-1 bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors rounded-full"
-              >
-                Log Out
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        title="Are you sure you want to log out?"
+        confirmLabel="Log Out"
+        onConfirm={confirmLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </div>
   );
 }
