@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronDown,
@@ -215,25 +216,47 @@ function CustomSelect({
 }) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(
+    null,
+  );
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const listboxRef = useRef<HTMLDivElement>(null);
 
   const selectedIndex = options.findIndex((o) => o.value === value);
   const selectedOption = selectedIndex >= 0 ? options[selectedIndex] : null;
 
+  const updateCoords = () => {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (rect) {
+      setCoords({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+    }
+  };
+
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      const insideTrigger = containerRef.current?.contains(target);
+      const insideListbox = listboxRef.current?.contains(target);
+      if (!insideTrigger && !insideListbox) setOpen(false);
     };
+    // capture:true so this also picks up scrolling inside any nested
+    // scrollable ancestor (e.g. the slide-over panel), not just the window.
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", updateCoords, true);
+    window.addEventListener("resize", updateCoords);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", updateCoords, true);
+      window.removeEventListener("resize", updateCoords);
+    };
   }, [open]);
 
   const openList = () => {
     if (disabled) return;
     setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    updateCoords();
     setOpen(true);
   };
 
@@ -274,6 +297,7 @@ function CustomSelect({
       <button
         type="button"
         id={id}
+        ref={buttonRef}
         disabled={disabled}
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={handleKeyDown}
@@ -297,43 +321,53 @@ function CustomSelect({
         </motion.span>
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            role="listbox"
-            id={`${id}-listbox`}
-            initial={{ opacity: 0, y: -4, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98 }}
-            transition={{ duration: 0.12 }}
-            className="absolute z-20 mt-1.5 min-w-full w-max max-w-xs max-h-64 overflow-y-auto bg-white border border-charcoal/10 rounded-xl shadow-lg py-1"
-          >
-            {options.map((opt, index) => {
-              const isSelected = opt.value === value;
-              const isActive = index === activeIndex;
-              return (
-                <div
-                  key={opt.value}
-                  id={`${id}-option-${index}`}
-                  role="option"
-                  aria-selected={isSelected}
-                  onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => commit(index)}
-                  className={`px-3.5 py-2 mx-1 rounded-lg font-body text-sm cursor-pointer truncate ${
-                    isSelected
-                      ? "bg-sage/20 text-charcoal font-medium"
-                      : isActive
-                        ? "bg-sand/50 text-charcoal"
-                        : "text-charcoal/80"
-                  }`}
-                >
-                  {opt.label}
-                </div>
-              );
-            })}
-          </motion.div>
+      {open &&
+        coords &&
+        createPortal(
+          <AnimatePresence>
+            <motion.div
+              ref={listboxRef}
+              role="listbox"
+              id={`${id}-listbox`}
+              initial={{ opacity: 0, y: -4, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -4, scale: 0.98 }}
+              transition={{ duration: 0.12 }}
+              style={{
+                position: "fixed",
+                top: coords.top,
+                left: coords.left,
+                minWidth: coords.width,
+              }}
+              className="z-[200] w-max max-w-xs max-h-64 overflow-y-auto bg-white border border-charcoal/10 rounded-xl shadow-lg py-1"
+            >
+              {options.map((opt, index) => {
+                const isSelected = opt.value === value;
+                const isActive = index === activeIndex;
+                return (
+                  <div
+                    key={opt.value}
+                    id={`${id}-option-${index}`}
+                    role="option"
+                    aria-selected={isSelected}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    onClick={() => commit(index)}
+                    className={`px-3.5 py-2 mx-1 rounded-lg font-body text-sm cursor-pointer truncate ${
+                      isSelected
+                        ? "bg-sage/20 text-charcoal font-medium"
+                        : isActive
+                          ? "bg-sand/50 text-charcoal"
+                          : "text-charcoal/80"
+                    }`}
+                  >
+                    {opt.label}
+                  </div>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>,
+          document.body,
         )}
-      </AnimatePresence>
     </div>
   );
 }
