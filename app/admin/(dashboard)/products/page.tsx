@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronDown,
@@ -8,6 +8,10 @@ import {
   Package,
   AlertCircle,
   Loader2,
+  Plus,
+  UploadCloud,
+  X,
+  ImageIcon,
 } from "lucide-react";
 import type { Product } from "@/lib/products";
 import { categoryTree, type MainCategory } from "@/lib/categories";
@@ -25,6 +29,19 @@ const emptyForm = {
   stockQuantity: "",
 };
 
+// Single source of truth for the availability badge + stat chips.
+// Tune these two numbers to change what counts as "Low Stock" everywhere.
+const STOCK_THRESHOLDS = {
+  OUT_OF_STOCK: 0,
+  LOW_STOCK_MAX: 10,
+} as const;
+
+function getAvailability(stockQuantity: number): "out" | "low" | "in" {
+  if (stockQuantity <= STOCK_THRESHOLDS.OUT_OF_STOCK) return "out";
+  if (stockQuantity <= STOCK_THRESHOLDS.LOW_STOCK_MAX) return "low";
+  return "in";
+}
+
 type SortKey = "name" | "price" | "stockQuantity";
 type SortConfig = { key: SortKey; direction: "asc" | "desc" } | null;
 type FieldErrors = Partial<
@@ -34,9 +51,18 @@ type FieldErrors = Partial<
   >
 >;
 
+// What we're confirming in the shared ConfirmDialog: one product, or a bulk
+// selection. Both resolve down to the same single-id DELETE endpoint below —
+// bulk delete is N sequential calls to the existing endpoint, not a new one.
+type ConfirmTarget =
+  | { type: "single"; id: string }
+  | { type: "bulk"; ids: string[] }
+  | null;
+
 // Shared column layout so the header, skeleton rows, and data rows always line up.
+// First column is the row-select checkbox.
 const GRID_COLS =
-  "minmax(220px,2.2fr) minmax(110px,1fr) minmax(90px,0.8fr) minmax(90px,0.8fr) minmax(120px,1.1fr) minmax(130px,1fr)";
+  "40px minmax(220px,2.2fr) minmax(110px,1fr) minmax(90px,0.8fr) minmax(90px,0.8fr) minmax(120px,1.1fr) minmax(140px,1fr)";
 
 /** Small inline banner used everywhere an alert() used to fire. */
 function ErrorBanner({
@@ -83,11 +109,13 @@ function SortHeader({
   sortKeyName,
   sortConfig,
   onSort,
+  align = "left",
 }: {
   label: string;
   sortKeyName: SortKey;
   sortConfig: SortConfig;
   onSort: (key: SortKey) => void;
+  align?: "left" | "right";
 }) {
   const isActive = sortConfig?.key === sortKeyName;
   const ariaSort = isActive
@@ -97,12 +125,20 @@ function SortHeader({
     : "none";
 
   return (
-    <div role="columnheader" aria-sort={ariaSort as any} className="px-5 py-3">
+    <div
+      role="columnheader"
+      aria-sort={ariaSort as any}
+      className={`px-5 py-3 ${align === "right" ? "text-right" : ""}`}
+    >
       <button
         type="button"
         onClick={() => onSort(sortKeyName)}
-        className={`flex items-center gap-1 font-body text-xs uppercase tracking-wide transition-colors ${
-          isActive ? "text-charcoal" : "text-charcoal/50 hover:text-charcoal/70"
+        className={`inline-flex items-center gap-1 font-body text-xs uppercase tracking-wide px-2 py-1 -mx-2 rounded-md transition-colors ${
+          align === "right" ? "flex-row-reverse" : ""
+        } ${
+          isActive
+            ? "text-charcoal bg-sand/50 font-semibold"
+            : "text-charcoal/50 hover:text-charcoal/70"
         }`}
       >
         {label}
@@ -117,9 +153,41 @@ function SortHeader({
   );
 }
 
+/** Small pill used for the summary stats row above the table. */
+function StatChip({
+  label,
+  value,
+  tone = "neutral",
+}: {
+  label: string;
+  value: number;
+  tone?: "neutral" | "warning" | "danger";
+}) {
+  const toneClasses =
+    tone === "danger"
+      ? "bg-red-50 text-red-600"
+      : tone === "warning"
+        ? "bg-amber-50 text-amber-700"
+        : "bg-sand/40 text-charcoal";
+
+  return (
+    <div
+      className={`flex items-center gap-2 rounded-xl px-4 py-3 border border-charcoal/10 ${toneClasses}`}
+    >
+      <span className="font-body text-lg font-semibold leading-none">
+        {value}
+      </span>
+      <span className="font-body text-xs uppercase tracking-wide opacity-70">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 export default function AdminProductsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -136,8 +204,11 @@ export default function AdminProductsPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget>(null);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadProducts();
@@ -177,6 +248,13 @@ export default function AdminProductsPage() {
   const activeProducts = products.filter((p) => !p.isArchived);
   const archivedProducts = products.filter((p) => p.isArchived);
 
+  const lowStockCount = activeProducts.filter(
+    (p) => getAvailability(p.stockQuantity) === "low",
+  ).length;
+  const outOfStockCount = activeProducts.filter(
+    (p) => getAvailability(p.stockQuantity) === "out",
+  ).length;
+
   const filtered = activeProducts.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
     const matchesCategory =
@@ -204,6 +282,17 @@ export default function AdminProductsPage() {
     });
   }, [filtered, sortConfig]);
 
+  // Drop any selections that scrolled out of the current filtered/sorted view
+  // (e.g. after a filter change) so the bulk bar never references stale rows.
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const visibleIds = new Set(sortedFiltered.map((p) => p.id));
+      const next = new Set([...prev].filter((id) => visibleIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortedFiltered]);
+
   const hasActiveFilters =
     search !== "" || filterCategory !== "All" || filterSubCategory !== "All";
 
@@ -222,26 +311,84 @@ export default function AdminProductsPage() {
     });
   };
 
-  const handleDelete = async () => {
-    if (!confirmDeleteId) return;
-    const id = confirmDeleteId;
-    setConfirmDeleteId(null);
-    setActionError("");
+  const allVisibleSelected =
+    sortedFiltered.length > 0 &&
+    sortedFiltered.every((p) => selectedIds.has(p.id));
 
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      if (allVisibleSelected) return new Set();
+      return new Set(sortedFiltered.map((p) => p.id));
+    });
+  };
+
+  const toggleSelectRow = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Shared by both the single-row delete button and the bulk action bar.
+  // Bulk delete is implemented as N calls to the existing single-id DELETE
+  // endpoint (archives each in turn) — the endpoint contract is unchanged.
+  const performDelete = async (ids: string[]) => {
+    setActionError("");
     const token = localStorage.getItem("token");
-    try {
-      const res = await fetch(`/api/admin/products/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Unable to remove product.");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`/api/admin/products/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }).then((res) => {
+          if (!res.ok) throw new Error();
+          return id;
+        }),
+      ),
+    );
+
+    const succeededIds = new Set(
+      results
+        .filter(
+          (r): r is PromiseFulfilledResult<string> => r.status === "fulfilled",
+        )
+        .map((r) => r.value),
+    );
+    const failedCount = results.length - succeededIds.size;
+
+    if (succeededIds.size > 0) {
       setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, isArchived: true } : p)),
+        prev.map((p) =>
+          succeededIds.has(p.id) ? { ...p, isArchived: true } : p,
+        ),
       );
-    } catch (error) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        succeededIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    }
+    if (failedCount > 0) {
       setActionError(
-        error instanceof Error ? error.message : "Something went wrong.",
+        ids.length === 1
+          ? "Unable to remove product."
+          : `Removed ${succeededIds.size} of ${ids.length} products — ${failedCount} failed.`,
       );
+    }
+  };
+
+  const handleConfirmedDelete = async () => {
+    if (!confirmTarget) return;
+    const ids =
+      confirmTarget.type === "single" ? [confirmTarget.id] : confirmTarget.ids;
+    setConfirmTarget(null);
+    if (confirmTarget.type === "bulk") setIsBulkDeleting(true);
+    try {
+      await performDelete(ids);
+    } finally {
+      setIsBulkDeleting(false);
     }
   };
 
@@ -317,9 +464,22 @@ export default function AdminProductsPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setImageFile(e.target.files?.[0] || null);
+  const applyImageFile = (file: File | null) => {
+    setImageFile(file);
     setFieldErrors((prev) => ({ ...prev, image: undefined }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    applyImageFile(e.target.files?.[0] || null);
+  };
+
+  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingImage(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      applyImageFile(file);
+    }
   };
 
   const validate = (): boolean => {
@@ -438,9 +598,28 @@ export default function AdminProductsPage() {
     },
   };
 
+  const confirmDialogProps = (() => {
+    if (!confirmTarget) {
+      // title is required by ConfirmDialogProps even while closed.
+      return { open: false as const, title: "" };
+    }
+    if (confirmTarget.type === "single") {
+      return {
+        open: true as const,
+        title: "Remove this product?",
+        confirmLabel: "Remove",
+      };
+    }
+    return {
+      open: true as const,
+      title: `Remove ${confirmTarget.ids.length} selected products?`,
+      confirmLabel: `Remove ${confirmTarget.ids.length}`,
+    };
+  })();
+
   return (
     <div className="p-10">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
             Products
@@ -466,23 +645,33 @@ export default function AdminProductsPage() {
         </div>
         <button
           onClick={openAddModal}
-          className="bg-charcoal text-cream font-body text-sm px-5 py-2.5 hover:bg-sage transition-colors rounded-full"
+          className="flex items-center gap-1.5 bg-charcoal text-cream font-body text-sm px-5 py-2.5 hover:bg-sage transition-colors rounded-full shadow-sm"
         >
-          + Add Product
+          <Plus className="w-4 h-4" />
+          Add Product
         </button>
       </div>
 
       <ErrorBanner message={errorMessage} onRetry={loadProducts} />
       <ErrorBanner message={actionError} />
 
-      {/* Search + Category/Subcategory filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
+      {/* Stat chips */}
+      {!isLoading && (
+        <div className="flex flex-wrap gap-3 mb-6">
+          <StatChip label="Active Products" value={activeProducts.length} />
+          <StatChip label="Low Stock" value={lowStockCount} tone="warning" />
+          <StatChip label="Out of Stock" value={outOfStockCount} tone="danger" />
+        </div>
+      )}
+
+      {/* Filter toolbar */}
+      <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-charcoal/10 rounded-xl px-4 py-3">
         <input
           type="text"
           placeholder="Search products..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[200px] max-w-sm border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors rounded-full"
+          className="flex-1 min-w-[200px] max-w-sm border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
         />
 
         <select
@@ -491,7 +680,7 @@ export default function AdminProductsPage() {
             setFilterCategory(e.target.value as MainCategory | "All");
             setFilterSubCategory("All");
           }}
-          className="border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors rounded-full"
+          className="border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
         >
           <option value="All">All Categories</option>
           {(Object.keys(categoryTree) as MainCategory[]).map((cat) => (
@@ -505,7 +694,7 @@ export default function AdminProductsPage() {
           <select
             value={filterSubCategory}
             onChange={(e) => setFilterSubCategory(e.target.value)}
-            className="border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors rounded-full"
+            className="border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
           >
             <option value="All">All Subcategories</option>
             {Object.keys(categoryTree[filterCategory]).map((sub) => (
@@ -533,6 +722,50 @@ export default function AdminProductsPage() {
         </AnimatePresence>
       </div>
 
+      {/* Bulk action bar */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.15 }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-center justify-between bg-charcoal text-cream rounded-xl px-4 py-2.5">
+              <span className="font-body text-sm">
+                {selectedIds.size} selected
+              </span>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="font-body text-xs text-cream/70 hover:text-cream"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  disabled={isBulkDeleting}
+                  onClick={() =>
+                    setConfirmTarget({
+                      type: "bulk",
+                      ids: Array.from(selectedIds),
+                    })
+                  }
+                  className="flex items-center gap-1.5 font-body text-xs bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white px-3 py-1.5 rounded-full transition-colors"
+                >
+                  {isBulkDeleting && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  )}
+                  Delete selected
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div
         className="bg-white border border-charcoal/10 rounded-xl overflow-hidden"
         role="table"
@@ -544,6 +777,16 @@ export default function AdminProductsPage() {
             className="grid border-b border-charcoal/10"
             style={{ gridTemplateColumns: GRID_COLS }}
           >
+            <div role="columnheader" className="px-5 py-3 flex items-center">
+              <input
+                type="checkbox"
+                aria-label="Select all visible products"
+                checked={allVisibleSelected}
+                onChange={toggleSelectAll}
+                disabled={sortedFiltered.length === 0}
+                className="w-3.5 h-3.5 rounded border-charcoal/30 accent-charcoal cursor-pointer disabled:cursor-not-allowed"
+              />
+            </div>
             <SortHeader
               label="Product"
               sortKeyName="name"
@@ -561,12 +804,14 @@ export default function AdminProductsPage() {
               sortKeyName="price"
               sortConfig={sortConfig}
               onSort={handleSort}
+              align="right"
             />
             <SortHeader
               label="Stock"
               sortKeyName="stockQuantity"
               sortConfig={sortConfig}
               onSort={handleSort}
+              align="right"
             />
             <div
               role="columnheader"
@@ -592,6 +837,9 @@ export default function AdminProductsPage() {
                 className="grid items-center py-3 border-b border-charcoal/5 last:border-0"
                 style={{ gridTemplateColumns: GRID_COLS }}
               >
+                <div className="px-5">
+                  <SkeletonBlock className="w-3.5 h-3.5 rounded" />
+                </div>
                 <div className="px-5 flex items-center gap-3">
                   <SkeletonBlock className="w-10 h-10 shrink-0" />
                   <SkeletonBlock className="h-4 w-32" />
@@ -599,10 +847,10 @@ export default function AdminProductsPage() {
                 <div className="px-5">
                   <SkeletonBlock className="h-4 w-16" />
                 </div>
-                <div className="px-5">
+                <div className="px-5 flex justify-end">
                   <SkeletonBlock className="h-4 w-12" />
                 </div>
-                <div className="px-5">
+                <div className="px-5 flex justify-end">
                   <SkeletonBlock className="h-4 w-10" />
                 </div>
                 <div className="px-5">
@@ -617,88 +865,105 @@ export default function AdminProductsPage() {
 
           {!isLoading && (
             <AnimatePresence initial={false}>
-              {sortedFiltered.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  role="row"
-                  layout
-                  custom={index}
-                  variants={rowVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  className="grid items-center py-3 border-b border-charcoal/5 last:border-0 hover:bg-sand/20 hover:shadow-sm transition-colors overflow-hidden group"
-                  style={{ gridTemplateColumns: GRID_COLS }}
-                >
-                  <div role="cell" className="px-5 flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-lg bg-sand overflow-hidden shrink-0">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
+              {sortedFiltered.map((product, index) => {
+                const availability = getAvailability(product.stockQuantity);
+                const isSelected = selectedIds.has(product.id);
+                return (
+                  <motion.div
+                    key={product.id}
+                    role="row"
+                    layout
+                    custom={index}
+                    variants={rowVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    className={`grid items-center py-3 border-b border-charcoal/5 last:border-0 hover:bg-sand/20 hover:shadow-sm transition-colors overflow-hidden group ${
+                      isSelected ? "bg-sage/5" : ""
+                    }`}
+                    style={{ gridTemplateColumns: GRID_COLS }}
+                  >
+                    <div role="cell" className="px-5">
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${product.name}`}
+                        checked={isSelected}
+                        onChange={() => toggleSelectRow(product.id)}
+                        className="w-3.5 h-3.5 rounded border-charcoal/30 accent-charcoal cursor-pointer"
                       />
                     </div>
-                    <span className="font-body text-sm text-charcoal truncate">
-                      {product.name}
-                    </span>
-                  </div>
-                  <div role="cell" className="px-5">
-                    <span className="font-body text-sm text-charcoal/70">
-                      {product.category}
-                    </span>
-                  </div>
-                  <div role="cell" className="px-5">
-                    <span className="font-body text-sm text-charcoal/70">
-                      ₱{product.price}
-                    </span>
-                  </div>
-                  <div role="cell" className="px-5">
-                    <span className="font-body text-sm text-charcoal/70">
-                      {product.stockQuantity}
-                    </span>
-                  </div>
-                  <div role="cell" className="px-5">
-                    <span
-                      className={`inline-flex items-center gap-1.5 font-body text-xs px-3 py-1 rounded-full ${
-                        product.stockQuantity === 0
-                          ? "bg-red-50 text-red-600"
-                          : product.stockQuantity <= 10
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-green-100 text-green-700"
-                      }`}
-                    >
+                    <div role="cell" className="px-5 flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-lg bg-sand overflow-hidden shrink-0">
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span className="font-body text-sm text-charcoal truncate">
+                        {product.name}
+                      </span>
+                    </div>
+                    <div role="cell" className="px-5">
+                      <span className="font-body text-sm text-charcoal/70">
+                        {product.category}
+                      </span>
+                    </div>
+                    <div role="cell" className="px-5 text-right">
+                      <span className="font-body text-sm text-charcoal/70 tabular-nums">
+                        ₱{product.price}
+                      </span>
+                    </div>
+                    <div role="cell" className="px-5 text-right">
+                      <span className="font-body text-sm text-charcoal/70 tabular-nums">
+                        {product.stockQuantity}
+                      </span>
+                    </div>
+                    <div role="cell" className="px-5">
                       <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          product.stockQuantity === 0
-                            ? "bg-red-500"
-                            : product.stockQuantity <= 10
-                              ? "bg-amber-500"
-                              : "bg-green-500"
+                        className={`inline-flex items-center gap-1.5 font-body text-xs px-3 py-1 rounded-full ${
+                          availability === "out"
+                            ? "bg-red-50 text-red-600"
+                            : availability === "low"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-green-100 text-green-700"
                         }`}
-                      />
-                      {product.stockQuantity === 0
-                        ? "Out of Stock"
-                        : product.stockQuantity <= 10
-                          ? "Low Stock"
-                          : "In Stock"}
-                    </span>
-                  </div>
-                  <div role="cell" className="px-5 flex items-center justify-end gap-4">
-                    <button
-                      onClick={() => openEditModal(product)}
-                      className="font-body text-xs text-charcoal/60 hover:text-sage hover:scale-105 transition-all"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => setConfirmDeleteId(product.id)}
-                      className="font-body text-xs text-charcoal/60 hover:text-red-600 hover:scale-105 transition-all"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            availability === "out"
+                              ? "bg-red-500"
+                              : availability === "low"
+                                ? "bg-amber-500"
+                                : "bg-green-500"
+                          }`}
+                        />
+                        {availability === "out"
+                          ? "Out of Stock"
+                          : availability === "low"
+                            ? "Low Stock"
+                            : "In Stock"}
+                      </span>
+                    </div>
+                    <div role="cell" className="px-5 flex items-center justify-end gap-4">
+                      <button
+                        onClick={() => openEditModal(product)}
+                        className="font-body text-xs text-charcoal/60 hover:text-sage hover:scale-105 transition-all"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() =>
+                          setConfirmTarget({ type: "single", id: product.id })
+                        }
+                        className="font-body text-xs text-charcoal/60 hover:text-red-600 hover:scale-105 transition-all"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           )}
 
@@ -804,386 +1069,417 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* Modal to edit or add product */}
+      {/* Add/Edit slide-over panel */}
       <AnimatePresence>
         {modalOpen && (
           <motion.div
-            className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-50 p-6"
+            className="fixed inset-0 bg-charcoal/40 z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
+            onClick={() => !isSaving && setModalOpen(false)}
           >
             <motion.div
-              className="bg-white w-full max-w-md p-8 max-h-[90vh] overflow-y-auto rounded-2xl"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 32 }}
+              className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 380, damping: 36 }}
               role="dialog"
               aria-modal="true"
               aria-labelledby="product-modal-title"
+              onClick={(e) => e.stopPropagation()}
             >
-              <h2
-                id="product-modal-title"
-                className="font-body text-lg font-medium text-charcoal mb-6"
-              >
-                {editingId ? "Edit Product" : "Add Product"}
-              </h2>
+              <div className="flex items-center justify-between px-8 pt-8 pb-6 border-b border-charcoal/10 sticky top-0 bg-white z-10">
+                <h2
+                  id="product-modal-title"
+                  className="font-body text-lg font-medium text-charcoal"
+                >
+                  {editingId ? "Edit Product" : "Add Product"}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => !isSaving && setModalOpen(false)}
+                  aria-label="Close"
+                  className="text-charcoal/40 hover:text-charcoal transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-              <ErrorBanner message={saveError} />
+              <div className="px-8 py-6">
+                <ErrorBanner message={saveError} />
 
-              <form onSubmit={handleSave} className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="product-name"
-                    className="font-body text-xs text-charcoal/60 block mb-1.5"
-                  >
-                    Name
-                  </label>
-                  <input
-                    id="product-name"
-                    type="text"
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    required
-                    aria-invalid={!!fieldErrors.name}
-                    aria-describedby={fieldErrors.name ? "name-error" : undefined}
-                    className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
-                      fieldErrors.name
-                        ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                        : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
-                    }`}
-                  />
-                  {fieldErrors.name && (
-                    <p id="name-error" className="font-body text-xs text-red-600 mt-1">
-                      {fieldErrors.name}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="product-category"
-                    className="font-body text-xs text-charcoal/60 block mb-1.5"
-                  >
-                    Category
-                  </label>
-                  <select
-                    id="product-category"
-                    name="category"
-                    value={form.category}
-                    onChange={handleChange}
-                    className="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
-                  >
-                    <option>Leaf Tea</option>
-                    <option>Matcha</option>
-                    <option>Tea Accessories</option>
-                  </select>
-                </div>
-
-                <AnimatePresence initial={false}>
-                  {categoryTree[form.category as MainCategory] && (
-                    <motion.div
-                      key="subcategory"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <div>
-                        <label
-                          htmlFor="product-subcategory"
-                          className="font-body text-xs text-charcoal/60 block mb-1.5"
-                        >
-                          Subcategory
-                        </label>
-                        <select
-                          id="product-subcategory"
-                          name="subCategory"
-                          value={form.subCategory}
-                          onChange={handleChange}
-                          required
-                          aria-invalid={!!fieldErrors.subCategory}
-                          className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
-                            fieldErrors.subCategory
-                              ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                              : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
-                          }`}
-                        >
-                          <option value="">Select subcategory...</option>
-                          {Object.keys(
-                            categoryTree[form.category as MainCategory],
-                          ).map((sub) => (
-                            <option key={sub} value={sub}>
-                              {sub}
-                            </option>
-                          ))}
-                        </select>
-                        {fieldErrors.subCategory && (
-                          <p className="font-body text-xs text-red-600 mt-1">
-                            {fieldErrors.subCategory}
-                          </p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <AnimatePresence initial={false}>
-                  {form.subCategory && (
-                    <motion.div
-                      key="type"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <div>
-                        <label
-                          htmlFor="product-type"
-                          className="font-body text-xs text-charcoal/60 block mb-1.5"
-                        >
-                          Type
-                        </label>
-                        <select
-                          id="product-type"
-                          name="type"
-                          value={form.type}
-                          onChange={handleChange}
-                          required
-                          aria-invalid={!!fieldErrors.type}
-                          className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
-                            fieldErrors.type
-                              ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                              : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
-                          }`}
-                        >
-                          <option value="">Select type...</option>
-                          {(categoryTree[form.category as MainCategory] as any)[
-                            form.subCategory
-                          ].map((t: string) => (
-                            <option key={t} value={t}>
-                              {t}
-                            </option>
-                          ))}
-                        </select>
-                        {fieldErrors.type && (
-                          <p className="font-body text-xs text-red-600 mt-1">
-                            {fieldErrors.type}
-                          </p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      htmlFor="product-price"
-                      className="font-body text-xs text-charcoal/60 block mb-1.5"
-                    >
-                      Price (₱)
-                    </label>
-                    <input
-                      id="product-price"
-                      type="number"
-                      step="0.01"
-                      name="price"
-                      value={form.price}
-                      onChange={handleChange}
-                      required
-                      aria-invalid={!!fieldErrors.price}
-                      aria-describedby={fieldErrors.price ? "price-error" : undefined}
-                      className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
-                        fieldErrors.price
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                          : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
-                      }`}
-                    />
-                    {fieldErrors.price && (
-                      <p id="price-error" className="font-body text-xs text-red-600 mt-1">
-                        {fieldErrors.price}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="product-stock"
-                      className="font-body text-xs text-charcoal/60 block mb-1.5"
-                    >
-                      Stock Quantity
-                    </label>
-                    <input
-                      id="product-stock"
-                      type="number"
-                      step="1"
-                      min="0"
-                      name="stockQuantity"
-                      value={form.stockQuantity}
-                      onChange={handleChange}
-                      required
-                      aria-invalid={!!fieldErrors.stockQuantity}
-                      aria-describedby={
-                        fieldErrors.stockQuantity ? "stock-error" : undefined
-                      }
-                      className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
-                        fieldErrors.stockQuantity
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                          : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
-                      }`}
-                    />
-                    {fieldErrors.stockQuantity && (
-                      <p id="stock-error" className="font-body text-xs text-red-600 mt-1">
-                        {fieldErrors.stockQuantity}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <p className="font-body text-xs text-charcoal/40 -mt-2">
-                  Availability is automatically set based on stock quantity.
-                </p>
-
-                <div>
-                  <label className="font-body text-xs text-charcoal/60 block mb-1.5">
-                    Product Image
-                  </label>
-
-                  <label
-                    htmlFor="product-image-upload"
-                    className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal cursor-pointer flex items-center justify-between transition-colors ${
-                      fieldErrors.image
-                        ? "border-red-500"
-                        : "border-charcoal/20 hover:border-sage"
-                    }`}
-                  >
-                    <span className="truncate">
-                      {imageFile ? imageFile.name : "Choose File"}
-                    </span>
-                    <span className="text-charcoal/40 text-xs shrink-0 ml-2">
-                      Browse
-                    </span>
-                  </label>
-
-                  <input
-                    id="product-image-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                  {fieldErrors.image && (
-                    <p className="font-body text-xs text-red-600 mt-1">
-                      {fieldErrors.image}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-3 mt-2">
-                    {form.image && !imageFile && (
-                      <img
-                        src={form.image}
-                        alt="Current"
-                        className="w-16 h-16 rounded-lg object-cover"
+                <form onSubmit={handleSave} className="space-y-6">
+                  {/* Basic Info */}
+                  <div className="space-y-4">
+                    <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/40 font-semibold">
+                      Basic Info
+                    </h3>
+                    <div>
+                      <label
+                        htmlFor="product-name"
+                        className="font-body text-xs text-charcoal/60 block mb-1.5"
+                      >
+                        Name
+                      </label>
+                      <input
+                        id="product-name"
+                        type="text"
+                        name="name"
+                        value={form.name}
+                        onChange={handleChange}
+                        required
+                        aria-invalid={!!fieldErrors.name}
+                        aria-describedby={fieldErrors.name ? "name-error" : undefined}
+                        className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                          fieldErrors.name
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                            : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
+                        }`}
                       />
-                    )}
-                    <AnimatePresence>
-                      {imagePreviewUrl && (
-                        <motion.img
-                          key={imagePreviewUrl}
-                          src={imagePreviewUrl}
-                          alt="New image preview"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          className="w-16 h-16 rounded-lg object-cover"
-                        />
+                      {fieldErrors.name && (
+                        <p id="name-error" className="font-body text-xs text-red-600 mt-1">
+                          {fieldErrors.name}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="product-category"
+                        className="font-body text-xs text-charcoal/60 block mb-1.5"
+                      >
+                        Category
+                      </label>
+                      <select
+                        id="product-category"
+                        name="category"
+                        value={form.category}
+                        onChange={handleChange}
+                        className="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
+                      >
+                        <option>Leaf Tea</option>
+                        <option>Matcha</option>
+                        <option>Tea Accessories</option>
+                      </select>
+                    </div>
+
+                    <AnimatePresence initial={false}>
+                      {categoryTree[form.category as MainCategory] && (
+                        <motion.div
+                          key="subcategory"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div>
+                            <label
+                              htmlFor="product-subcategory"
+                              className="font-body text-xs text-charcoal/60 block mb-1.5"
+                            >
+                              Subcategory
+                            </label>
+                            <select
+                              id="product-subcategory"
+                              name="subCategory"
+                              value={form.subCategory}
+                              onChange={handleChange}
+                              required
+                              aria-invalid={!!fieldErrors.subCategory}
+                              className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                                fieldErrors.subCategory
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                  : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
+                              }`}
+                            >
+                              <option value="">Select subcategory...</option>
+                              {Object.keys(
+                                categoryTree[form.category as MainCategory],
+                              ).map((sub) => (
+                                <option key={sub} value={sub}>
+                                  {sub}
+                                </option>
+                              ))}
+                            </select>
+                            {fieldErrors.subCategory && (
+                              <p className="font-body text-xs text-red-600 mt-1">
+                                {fieldErrors.subCategory}
+                              </p>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <AnimatePresence initial={false}>
+                      {form.subCategory && (
+                        <motion.div
+                          key="type"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div>
+                            <label
+                              htmlFor="product-type"
+                              className="font-body text-xs text-charcoal/60 block mb-1.5"
+                            >
+                              Type
+                            </label>
+                            <select
+                              id="product-type"
+                              name="type"
+                              value={form.type}
+                              onChange={handleChange}
+                              required
+                              aria-invalid={!!fieldErrors.type}
+                              className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                                fieldErrors.type
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                  : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
+                              }`}
+                            >
+                              <option value="">Select type...</option>
+                              {(categoryTree[form.category as MainCategory] as any)[
+                                form.subCategory
+                              ].map((t: string) => (
+                                <option key={t} value={t}>
+                                  {t}
+                                </option>
+                              ))}
+                            </select>
+                            {fieldErrors.type && (
+                              <p className="font-body text-xs text-red-600 mt-1">
+                                {fieldErrors.type}
+                              </p>
+                            )}
+                          </div>
+                        </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
-                </div>
 
-                <div>
-                  <label
-                    htmlFor="product-description"
-                    className="font-body text-xs text-charcoal/60 block mb-1.5"
-                  >
-                    Description
-                  </label>
-                  <textarea
-                    id="product-description"
-                    name="description"
-                    value={form.description}
-                    onChange={handleChange}
-                    rows={3}
-                    required
-                    aria-invalid={!!fieldErrors.description}
-                    aria-describedby={
-                      fieldErrors.description ? "description-error" : undefined
-                    }
-                    className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
-                      fieldErrors.description
-                        ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                        : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
-                    }`}
-                  />
-                  {fieldErrors.description && (
-                    <p
-                      id="description-error"
-                      className="font-body text-xs text-red-600 mt-1"
-                    >
-                      {fieldErrors.description}
+                  {/* Pricing & Inventory */}
+                  <div className="space-y-4 pt-2 border-t border-charcoal/10">
+                    <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/40 font-semibold pt-4">
+                      Pricing &amp; Inventory
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          htmlFor="product-price"
+                          className="font-body text-xs text-charcoal/60 block mb-1.5"
+                        >
+                          Price (₱)
+                        </label>
+                        <input
+                          id="product-price"
+                          type="number"
+                          step="0.01"
+                          name="price"
+                          value={form.price}
+                          onChange={handleChange}
+                          required
+                          aria-invalid={!!fieldErrors.price}
+                          aria-describedby={fieldErrors.price ? "price-error" : undefined}
+                          className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                            fieldErrors.price
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                              : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
+                          }`}
+                        />
+                        {fieldErrors.price && (
+                          <p id="price-error" className="font-body text-xs text-red-600 mt-1">
+                            {fieldErrors.price}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="product-stock"
+                          className="font-body text-xs text-charcoal/60 block mb-1.5"
+                        >
+                          Stock Quantity
+                        </label>
+                        <input
+                          id="product-stock"
+                          type="number"
+                          step="1"
+                          min="0"
+                          name="stockQuantity"
+                          value={form.stockQuantity}
+                          onChange={handleChange}
+                          required
+                          aria-invalid={!!fieldErrors.stockQuantity}
+                          aria-describedby={
+                            fieldErrors.stockQuantity ? "stock-error" : undefined
+                          }
+                          className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                            fieldErrors.stockQuantity
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                              : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
+                          }`}
+                        />
+                        {fieldErrors.stockQuantity && (
+                          <p id="stock-error" className="font-body text-xs text-red-600 mt-1">
+                            {fieldErrors.stockQuantity}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <p className="font-body text-xs text-charcoal/40 -mt-2">
+                      Availability is automatically set based on stock quantity.
                     </p>
-                  )}
-                </div>
+                  </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className={`flex-1 font-body text-sm py-2.5 rounded-full transition-colors flex items-center justify-center gap-2 ${
-                      isSaving
-                        ? "bg-charcoal/60 text-cream cursor-not-allowed"
-                        : "bg-charcoal text-cream hover:bg-sage"
-                    }`}
-                  >
-                    {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {isSaving
-                      ? "Saving..."
-                      : editingId
-                        ? "Save Changes"
-                        : "Add Product"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setModalOpen(false)}
-                    disabled={isSaving}
-                    className={`flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-2.5 rounded-full transition-colors ${
-                      isSaving
-                        ? "opacity-50 cursor-not-allowed"
-                        : "hover:bg-sand/30"
-                    }`}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+                  {/* Media */}
+                  <div className="space-y-3 pt-2 border-t border-charcoal/10">
+                    <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/40 font-semibold pt-4">
+                      Media
+                    </h3>
+                    <div
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDraggingImage(true);
+                      }}
+                      onDragLeave={() => setIsDraggingImage(false)}
+                      onDrop={handleImageDrop}
+                      className={`rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
+                        isDraggingImage
+                          ? "border-sage bg-sage/5"
+                          : fieldErrors.image
+                            ? "border-red-400"
+                            : "border-charcoal/20 hover:border-sage/60"
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        {imagePreviewUrl || (form.image && !imageFile) ? (
+                          <img
+                            src={imagePreviewUrl || form.image}
+                            alt={imagePreviewUrl ? "New image preview" : "Current"}
+                            className="w-24 h-24 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-sand/60 flex items-center justify-center">
+                            <ImageIcon className="w-5 h-5 text-charcoal/40" />
+                          </div>
+                        )}
+
+                        <p className="font-body text-xs text-charcoal/60">
+                          {imageFile
+                            ? imageFile.name
+                            : "Drag an image here, or"}
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center gap-1.5 font-body text-xs text-charcoal underline hover:text-sage transition-colors"
+                        >
+                          <UploadCloud className="w-3.5 h-3.5" />
+                          {editingId && form.image ? "Replace image" : "Browse files"}
+                        </button>
+                      </div>
+
+                      <input
+                        ref={fileInputRef}
+                        id="product-image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                    </div>
+                    {fieldErrors.image && (
+                      <p className="font-body text-xs text-red-600">
+                        {fieldErrors.image}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-4 pt-2 border-t border-charcoal/10">
+                    <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/40 font-semibold pt-4">
+                      Description
+                    </h3>
+                    <div>
+                      <textarea
+                        id="product-description"
+                        name="description"
+                        value={form.description}
+                        onChange={handleChange}
+                        rows={4}
+                        required
+                        aria-invalid={!!fieldErrors.description}
+                        aria-describedby={
+                          fieldErrors.description ? "description-error" : undefined
+                        }
+                        className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                          fieldErrors.description
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                            : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
+                        }`}
+                      />
+                      {fieldErrors.description && (
+                        <p
+                          id="description-error"
+                          className="font-body text-xs text-red-600 mt-1"
+                        >
+                          {fieldErrors.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4 sticky bottom-0 bg-white pb-2">
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className={`flex-1 font-body text-sm py-2.5 rounded-full transition-colors flex items-center justify-center gap-2 ${
+                        isSaving
+                          ? "bg-charcoal/60 text-cream cursor-not-allowed"
+                          : "bg-charcoal text-cream hover:bg-sage"
+                      }`}
+                    >
+                      {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {isSaving
+                        ? "Saving..."
+                        : editingId
+                          ? "Save Changes"
+                          : "Add Product"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalOpen(false)}
+                      disabled={isSaving}
+                      className={`flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-2.5 rounded-full transition-colors ${
+                        isSaving
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-sand/30"
+                      }`}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       <ConfirmDialog
-        open={confirmDeleteId !== null}
-        title="Remove this product?"
-        confirmLabel="Remove"
+        {...confirmDialogProps}
         destructive
-        onConfirm={handleDelete}
-        onCancel={() => setConfirmDeleteId(null)}
+        onConfirm={handleConfirmedDelete}
+        onCancel={() => setConfirmTarget(null)}
       />
     </div>
   );
