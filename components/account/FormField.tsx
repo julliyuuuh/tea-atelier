@@ -15,11 +15,7 @@ type FormFieldProps = {
   maxLength?: number;
 };
 
-/**
- * Labeled text input with a subtle animated focus state (label + border
- * color ease into "focused" together) instead of the instant
- * transition-colors swap used before.
- */
+
 export default function FormField({
   label,
   value,

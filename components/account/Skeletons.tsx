@@ -1,9 +1,5 @@
 "use client";
 
-// Shared skeleton pieces — all built from the same rounded-xl / bg-sand/30
-// animate-pulse pattern that OrdersTab already used, so loading states look
-// identical across all three tabs.
-
 export function AddressSkeleton() {
   return (
     <div className="space-y-3">
