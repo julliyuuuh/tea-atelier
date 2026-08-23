@@ -184,6 +184,160 @@ function StatChip({
   );
 }
 
+type SelectOption = { value: string; label: string };
+
+/**
+ * Custom listbox that replaces native <select> for consistent styling —
+ * the browser renders a native <select>'s open dropdown itself, ignoring
+ * almost all CSS on it, so it can't be made to match the rest of the UI.
+ * This mirrors <select>'s behavior (single value, onChange(value)) via a
+ * styled button + listbox instead, with keyboard support via
+ * aria-activedescendant so DOM focus never leaves the trigger button.
+ */
+function CustomSelect({
+  id,
+  value,
+  onChange,
+  options,
+  placeholder = "Select...",
+  triggerClassName = "",
+  invalid = false,
+  disabled = false,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  placeholder?: string;
+  triggerClassName?: string;
+  invalid?: boolean;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const selectedIndex = options.findIndex((o) => o.value === value);
+  const selectedOption = selectedIndex >= 0 ? options[selectedIndex] : null;
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const openList = () => {
+    if (disabled) return;
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    setOpen(true);
+  };
+
+  const commit = (index: number) => {
+    const opt = options[index];
+    if (opt) onChange(opt.value);
+    setOpen(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (disabled) return;
+    if (!open) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openList();
+      }
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, options.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      commit(activeIndex);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+    } else if (e.key === "Tab") {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        id={id}
+        disabled={disabled}
+        onClick={() => (open ? setOpen(false) : openList())}
+        onKeyDown={handleKeyDown}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-invalid={invalid}
+        aria-activedescendant={
+          open && activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined
+        }
+        className={`flex items-center justify-between gap-2 bg-white text-left disabled:opacity-50 disabled:cursor-not-allowed ${triggerClassName}`}
+      >
+        <span className={`truncate ${!selectedOption ? "text-charcoal/40" : ""}`}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.15 }}
+          className="shrink-0"
+        >
+          <ChevronDown className="w-4 h-4 text-charcoal/40" />
+        </motion.span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="listbox"
+            id={`${id}-listbox`}
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.12 }}
+            className="absolute z-20 mt-1.5 min-w-full w-max max-w-xs max-h-64 overflow-y-auto bg-white border border-charcoal/10 rounded-xl shadow-lg py-1"
+          >
+            {options.map((opt, index) => {
+              const isSelected = opt.value === value;
+              const isActive = index === activeIndex;
+              return (
+                <div
+                  key={opt.value}
+                  id={`${id}-option-${index}`}
+                  role="option"
+                  aria-selected={isSelected}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onClick={() => commit(index)}
+                  className={`px-3.5 py-2 mx-1 rounded-lg font-body text-sm cursor-pointer truncate ${
+                    isSelected
+                      ? "bg-sage/20 text-charcoal font-medium"
+                      : isActive
+                        ? "bg-sand/50 text-charcoal"
+                        : "text-charcoal/80"
+                  }`}
+                >
+                  {opt.label}
+                </div>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function AdminProductsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -464,6 +618,27 @@ export default function AdminProductsPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Mirror handleChange's behavior for the three CustomSelect-driven fields,
+  // since they report a plain value rather than a change event.
+  const handleCategorySelect = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      category: value as Product["category"],
+      subCategory: "",
+      type: "",
+    }));
+  };
+
+  const handleSubCategorySelect = (value: string) => {
+    setFieldErrors((prev) => ({ ...prev, subCategory: undefined }));
+    setForm((prev) => ({ ...prev, subCategory: value, type: "" }));
+  };
+
+  const handleTypeSelect = (value: string) => {
+    setFieldErrors((prev) => ({ ...prev, type: undefined }));
+    setForm((prev) => ({ ...prev, type: value }));
+  };
+
   const applyImageFile = (file: File | null) => {
     setImageFile(file);
     setFieldErrors((prev) => ({ ...prev, image: undefined }));
@@ -674,35 +849,37 @@ export default function AdminProductsPage() {
           className="flex-1 min-w-[200px] max-w-sm border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
         />
 
-        <select
+        <CustomSelect
+          id="filter-category"
           value={filterCategory}
-          onChange={(e) => {
-            setFilterCategory(e.target.value as MainCategory | "All");
+          onChange={(value) => {
+            setFilterCategory(value as MainCategory | "All");
             setFilterSubCategory("All");
           }}
-          className="border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
-        >
-          <option value="All">All Categories</option>
-          {(Object.keys(categoryTree) as MainCategory[]).map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "All", label: "All Categories" },
+            ...(Object.keys(categoryTree) as MainCategory[]).map((cat) => ({
+              value: cat,
+              label: cat,
+            })),
+          ]}
+          triggerClassName="min-w-[170px] border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
+        />
 
         {filterCategory !== "All" && categoryTree[filterCategory] && (
-          <select
+          <CustomSelect
+            id="filter-subcategory"
             value={filterSubCategory}
-            onChange={(e) => setFilterSubCategory(e.target.value)}
-            className="border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
-          >
-            <option value="All">All Subcategories</option>
-            {Object.keys(categoryTree[filterCategory]).map((sub) => (
-              <option key={sub} value={sub}>
-                {sub}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setFilterSubCategory(value)}
+            options={[
+              { value: "All", label: "All Subcategories" },
+              ...Object.keys(categoryTree[filterCategory]).map((sub) => ({
+                value: sub,
+                label: sub,
+              })),
+            ]}
+            triggerClassName="min-w-[170px] border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
+          />
         )}
 
         <AnimatePresence>
@@ -1153,17 +1330,17 @@ export default function AdminProductsPage() {
                       >
                         Category
                       </label>
-                      <select
+                      <CustomSelect
                         id="product-category"
-                        name="category"
                         value={form.category}
-                        onChange={handleChange}
-                        className="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
-                      >
-                        <option>Leaf Tea</option>
-                        <option>Matcha</option>
-                        <option>Tea Accessories</option>
-                      </select>
+                        onChange={handleCategorySelect}
+                        options={[
+                          { value: "Leaf Tea", label: "Leaf Tea" },
+                          { value: "Matcha", label: "Matcha" },
+                          { value: "Tea Accessories", label: "Tea Accessories" },
+                        ]}
+                        triggerClassName="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
+                      />
                     </div>
 
                     <AnimatePresence initial={false}>
@@ -1183,28 +1360,21 @@ export default function AdminProductsPage() {
                             >
                               Subcategory
                             </label>
-                            <select
+                            <CustomSelect
                               id="product-subcategory"
-                              name="subCategory"
                               value={form.subCategory}
-                              onChange={handleChange}
-                              required
-                              aria-invalid={!!fieldErrors.subCategory}
-                              className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                              onChange={handleSubCategorySelect}
+                              placeholder="Select subcategory..."
+                              invalid={!!fieldErrors.subCategory}
+                              options={Object.keys(
+                                categoryTree[form.category as MainCategory],
+                              ).map((sub) => ({ value: sub, label: sub }))}
+                              triggerClassName={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                                 fieldErrors.subCategory
                                   ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                   : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
                               }`}
-                            >
-                              <option value="">Select subcategory...</option>
-                              {Object.keys(
-                                categoryTree[form.category as MainCategory],
-                              ).map((sub) => (
-                                <option key={sub} value={sub}>
-                                  {sub}
-                                </option>
-                              ))}
-                            </select>
+                            />
                             {fieldErrors.subCategory && (
                               <p className="font-body text-xs text-red-600 mt-1">
                                 {fieldErrors.subCategory}
@@ -1232,28 +1402,23 @@ export default function AdminProductsPage() {
                             >
                               Type
                             </label>
-                            <select
+                            <CustomSelect
                               id="product-type"
-                              name="type"
                               value={form.type}
-                              onChange={handleChange}
-                              required
-                              aria-invalid={!!fieldErrors.type}
-                              className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                              onChange={handleTypeSelect}
+                              placeholder="Select type..."
+                              invalid={!!fieldErrors.type}
+                              options={(
+                                (categoryTree[form.category as MainCategory] as any)[
+                                  form.subCategory
+                                ] as string[]
+                              ).map((t) => ({ value: t, label: t }))}
+                              triggerClassName={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                                 fieldErrors.type
                                   ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                   : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
                               }`}
-                            >
-                              <option value="">Select type...</option>
-                              {(categoryTree[form.category as MainCategory] as any)[
-                                form.subCategory
-                              ].map((t: string) => (
-                                <option key={t} value={t}>
-                                  {t}
-                                </option>
-                              ))}
-                            </select>
+                            />
                             {fieldErrors.type && (
                               <p className="font-body text-xs text-red-600 mt-1">
                                 {fieldErrors.type}
