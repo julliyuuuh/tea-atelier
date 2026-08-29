@@ -6,7 +6,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import StockErrorModal from "@/components/StockErrorModal";
 import AddedToCartModal from "@/components/AddedToCartModal";
 import Script from "next/script";
-
+import { WishlistProvider } from "@/lib/wishlist-context";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -34,12 +34,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${fraunces.variable} ${inter.variable} antialiased`}>
-        <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="afterInteractive"
+        />
         <AuthProvider>
           <CartProvider>
-            {children}
-            <StockErrorModal />
-            <AddedToCartModal />
+            <WishlistProvider>
+              {children}
+              <StockErrorModal />
+              <AddedToCartModal />
+            </WishlistProvider>
           </CartProvider>
         </AuthProvider>
       </body>

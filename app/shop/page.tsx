@@ -9,6 +9,8 @@ import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import type { Product } from "@/lib/products";
 import { categoryTree, type MainCategory } from "@/lib/categories";
+import { Heart } from "lucide-react";
+import { useWishlist } from "@/lib/wishlist-context";
 
 type SortOption = "Newest" | "Price: Low to High" | "Price: High to Low";
 
@@ -31,6 +33,7 @@ const collectionsTeaser = [
 ];
 
 export default function ShopPage() {
+  const { toggleWishlist, isWishlisted } = useWishlist();
   const [expandedCategory, setExpandedCategory] = useState<MainCategory | null>(
     null,
   );
@@ -309,6 +312,23 @@ export default function ShopPage() {
                     <span className="absolute top-3 left-3 bg-cream/90 rounded-full px-2.5 py-1 font-body text-[9px] tracking-[0.1em] uppercase text-charcoal">
                       {product.category}
                     </span>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleWishlist(product);
+                      }}
+                      className="absolute top-3 right-3 w-8 h-8 rounded-full bg-cream/90 flex items-center justify-center hover:bg-cream transition-colors"
+                      aria-label="Toggle wishlist"
+                    >
+                      <Heart
+                        size={15}
+                        className={
+                          isWishlisted(product.id)
+                            ? "fill-red-500 text-red-500"
+                            : "text-charcoal/60"
+                        }
+                      />
+                    </button>
                   </div>
 
                   <div className="px-1">

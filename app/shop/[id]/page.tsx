@@ -8,6 +8,8 @@ import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
 import type { Product } from "@/lib/products";
 import Link from "next/link";
+import { Heart } from "lucide-react";
+import { useWishlist } from "@/lib/wishlist-context";
 
 export default function ProductDetailsPage() {
   const { id } = useParams();
@@ -16,6 +18,7 @@ export default function ProductDetailsPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
+  const { toggleWishlist, isWishlisted } = useWishlist();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -139,6 +142,20 @@ export default function ProductDetailsPage() {
               className="flex-1 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
             >
               Add to Cart
+            </button>
+            <button
+              onClick={() => toggleWishlist(product)}
+              className="w-14 h-14 rounded-full border border-charcoal/20 flex items-center justify-center hover:border-red-400 transition-colors shrink-0"
+              aria-label="Toggle wishlist"
+            >
+              <Heart
+                size={18}
+                className={
+                  isWishlisted(product.id)
+                    ? "fill-red-500 text-red-500"
+                    : "text-charcoal/60"
+                }
+              />
             </button>
           </div>
         </motion.div>
