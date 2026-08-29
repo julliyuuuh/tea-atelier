@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, ShoppingBag, Settings, LogOut } from "lucide-react";
+import { User, ShoppingBag, Settings, LogOut, Heart } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import ConfirmDialog from "@/components/account/ConfirmDialog";
+import { useWishlist } from "@/lib/wishlist-context";
 
 const links = [
   { label: "Home", href: "/" },
@@ -24,6 +25,7 @@ export default function Navbar() {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const { totalItems } = useCart();
+  const { items: wishlistItems } = useWishlist();
   const { user, logout } = useAuth();
   const router = useRouter();
 
@@ -152,6 +154,19 @@ export default function Navbar() {
             )}
 
             <Link
+              href="/wishlist"
+              className="relative w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors"
+              aria-label="Wishlist"
+            >
+              <Heart size={18} strokeWidth={1.5} />
+              {wishlistItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                  {wishlistItems.length}
+                </span>
+              )}
+            </Link>
+
+            <Link
               href="/cart"
               className="relative w-9 h-9 flex items-center justify-center rounded-full bg-sage text-cream hover:bg-charcoal transition-colors"
               aria-label="Cart"
@@ -263,6 +278,17 @@ export default function Navbar() {
                     </Link>
                   )}
                 </li>
+                <li>
+                  <Link
+                    href="/wishlist"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 font-body text-sm text-charcoal/80"
+                  >
+                    <Heart size={16} strokeWidth={1.5} /> Wishlist (
+                    {wishlistItems.length})
+                  </Link>
+                </li>
+                <li></li>
                 <li>
                   <Link
                     href="/cart"
