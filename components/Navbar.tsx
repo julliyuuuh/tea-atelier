@@ -9,6 +9,7 @@ import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import ConfirmDialog from "@/components/account/ConfirmDialog";
 import { useWishlist } from "@/lib/wishlist-context";
+import { usePathname } from "next/navigation";
 
 const links = [
   { label: "Home", href: "/" },
@@ -19,6 +20,7 @@ const links = [
 ];
 
 export default function Navbar() {
+  const pathname = usePathname();
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -28,6 +30,7 @@ export default function Navbar() {
   const { items: wishlistItems } = useWishlist();
   const { user, logout } = useAuth();
   const router = useRouter();
+  const showWishlist = Boolean(user) && pathname !== "/";
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -153,18 +156,20 @@ export default function Navbar() {
               </Link>
             )}
 
-            <Link
-              href="/wishlist"
-              className="relative w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors"
-              aria-label="Wishlist"
-            >
-              <Heart size={18} strokeWidth={1.5} />
-              {wishlistItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-                  {wishlistItems.length}
-                </span>
-              )}
-            </Link>
+            {showWishlist && (
+              <Link
+                href="/wishlist"
+                className="relative w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors"
+                aria-label="Wishlist"
+              >
+                <Heart size={18} strokeWidth={1.5} />
+                {wishlistItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                    {wishlistItems.length}
+                  </span>
+                )}
+              </Link>
+            )}
 
             <Link
               href="/cart"
@@ -278,17 +283,18 @@ export default function Navbar() {
                     </Link>
                   )}
                 </li>
-                <li>
-                  <Link
-                    href="/wishlist"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2 font-body text-sm text-charcoal/80"
-                  >
-                    <Heart size={16} strokeWidth={1.5} /> Wishlist (
-                    {wishlistItems.length})
-                  </Link>
-                </li>
-                <li></li>
+                {showWishlist && (
+                  <li>
+                    <Link
+                      href="/wishlist"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 font-body text-sm text-charcoal/80"
+                    >
+                      <Heart size={16} strokeWidth={1.5} /> Wishlist (
+                      {wishlistItems.length})
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <Link
                     href="/cart"
