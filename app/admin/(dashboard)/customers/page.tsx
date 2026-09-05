@@ -189,7 +189,7 @@ export default function AdminCustomersPage() {
         <div role="rowgroup">
           <div
             role="row"
-            className="grid border-b border-charcoal/10"
+            className="grid items-center border-b border-charcoal/10"
             style={{ gridTemplateColumns: GRID_COLS }}
           >
             <SortHeader label="Customer" sortKeyName="name" sortConfig={sortConfig} onSort={handleSort} />

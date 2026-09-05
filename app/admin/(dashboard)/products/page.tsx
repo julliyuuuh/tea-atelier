@@ -666,7 +666,7 @@ export default function AdminProductsPage() {
         <div role="rowgroup">
           <div
             role="row"
-            className="grid border-b border-charcoal/10"
+            className="grid items-center border-b border-charcoal/10"
             style={{ gridTemplateColumns: GRID_COLS }}
           >
             <div role="columnheader" className="px-5 py-3 flex items-center">

@@ -242,7 +242,7 @@ export default function AdminOrdersPage() {
         <div role="rowgroup">
           <div
             role="row"
-            className="grid border-b border-charcoal/10"
+            className="grid items-center border-b border-charcoal/10"
             style={{ gridTemplateColumns: GRID_COLS }}
           >
             <SortHeader label="Order" sortKeyName="id" sortConfig={sortConfig} onSort={handleSort} />
