@@ -321,6 +321,32 @@ export function CustomSelect({
   );
 }
 
+/** Non-sortable column header. Mirrors SortHeader's exact box model (same
+ * padding/margin) so both sit on the same line, but shows its background
+ * only on hover instead of an active-sort pill, since it isn't clickable. */
+export function PlainHeader({
+  label,
+  align = "left",
+}: {
+  label: string;
+  align?: "left" | "right";
+}) {
+  return (
+    <div
+      role="columnheader"
+      className={`px-5 py-3 ${align === "right" ? "text-right" : ""}`}
+    >
+      <span
+        className={`inline-flex items-center gap-1 font-body text-xs uppercase tracking-wide px-2 py-1 -mx-2 -my-1 rounded-md text-charcoal/50 hover:bg-sand/50 transition-colors ${
+          align === "right" ? "flex-row-reverse" : ""
+        }`}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
 /** Framer Motion variants for animated table rows (fade/slide in, collapse on exit). */
 export const rowVariants = {
   initial: { opacity: 0, y: 8 },

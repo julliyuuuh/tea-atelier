@@ -8,6 +8,7 @@ import {
   ErrorBanner,
   StatChip,
   SortHeader,
+  PlainHeader,
   CustomSelect,
   rowVariants,
   type SortConfig,
@@ -246,12 +247,7 @@ export default function AdminOrdersPage() {
             style={{ gridTemplateColumns: GRID_COLS }}
           >
             <SortHeader label="Order" sortKeyName="id" sortConfig={sortConfig} onSort={handleSort} />
-            <div
-              role="columnheader"
-              className="font-body text-xs uppercase tracking-wide text-charcoal/50 px-5 py-3"
-            >
-              Customer
-            </div>
+            <PlainHeader label="Customer" />
             <SortHeader
               label="Items"
               sortKeyName="itemCount"
@@ -272,12 +268,7 @@ export default function AdminOrdersPage() {
               sortConfig={sortConfig}
               onSort={handleSort}
             />
-            <div
-              role="columnheader"
-              className="font-body text-xs uppercase tracking-wide text-charcoal/50 px-5 py-3"
-            >
-              Status
-            </div>
+            <PlainHeader label="Status" />
           </div>
         </div>
 

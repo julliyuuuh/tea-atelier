@@ -19,6 +19,7 @@ import {
   ErrorBanner,
   StatChip,
   SortHeader,
+  PlainHeader,
   CustomSelect,
   rowVariants,
   type SortConfig,
@@ -685,12 +686,7 @@ export default function AdminProductsPage() {
               sortConfig={sortConfig}
               onSort={handleSort}
             />
-            <div
-              role="columnheader"
-              className="font-body text-xs uppercase tracking-wide text-charcoal/50 px-5 py-3"
-            >
-              Category
-            </div>
+            <PlainHeader label="Category" />
             <SortHeader
               label="Price"
               sortKeyName="price"
@@ -705,18 +701,8 @@ export default function AdminProductsPage() {
               onSort={handleSort}
               align="right"
             />
-            <div
-              role="columnheader"
-              className="font-body text-xs uppercase tracking-wide text-charcoal/50 px-5 py-3"
-            >
-              Availability
-            </div>
-            <div
-              role="columnheader"
-              className="font-body text-xs uppercase tracking-wide text-charcoal/50 px-5 py-3 text-right"
-            >
-              Actions
-            </div>
+            <PlainHeader label="Availability" />
+            <PlainHeader label="Actions" align="right" />
           </div>
         </div>
 
