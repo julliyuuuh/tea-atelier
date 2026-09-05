@@ -578,7 +578,7 @@ export default function AdminProductsPage() {
               label: cat,
             })),
           ]}
-          triggerClassName="min-w-[170px] border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
+          triggerClassName="min-w-[170px] bg-white border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
         />
 
         {filterCategory !== "All" && categoryTree[filterCategory] && (
@@ -593,7 +593,7 @@ export default function AdminProductsPage() {
                 label: sub,
               })),
             ]}
-            triggerClassName="min-w-[170px] border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
+            triggerClassName="min-w-[170px] bg-white border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
           />
         )}
 
@@ -1054,7 +1054,7 @@ export default function AdminProductsPage() {
                           { value: "Matcha", label: "Matcha" },
                           { value: "Tea Accessories", label: "Tea Accessories" },
                         ]}
-                        triggerClassName="w-full rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
+                        triggerClassName="w-full bg-white rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
                       />
                     </div>
 
@@ -1084,7 +1084,7 @@ export default function AdminProductsPage() {
                               options={Object.keys(
                                 categoryTree[form.category as MainCategory],
                               ).map((sub) => ({ value: sub, label: sub }))}
-                              triggerClassName={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                              triggerClassName={`w-full bg-white rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                                 fieldErrors.subCategory
                                   ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                   : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
@@ -1128,7 +1128,7 @@ export default function AdminProductsPage() {
                                   form.subCategory
                                 ] as string[]
                               ).map((t) => ({ value: t, label: t }))}
-                              triggerClassName={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                              triggerClassName={`w-full bg-white rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                                 fieldErrors.type
                                   ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                   : "border-charcoal/20 focus:border-sage focus:ring-sage/20"

@@ -161,7 +161,7 @@ export default function AdminCustomersPage() {
           value={filterVerified}
           onChange={setFilterVerified}
           options={VERIFIED_OPTIONS}
-          triggerClassName="min-w-[170px] border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
+          triggerClassName="min-w-[170px] bg-white border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
         />
 
         <AnimatePresence>

@@ -114,7 +114,7 @@ export function SortHeader<K extends string>({
       <button
         type="button"
         onClick={() => onSort(sortKeyName)}
-        className={`inline-flex items-center gap-1 font-body text-xs uppercase tracking-wide px-2 py-1 -mx-2 rounded-md transition-colors ${
+        className={`inline-flex items-center gap-1 font-body text-xs uppercase tracking-wide px-2 py-1 -mx-2 -my-1 rounded-md transition-colors ${
           align === "right" ? "flex-row-reverse" : ""
         } ${
           isActive
@@ -136,6 +136,14 @@ export function SortHeader<K extends string>({
 
 export type SelectOption = { value: string; label: string };
 
+/**
+ * Custom listbox that replaces native <select> for consistent styling —
+ * the browser renders a native <select>'s open dropdown itself, ignoring
+ * almost all CSS on it, so it can't be made to match the rest of the UI.
+ * This mirrors <select>'s behavior (single value, onChange(value)) via a
+ * styled button + listbox instead, with keyboard support via
+ * aria-activedescendant so DOM focus never leaves the trigger button.
+ */
 export function CustomSelect({
   id,
   value,
@@ -248,7 +256,7 @@ export function CustomSelect({
         aria-activedescendant={
           open && activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined
         }
-        className={`flex items-center justify-between gap-2 bg-white text-left disabled:opacity-50 disabled:cursor-not-allowed ${triggerClassName}`}
+        className={`flex items-center justify-between gap-2 text-left disabled:opacity-50 disabled:cursor-not-allowed ${triggerClassName}`}
       >
         <span className={`truncate ${!selectedOption ? "text-charcoal/40" : ""}`}>
           {selectedOption ? selectedOption.label : placeholder}
@@ -258,7 +266,7 @@ export function CustomSelect({
           transition={{ duration: 0.15 }}
           className="shrink-0"
         >
-          <ChevronDown className="w-4 h-4 text-charcoal/40" />
+          <ChevronDown className="w-4 h-4 opacity-60" />
         </motion.span>
       </button>
 

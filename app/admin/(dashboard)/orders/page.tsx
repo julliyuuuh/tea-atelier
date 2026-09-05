@@ -34,6 +34,10 @@ const STATUS_OPTIONS = [
   { value: "CANCELLED", label: "Cancelled" },
 ];
 
+// Same statuses, without "All" — used for the per-row status picker where
+// there's always exactly one current status, never "all of them".
+const ROW_STATUS_OPTIONS = STATUS_OPTIONS.filter((o) => o.value !== "All");
+
 // Shared column layout so the header, skeleton rows, and data rows always line up.
 const GRID_COLS =
   "minmax(90px,0.7fr) minmax(200px,2fr) minmax(70px,0.6fr) minmax(100px,0.9fr) minmax(110px,0.9fr) minmax(150px,1.1fr)";
@@ -210,7 +214,7 @@ export default function AdminOrdersPage() {
           value={filterStatus}
           onChange={setFilterStatus}
           options={STATUS_OPTIONS}
-          triggerClassName="min-w-[170px] border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
+          triggerClassName="min-w-[170px] bg-white border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
         />
 
         <AnimatePresence>
@@ -358,17 +362,14 @@ export default function AdminOrdersPage() {
                       </span>
                     </div>
                     <div role="cell" className="px-5">
-                      <select
+                      <CustomSelect
+                        id={`order-status-${order.id}`}
                         value={order.status}
+                        onChange={(value) => handleStatusChange(order.id, value)}
+                        options={ROW_STATUS_OPTIONS}
                         disabled={updatingId === order.id}
-                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                        className={`font-body text-xs px-3 py-1.5 rounded-full border-0 focus:outline-none focus:ring-1 focus:ring-sage disabled:opacity-50 transition-colors ${badge.bg} ${badge.text}`}
-                      >
-                        <option value="PENDING">Pending</option>
-                        <option value="SHIPPED">Shipped</option>
-                        <option value="DELIVERED">Delivered</option>
-                        <option value="CANCELLED">Cancelled</option>
-                      </select>
+                        triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${badge.bg} ${badge.text}`}
+                      />
                     </div>
                   </motion.div>
                 );
