@@ -20,6 +20,41 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(6).fill(""));
+
+  const handleOtpChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const next = [...otpDigits];
+    next[index] = digit;
+    setOtpDigits(next);
+    setTotpCode(next.join(""));
+
+    if (digit && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const next = Array(6).fill("");
+    pasted.split("").forEach((d, i) => (next[i] = d));
+    setOtpDigits(next);
+    setTotpCode(pasted);
+    otpRefs.current[Math.min(pasted.length, 5)]?.focus();
+  };
+
   useEffect(() => {
     if (!authLoading && user && user.role !== "admin") {
       window.location.href = redirectTo || "/";
@@ -175,17 +210,25 @@ function LoginForm() {
 
           {needsTotp ? (
             <form onSubmit={handleSubmit} className="space-y-5">
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                required
-                autoFocus
-                value={totpCode}
-                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
-                placeholder="000000"
-                className="w-full rounded-xl text-center tracking-[0.3em] border border-charcoal/20 bg-white px-4 py-3 font-body text-lg text-charcoal focus:outline-none focus:border-sage transition-colors"
-              />
+              <div className="flex justify-center gap-2">
+                {otpDigits.map((digit, i) => (
+                  <input
+                    key={i}
+                    ref={(el) => {
+                      otpRefs.current[i] = el;
+                    }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    autoFocus={i === 0}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                    onPaste={i === 0 ? handleOtpPaste : undefined}
+                    className="w-12 h-14 rounded-xl text-center border border-charcoal/20 bg-white font-body text-xl text-charcoal focus:outline-none focus:border-sage transition-colors"
+                  />
+                ))}
+              </div>
               <button
                 type="submit"
                 disabled={isLoading || totpCode.length !== 6}
@@ -198,6 +241,7 @@ function LoginForm() {
                 onClick={() => {
                   setNeedsTotp(false);
                   setTotpCode("");
+                  setOtpDigits(Array(6).fill(""));
                   setErrorMessage("");
                 }}
                 className="w-full font-body text-xs text-charcoal/50 hover:text-charcoal transition-colors"
