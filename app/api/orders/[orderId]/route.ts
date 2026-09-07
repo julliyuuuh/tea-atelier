@@ -12,10 +12,10 @@ export async function GET(
   const { orderId } = await params;
 
   const orderResult = await pool.query(
-    `SELECT order_id, user_id, shipping_cost, total_amount, order_status,
+    `SELECT order_id, user_id, shipping_cost, total_amount, order_status, payment_status,
             created_at, payment_method, contact_phone, recipient_name
-     FROM orders
-     WHERE order_id = $1`,
+    FROM orders
+    WHERE order_id = $1`,
     [orderId]
   );
 
@@ -44,6 +44,7 @@ export async function GET(
     orderId: order.order_id,
     recipientName: order.recipient_name,
     orderStatus: order.order_status,
+    paymentStatus: order.payment_status,
     paymentMethod: order.payment_method,
     createdAt: order.created_at,
     subtotal,

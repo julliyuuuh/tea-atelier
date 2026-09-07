@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Product } from "./products";
 import { useAuth } from "./auth-context";
@@ -44,7 +44,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (authLoading) return; // wait for auth to resolve first
 
     if (!user) {
-      setItems([]); // logged out (or never logged in) — no persisted cart
+      setItems([]); // logged out (or never logged in), no persisted cart
       setLoading(false);
       return;
     }
@@ -57,10 +57,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, [user, authLoading]);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setItems([]);
     fetch("/api/cart", { method: "DELETE", headers: authHeaders() }).catch(() => {});
-  };
+  }, []);
 
   const addToCart = async (product: Product, quantity: number = 1) => {
     if (!user) {

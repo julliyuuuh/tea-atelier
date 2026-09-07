@@ -118,11 +118,12 @@ export async function POST(req: Request) {
     // Create the order
     const orderResult = await client.query(
       `INSERT INTO orders (user_id, address_id, shipping_cost, total_amount, order_status, payment_method, contact_phone, recipient_name)
-       VALUES ($1, $2, $3, $4, 'PENDING', $5, $6, $7)
-       RETURNING order_id`,
+      VALUES ($1, $2, $3, $4, 'PENDING', $5, $6, $7)
+      RETURNING order_id, payment_status`,
       [userId, addressId, shippingCost, totalAmount, paymentMethod || "cod", phone || null, fullName || null]
     );
     const orderId = orderResult.rows[0].order_id;
+    const paymentStatus = orderResult.rows[0].payment_status;
 
     // Create order_items and decrement stock for each cart item
     for (const item of cartResult.rows) {
@@ -145,6 +146,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       orderId,
+      paymentStatus,
       subtotal: subtotal.toFixed(2),
       deliveryFee: shippingCost.toFixed(2),
       total: totalAmount.toFixed(2),

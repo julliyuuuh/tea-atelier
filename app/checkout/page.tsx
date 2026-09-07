@@ -61,30 +61,29 @@ export default function CheckoutPage() {
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          street: formData.street,
-          city: formData.city,
-          province: formData.province,
-          deliveryFee,
-          paymentMethod,
-          phone: formData.phone,
-          fullName: formData.fullName,
+          street: formData.street, city: formData.city, province: formData.province,
+          deliveryFee, paymentMethod, phone: formData.phone, fullName: formData.fullName,
         }),
       });
-
       const data = await res.json();
+      if (!res.ok) { alert(data.error || "Unable to place order."); return; }
 
-      if (!res.ok) {
-        alert(data.error || "Unable to place order.");
-        return;
+      if (paymentMethod === "cod") {
+        clearCart();
+        router.push(`/order-confirmation?orderId=${data.orderId}`);
+      } else {
+        const src = await fetch("/api/payments/paymongo/source", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ orderId: data.orderId, amount: data.total, type: paymentMethod }),
+        });
+        const srcData = await src.json();
+        if (!src.ok) { alert(srcData.error || "Payment initiation failed."); return; }
+        // don't clearCart() yet, only after payment is confirmed
+        window.location.href = srcData.checkoutUrl;
       }
-
-      clearCart();
-      router.push(`/order-confirmation?orderId=${data.orderId}`);
     } catch {
       alert("Something went wrong. Please try again.");
     }
@@ -227,6 +226,20 @@ export default function CheckoutPage() {
                   <span className="font-body text-sm text-charcoal">
                     Cash on Delivery
                   </span>
+                </label>
+                <label className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer">
+                  <input type="radio" name="payment" value="gcash"
+                    checked={paymentMethod === "gcash"}
+                    onChange={() => setPaymentMethod("gcash")}
+                    className="accent-sage" />
+                  <span className="font-body text-sm text-charcoal">GCash</span>
+                </label>
+                <label className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer">
+                  <input type="radio" name="payment" value="paymaya"
+                    checked={paymentMethod === "paymaya"}
+                    onChange={() => setPaymentMethod("paymaya")}
+                    className="accent-sage" />
+                  <span className="font-body text-sm text-charcoal">Maya</span>
                 </label>
               </div>
             </div>
