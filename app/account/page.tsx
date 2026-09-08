@@ -495,7 +495,7 @@ function ProfileTab() {
         <h2 className="font-display text-xl text-charcoal mb-6">Account Information</h2>
 
         <form onSubmit={handleSaveProfile} className="space-y-5">
-          <div className="flex gap-6 items-start">
+          <div className="flex gap-6 items-center">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -507,11 +507,11 @@ function ProfileTab() {
                 <img
                   src={avatarUrl}
                   alt="Profile picture"
-                  className="w-20 h-20 rounded-full object-cover border border-charcoal/10 transition-opacity group-hover:opacity-80"
+                  className="w-36 h-36 rounded-full object-cover border border-charcoal/10 transition-opacity group-hover:opacity-80"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-sand/50 border border-charcoal/10 flex items-center justify-center transition-colors group-hover:bg-sand/70">
-                  <User size={28} className="text-charcoal/30" strokeWidth={1.5} />
+                <div className="w-36 h-36 rounded-full bg-sand/50 border border-charcoal/10 flex items-center justify-center transition-colors group-hover:bg-sand/70">
+                  <User size={44} className="text-charcoal/30" strokeWidth={1.5} />
                 </div>
               )}
 
