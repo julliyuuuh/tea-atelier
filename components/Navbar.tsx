@@ -134,6 +134,13 @@ export default function Navbar() {
                       transition={{ duration: 0.15 }}
                       className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
                     >
+                      <Link
+                        href="/account"
+                        onClick={() => setAccountMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                      >
+                        <Settings size={16} strokeWidth={1.5} /> Account
+                      </Link>
                       {showWishlist && (
                         <Link
                           href="/wishlist"
@@ -148,13 +155,6 @@ export default function Navbar() {
                           )}
                         </Link>
                       )}
-                      <Link
-                        href="/account"
-                        onClick={() => setAccountMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                      >
-                        <Settings size={16} strokeWidth={1.5} /> Account
-                      </Link>
                       <button
                         onClick={() => {
                           setShowLogoutConfirm(true);
