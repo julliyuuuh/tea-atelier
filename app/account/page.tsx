@@ -14,7 +14,7 @@ import {
   OrderSkeleton,
   SecurityPanelSkeleton,
 } from "@/components/account/Skeletons";
-import { Plus, Trash2, MapPin, Package } from "lucide-react";
+import { Plus, Trash2, MapPin, Package, User, Loader2 } from "lucide-react";
 
 type TabKey = "profile" | "orders" | "settings";
 
@@ -148,7 +148,7 @@ function AccountPageInner() {
             `activeTab` state rather than mounting/unmounting via
             AnimatePresence, since unmounting Orders/Settings would force
             a refetch the next time they're selected. */}
-        <div className="relative bg-white border border-charcoal/10 rounded-2xl p-8 min-h-[420px] grid overflow-hidden">
+        <div className="relative bg-cream border border-charcoal/10 rounded-2xl p-8 min-h-[420px] grid overflow-hidden">
           <motion.div
             id="account-panel-profile"
             role="tabpanel"
@@ -277,12 +277,19 @@ function ProfileTab() {
   });
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
+  // Profile picture
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   useEffect(() => {
     if (user) {
       setFirstName(user.firstName || "");
       setLastName(user.lastName || "");
       setEmail(user.email || "");
       setPhone(user.phone || "");
+      setAvatarUrl(user.avatarUrl || null);
       setLastSaved({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
@@ -341,6 +348,95 @@ function ProfileTab() {
     }
   };
 
+  // Uploads through the server (same pattern as product images):
+  // the file goes to /api/user/avatar-upload, which signs and streams
+  // it to Cloudinary via the shared server-side client, and hands back
+  // a secure_url. That URL is then saved via PATCH /api/user.
+  const uploadAvatarFile = async (file: File, token: string | null): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/api/user/avatar-upload", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Unable to upload photo.");
+
+    return data.url as string;
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+
+    setAvatarError(null);
+
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError("Image must be under 5MB.");
+      return;
+    }
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      setAvatarError("Only JPG or PNG images are supported.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const token = localStorage.getItem("token");
+
+    try {
+      const uploadedUrl = await uploadAvatarFile(file, token);
+
+      const res = await fetch("/api/user", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ avatarUrl: uploadedUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to save photo.");
+
+      setAvatarUrl(data.user.avatarUrl);
+      updateUser({ avatarUrl: data.user.avatarUrl });
+    } catch (error) {
+      setAvatarError(error instanceof Error ? error.message : "Something went wrong, try again.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setAvatarError(null);
+    setUploadingAvatar(true);
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch("/api/user", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ avatarUrl: null }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Unable to remove photo.");
+      }
+
+      setAvatarUrl(null);
+      updateUser({ avatarUrl: null });
+    } catch (error) {
+      setAvatarError(error instanceof Error ? error.message : "Something went wrong, try again.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAddress.addressLine1.trim()) return;
@@ -394,8 +490,85 @@ function ProfileTab() {
 
   return (
     <div className="space-y-12">
-      {/* Account Information */}
+      {/* Profile Picture */}
       <div>
+        <h2 className="font-display text-xl text-charcoal mb-6">Profile Picture</h2>
+
+        <div className="flex items-center gap-6">
+          <div className="relative shrink-0">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Profile picture"
+                className="w-24 h-24 rounded-full object-cover border border-charcoal/10"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-sand/50 border border-charcoal/10 flex items-center justify-center">
+                <User size={32} className="text-charcoal/30" strokeWidth={1.5} />
+              </div>
+            )}
+
+            {uploadingAvatar && (
+              <div className="absolute inset-0 rounded-full bg-charcoal/40 flex items-center justify-center">
+                <Loader2 size={20} className="text-cream animate-spin" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-3">
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="rounded-full bg-sage text-cream font-body text-xs tracking-wide uppercase px-6 py-2.5 hover:bg-charcoal transition-colors disabled:opacity-50"
+              >
+                {avatarUrl ? "Change Photo" : "Upload Photo"}
+              </motion.button>
+
+              {avatarUrl && (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={handleRemoveAvatar}
+                  disabled={uploadingAvatar}
+                  className="rounded-full border border-charcoal/20 text-charcoal font-body text-xs tracking-wide uppercase px-6 py-2.5 hover:bg-sand/30 transition-colors disabled:opacity-50"
+                >
+                  Remove
+                </motion.button>
+              )}
+            </div>
+
+            <p className="font-body text-xs text-charcoal/50">JPG or PNG, up to 5MB.</p>
+
+            <AnimatePresence>
+              {avatarError && (
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2 }}
+                  className="font-body text-xs text-red-500"
+                >
+                  {avatarError}
+                </motion.p>
+              )}
+            </AnimatePresence>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png, image/jpeg"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Account Information */}
+      <div className="border-t border-charcoal/10 pt-8">
         <h2 className="font-display text-xl text-charcoal mb-6">Account Information</h2>
 
         <form onSubmit={handleSaveProfile} className="space-y-5">

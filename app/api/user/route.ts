@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { verifyToken } from "@/lib/auth-server"; 
+import { verifyToken } from "@/lib/auth-server";
 
 export async function PATCH(req: Request) {
   try {
@@ -11,18 +11,51 @@ export async function PATCH(req: Request) {
     }
 
     const decoded = verifyToken(token); // should return { userId, email, role } or throw
-    const { firstName, lastName, phoneNumber } = await req.json();
+    const { firstName, lastName, phoneNumber, avatarUrl } = await req.json();
 
-    if (!firstName || !lastName) {
+    // An avatar-only request (upload or removal) comes through as just
+    // { avatarUrl }, so the name fields are only required when this is
+    // a profile-details save.
+    const isAvatarOnly =
+      avatarUrl !== undefined && firstName === undefined && lastName === undefined;
+
+    if (!isAvatarOnly && (!firstName || !lastName)) {
       return NextResponse.json({ error: "First and last name are required." }, { status: 400 });
     }
 
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    let i = 1;
+
+    if (firstName !== undefined) {
+      fields.push(`first_name = $${i++}`);
+      values.push(firstName);
+    }
+    if (lastName !== undefined) {
+      fields.push(`last_name = $${i++}`);
+      values.push(lastName);
+    }
+    if (phoneNumber !== undefined) {
+      fields.push(`phone_number = $${i++}`);
+      values.push(phoneNumber || null);
+    }
+    if (avatarUrl !== undefined) {
+      fields.push(`avatar_url = $${i++}`);
+      values.push(avatarUrl); // null clears it
+    }
+
+    if (fields.length === 0) {
+      return NextResponse.json({ error: "No fields to update." }, { status: 400 });
+    }
+
+    values.push(decoded.userId);
+
     const result = await pool.query(
       `UPDATE users
-       SET first_name = $1, last_name = $2, phone_number = $3
-       WHERE user_id = $4
-       RETURNING user_id, first_name, last_name, email, phone_number, role`,
-      [firstName, lastName, phoneNumber || null, decoded.userId]
+       SET ${fields.join(", ")}
+       WHERE user_id = $${i}
+       RETURNING user_id, first_name, last_name, email, phone_number, role, avatar_url`,
+      values
     );
 
     if (result.rows.length === 0) {
@@ -38,6 +71,7 @@ export async function PATCH(req: Request) {
         email: user.email,
         phone: user.phone_number,
         role: user.role,
+        avatarUrl: user.avatar_url,
       },
     });
   } catch (error) {

@@ -10,6 +10,7 @@ type User = {
   role: "admin" | "customer";
   phone: string | null;
   isVerified: boolean;
+  avatarUrl: string | null;  
 } | null;
 
 type AuthContextType = {
