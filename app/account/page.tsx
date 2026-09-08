@@ -508,74 +508,76 @@ function ProfileTab() {
         <h2 className="font-display text-xl text-charcoal mb-6">Account Information</h2>
 
         <form onSubmit={handleSaveProfile} className="space-y-5">
-          <div className="flex gap-6 items-center">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={saving}
-              aria-label={displayedAvatar ? "Change profile picture" : "Upload profile picture"}
-              className="relative shrink-0 rounded-full cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {displayedAvatar ? (
-                <img
-                  src={displayedAvatar}
-                  alt="Profile picture"
-                  className="w-36 h-36 rounded-full object-cover border border-charcoal/10"
-                />
-              ) : (
-                <div className="w-36 h-36 rounded-full bg-sand/50 border border-charcoal/10 flex items-center justify-center">
-                  <User size={44} className="text-charcoal/30" strokeWidth={1.5} />
-                </div>
+          <div className="flex gap-6 items-start">
+            <div className="flex flex-col items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={saving}
+                aria-label={displayedAvatar ? "Change profile picture" : "Upload profile picture"}
+                className="relative shrink-0 rounded-full cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {displayedAvatar ? (
+                  <img
+                    src={displayedAvatar}
+                    alt="Profile picture"
+                    className="w-36 h-36 rounded-full object-cover border border-charcoal/10"
+                  />
+                ) : (
+                  <div className="w-36 h-36 rounded-full bg-sand/50 border border-charcoal/10 flex items-center justify-center">
+                    <User size={44} className="text-charcoal/30" strokeWidth={1.5} />
+                  </div>
+                )}
+
+                {saving && (avatarFile || avatarRemoved) ? (
+                  <div className="absolute inset-0 rounded-full bg-charcoal/40 flex items-center justify-center">
+                    <Loader2 size={22} className="text-cream animate-spin" />
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 rounded-full bg-charcoal/20 group-hover:bg-charcoal/40 transition-colors flex items-center justify-center">
+                    <Pencil size={22} className="text-cream/90" strokeWidth={1.75} />
+                  </div>
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png, image/jpeg"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+
+              {displayedAvatar && (
+                <button
+                  type="button"
+                  onClick={handleRemoveAvatar}
+                  disabled={saving}
+                  className="font-body text-xs uppercase tracking-wide text-charcoal/40 hover:text-red-500 transition-colors disabled:opacity-50"
+                >
+                  Remove Photo
+                </button>
               )}
 
-              {saving && (avatarFile || avatarRemoved) ? (
-                <div className="absolute inset-0 rounded-full bg-charcoal/40 flex items-center justify-center">
-                  <Loader2 size={22} className="text-cream animate-spin" />
-                </div>
-              ) : (
-                <div className="absolute inset-0 rounded-full bg-charcoal/20 group-hover:bg-charcoal/40 transition-colors flex items-center justify-center">
-                  <Pencil size={22} className="text-cream/90" strokeWidth={1.75} />
-                </div>
-              )}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png, image/jpeg"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
+              <AnimatePresence>
+                {avatarError && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.2 }}
+                    className="font-body text-xs text-red-500 text-center"
+                  >
+                    {avatarError}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
 
             <div className="flex-1 flex flex-col gap-4">
               <FormField label="First Name" value={firstName} onChange={setFirstName} required />
               <FormField label="Last Name" value={lastName} onChange={setLastName} required />
             </div>
           </div>
-
-          <AnimatePresence>
-            {avatarError && (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.2 }}
-                className="font-body text-xs text-red-500"
-              >
-                {avatarError}
-              </motion.p>
-            )}
-          </AnimatePresence>
-
-          {displayedAvatar && (
-            <button
-              type="button"
-              onClick={handleRemoveAvatar}
-              disabled={saving}
-              className="font-body text-xs uppercase tracking-wide text-charcoal/40 hover:text-red-500 transition-colors disabled:opacity-50"
-            >
-              Remove Photo
-            </button>
-          )}
 
           <FormField
             label="Email"
