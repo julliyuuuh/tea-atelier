@@ -14,7 +14,7 @@ import {
   OrderSkeleton,
   SecurityPanelSkeleton,
 } from "@/components/account/Skeletons";
-import { Plus, Trash2, MapPin, Package, User, Loader2 } from "lucide-react";
+import { Plus, Trash2, MapPin, Package, User, Loader2, Pencil } from "lucide-react";
 
 type TabKey = "profile" | "orders" | "settings";
 
@@ -260,11 +260,6 @@ function ProfileTab() {
   // successful PATCH, so the indicator always compares against what's
   // actually persisted rather than what was typed a moment ago.
   const [lastSaved, setLastSaved] = useState<SavedProfile | null>(null);
-  const isDirty =
-    lastSaved !== null &&
-    (firstName !== lastSaved.firstName ||
-      lastName !== lastSaved.lastName ||
-      phone !== lastSaved.phone);
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
@@ -277,11 +272,37 @@ function ProfileTab() {
   });
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
-  // Profile picture
+  // Profile picture. Selecting or removing a photo only stages the
+  // change locally (avatarFile / avatarRemoved); the actual upload and
+  // persistence happen inside handleSaveProfile, alongside the rest of
+  // the form, rather than firing immediately on selection.
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // What's actually shown in the circle: a staged local preview takes
+  // priority, then a staged removal shows the empty state, otherwise
+  // whatever's currently saved.
+  const displayedAvatar = avatarPreviewUrl || (avatarRemoved ? null : avatarUrl);
+
+  const isDirty =
+    lastSaved !== null &&
+    (firstName !== lastSaved.firstName ||
+      lastName !== lastSaved.lastName ||
+      phone !== lastSaved.phone ||
+      avatarFile !== null ||
+      avatarRemoved);
+
+  // Revoke the local object URL whenever it's replaced or the component
+  // unmounts, so we don't leak memory on repeated selections.
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    };
+  }, [avatarPreviewUrl]);
 
   useEffect(() => {
     if (user) {
@@ -316,42 +337,10 @@ function ProfileTab() {
     if (user) loadAddresses();
   }, [user]);
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setSaveError(null);
-    const token = localStorage.getItem("token");
-
-    try {
-      const res = await fetch("/api/user", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ firstName, lastName, phoneNumber: phone }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Something went wrong.");
-
-      setSaved(true);
-      setLastSaved({ firstName, lastName, phone });
-      // Keep the shared auth context in sync so a remount elsewhere in
-      // the app (e.g. navigating away and back to /account) reflects
-      // the change immediately, instead of the stale snapshot from login.
-      updateUser({ firstName, lastName, phone });
-      setTimeout(() => setSaved(false), 2500);
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Something went wrong, try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   // Uploads through the server (same pattern as product images):
   // the file goes to /api/user/avatar-upload, which signs and streams
   // it to Cloudinary via the shared server-side client, and hands back
-  // a secure_url. That URL is then saved via PATCH /api/user.
+  // a secure_url.
   const uploadAvatarFile = async (file: File, token: string | null): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
@@ -367,7 +356,69 @@ function ProfileTab() {
     return data.url as string;
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setSaveError(null);
+    const token = localStorage.getItem("token");
+
+    try {
+      // Only touch the avatar in the request if it actually changed.
+      // undefined means "leave it alone", null means "clear it".
+      let nextAvatarUrl: string | null | undefined;
+      if (avatarFile) {
+        nextAvatarUrl = await uploadAvatarFile(avatarFile, token);
+      } else if (avatarRemoved) {
+        nextAvatarUrl = null;
+      }
+
+      const res = await fetch("/api/user", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          phoneNumber: phone,
+          ...(nextAvatarUrl !== undefined ? { avatarUrl: nextAvatarUrl } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Something went wrong.");
+
+      setSaved(true);
+      setLastSaved({ firstName, lastName, phone });
+      // Keep the shared auth context in sync so a remount elsewhere in
+      // the app (e.g. navigating away and back to /account) reflects
+      // the change immediately, instead of the stale snapshot from login.
+      updateUser({
+        firstName,
+        lastName,
+        phone,
+        ...(nextAvatarUrl !== undefined ? { avatarUrl: nextAvatarUrl } : {}),
+      });
+
+      if (nextAvatarUrl !== undefined) {
+        if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+        setAvatarUrl(nextAvatarUrl);
+        setAvatarFile(null);
+        setAvatarPreviewUrl(null);
+        setAvatarRemoved(false);
+      }
+
+      setTimeout(() => setSaved(false), 2500);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Something went wrong, try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Selecting a photo only stages it locally as a preview; it isn't
+  // uploaded until the form is saved.
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-selecting the same file later
     if (!file) return;
@@ -383,58 +434,20 @@ function ProfileTab() {
       return;
     }
 
-    setUploadingAvatar(true);
-    const token = localStorage.getItem("token");
-
-    try {
-      const uploadedUrl = await uploadAvatarFile(file, token);
-
-      const res = await fetch("/api/user", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ avatarUrl: uploadedUrl }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to save photo.");
-
-      setAvatarUrl(data.user.avatarUrl);
-      updateUser({ avatarUrl: data.user.avatarUrl });
-    } catch (error) {
-      setAvatarError(error instanceof Error ? error.message : "Something went wrong, try again.");
-    } finally {
-      setUploadingAvatar(false);
-    }
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    setAvatarFile(file);
+    setAvatarPreviewUrl(URL.createObjectURL(file));
+    setAvatarRemoved(false);
   };
 
-  const handleRemoveAvatar = async () => {
+  // Also just stages the removal; the PATCH to actually clear it fires
+  // from handleSaveProfile.
+  const handleRemoveAvatar = () => {
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    setAvatarFile(null);
+    setAvatarPreviewUrl(null);
+    setAvatarRemoved(true);
     setAvatarError(null);
-    setUploadingAvatar(true);
-    const token = localStorage.getItem("token");
-
-    try {
-      const res = await fetch("/api/user", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ avatarUrl: null }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Unable to remove photo.");
-      }
-
-      setAvatarUrl(null);
-      updateUser({ avatarUrl: null });
-    } catch (error) {
-      setAvatarError(error instanceof Error ? error.message : "Something went wrong, try again.");
-    } finally {
-      setUploadingAvatar(false);
-    }
   };
 
   const handleAddAddress = async (e: React.FormEvent) => {
@@ -499,25 +512,29 @@ function ProfileTab() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingAvatar}
-              aria-label={avatarUrl ? "Change profile picture" : "Upload profile picture"}
-              className="relative shrink-0 rounded-full group disabled:opacity-50"
+              disabled={saving}
+              aria-label={displayedAvatar ? "Change profile picture" : "Upload profile picture"}
+              className="relative shrink-0 rounded-full cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {avatarUrl ? (
+              {displayedAvatar ? (
                 <img
-                  src={avatarUrl}
+                  src={displayedAvatar}
                   alt="Profile picture"
-                  className="w-36 h-36 rounded-full object-cover border border-charcoal/10 transition-opacity group-hover:opacity-80"
+                  className="w-36 h-36 rounded-full object-cover border border-charcoal/10"
                 />
               ) : (
-                <div className="w-36 h-36 rounded-full bg-sand/50 border border-charcoal/10 flex items-center justify-center transition-colors group-hover:bg-sand/70">
+                <div className="w-36 h-36 rounded-full bg-sand/50 border border-charcoal/10 flex items-center justify-center">
                   <User size={44} className="text-charcoal/30" strokeWidth={1.5} />
                 </div>
               )}
 
-              {uploadingAvatar && (
+              {saving && (avatarFile || avatarRemoved) ? (
                 <div className="absolute inset-0 rounded-full bg-charcoal/40 flex items-center justify-center">
-                  <Loader2 size={18} className="text-cream animate-spin" />
+                  <Loader2 size={22} className="text-cream animate-spin" />
+                </div>
+              ) : (
+                <div className="absolute inset-0 rounded-full bg-charcoal/20 group-hover:bg-charcoal/40 transition-colors flex items-center justify-center">
+                  <Pencil size={22} className="text-cream/90" strokeWidth={1.75} />
                 </div>
               )}
             </button>
@@ -549,11 +566,11 @@ function ProfileTab() {
             )}
           </AnimatePresence>
 
-          {avatarUrl && (
+          {displayedAvatar && (
             <button
               type="button"
               onClick={handleRemoveAvatar}
-              disabled={uploadingAvatar}
+              disabled={saving}
               className="font-body text-xs uppercase tracking-wide text-charcoal/40 hover:text-red-500 transition-colors disabled:opacity-50"
             >
               Remove Photo
