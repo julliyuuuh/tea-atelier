@@ -111,7 +111,7 @@ export default function Navbar() {
               <div className="relative" ref={accountMenuRef}>
                 <button
                   onClick={() => setAccountMenuOpen((prev) => !prev)}
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors overflow-hidden border border-transparent hover:border-charcoal/10"
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors overflow-hidden border border-transparent hover:border-charcoal/10 cursor-pointer"
                   aria-label="Account"
                 >
                   {user.avatarUrl ? (
@@ -134,6 +134,20 @@ export default function Navbar() {
                       transition={{ duration: 0.15 }}
                       className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
                     >
+                      {showWishlist && (
+                        <Link
+                          href="/wishlist"
+                          onClick={() => setAccountMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                        >
+                          <Heart size={16} strokeWidth={1.5} /> Wishlist
+                          {wishlistItems.length > 0 && (
+                            <span className="ml-auto bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                              {wishlistItems.length}
+                            </span>
+                          )}
+                        </Link>
+                      )}
                       <Link
                         href="/account"
                         onClick={() => setAccountMenuOpen(false)}
@@ -161,21 +175,6 @@ export default function Navbar() {
                 aria-label="Account"
               >
                 <User size={18} strokeWidth={1.5} />
-              </Link>
-            )}
-
-            {showWishlist && (
-              <Link
-                href="/wishlist"
-                className="relative w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors"
-                aria-label="Wishlist"
-              >
-                <Heart size={18} strokeWidth={1.5} />
-                {wishlistItems.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-                    {wishlistItems.length}
-                  </span>
-                )}
               </Link>
             )}
 
@@ -265,6 +264,19 @@ export default function Navbar() {
                             className="overflow-hidden"
                           >
                             <div className="flex flex-col gap-3 mt-3 pl-6">
+                              {showWishlist && (
+                                <Link
+                                  href="/wishlist"
+                                  onClick={() => {
+                                    setAccountMenuOpen(false);
+                                    setMenuOpen(false);
+                                  }}
+                                  className="flex items-center gap-2 font-body text-sm text-charcoal/70"
+                                >
+                                  <Heart size={16} strokeWidth={1.5} /> Wishlist (
+                                  {wishlistItems.length})
+                                </Link>
+                              )}
                               <Link
                                 href="/account"
                                 onClick={() => {
@@ -300,18 +312,6 @@ export default function Navbar() {
                     </Link>
                   )}
                 </li>
-                {showWishlist && (
-                  <li>
-                    <Link
-                      href="/wishlist"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2 font-body text-sm text-charcoal/80"
-                    >
-                      <Heart size={16} strokeWidth={1.5} /> Wishlist (
-                      {wishlistItems.length})
-                    </Link>
-                  </li>
-                )}
                 <li>
                   <Link
                     href="/cart"
