@@ -529,13 +529,9 @@ function ProfileTab() {
               className="hidden"
             />
 
-            <div className="flex-1 flex gap-4">
-              <div className="flex-1">
-                <FormField label="First Name" value={firstName} onChange={setFirstName} required />
-              </div>
-              <div className="flex-1">
-                <FormField label="Last Name" value={lastName} onChange={setLastName} required />
-              </div>
+            <div className="flex-1 flex flex-col gap-4">
+              <FormField label="First Name" value={firstName} onChange={setFirstName} required />
+              <FormField label="Last Name" value={lastName} onChange={setLastName} required />
             </div>
           </div>
 
