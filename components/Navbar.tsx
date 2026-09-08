@@ -9,7 +9,6 @@ import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import ConfirmDialog from "@/components/account/ConfirmDialog";
 import { useWishlist } from "@/lib/wishlist-context";
-import { usePathname } from "next/navigation";
 
 const links = [
   { label: "Home", href: "/" },
@@ -20,7 +19,6 @@ const links = [
 ];
 
 export default function Navbar() {
-  const pathname = usePathname();
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -30,7 +28,7 @@ export default function Navbar() {
   const { items: wishlistItems } = useWishlist();
   const { user, logout } = useAuth();
   const router = useRouter();
-  const showWishlist = Boolean(user) && pathname !== "/";
+  const showWishlist = Boolean(user);
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -134,13 +132,6 @@ export default function Navbar() {
                       transition={{ duration: 0.15 }}
                       className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
                     >
-                      <Link
-                        href="/account"
-                        onClick={() => setAccountMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                      >
-                        <Settings size={16} strokeWidth={1.5} /> Account
-                      </Link>
                       {showWishlist && (
                         <Link
                           href="/wishlist"
@@ -155,6 +146,13 @@ export default function Navbar() {
                           )}
                         </Link>
                       )}
+                      <Link
+                        href="/account"
+                        onClick={() => setAccountMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                      >
+                        <Settings size={16} strokeWidth={1.5} /> Account
+                      </Link>
                       <button
                         onClick={() => {
                           setShowLogoutConfirm(true);
