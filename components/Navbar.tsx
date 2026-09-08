@@ -111,10 +111,18 @@ export default function Navbar() {
               <div className="relative" ref={accountMenuRef}>
                 <button
                   onClick={() => setAccountMenuOpen((prev) => !prev)}
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors"
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors overflow-hidden border border-transparent hover:border-charcoal/10"
                   aria-label="Account"
                 >
-                  <User size={18} strokeWidth={1.5} />
+                  {user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={18} strokeWidth={1.5} />
+                  )}
                 </button>
 
                 <AnimatePresence>
@@ -235,7 +243,16 @@ export default function Navbar() {
                         onClick={() => setAccountMenuOpen((prev) => !prev)}
                         className="flex items-center gap-2 font-body text-sm text-charcoal/80"
                       >
-                        <User size={16} strokeWidth={1.5} /> Account
+                        {user.avatarUrl ? (
+                          <img
+                            src={user.avatarUrl}
+                            alt=""
+                            className="w-5 h-5 rounded-full object-cover border border-charcoal/10"
+                          />
+                        ) : (
+                          <User size={16} strokeWidth={1.5} />
+                        )}
+                        Account
                       </button>
 
                       <AnimatePresence>
