@@ -24,7 +24,7 @@ export default function BestSellers() {
 
     async function loadProducts() {
       try {
-        const res = await fetch("/api/products", { signal: controller.signal });
+        const res = await fetch("/api/products/best-sellers", { signal: controller.signal });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to load products.");
         setProducts(data.products);
