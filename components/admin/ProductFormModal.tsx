@@ -18,8 +18,8 @@ const emptyForm = {
   stockQuantity: "",
 };
 
-type FieldErrors = Partial
-  Record
+type FieldErrors = Partial<
+  Record <
     "name" | "price" | "stockQuantity" | "description" | "subCategory" | "type" | "image",
     string
   >
