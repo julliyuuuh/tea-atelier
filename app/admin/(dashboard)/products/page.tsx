@@ -273,8 +273,6 @@ export default function AdminProductsPage() {
     setModalOpen(true);
   };
 
-  // Passed into ProductFormModal — it does its own fetch/validation and
-  // just hands back the saved product plus whether it was a create or update.
   const handleProductSaved = (product: Product, isNew: boolean) => {
     if (isNew) {
       setProducts((prev) => [...prev, { ...product, isArchived: false }]);
@@ -746,8 +744,6 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* Add/Edit slide-over panel — now fully self-contained, so typing in
-          it never re-renders (or re-measures) this table. */}
       <ProductFormModal
         open={modalOpen}
         editingProduct={editingProduct}
