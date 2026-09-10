@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ClipboardList } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
@@ -14,6 +14,8 @@ import {
   type SortConfig,
 } from "@/components/admin/AdminUI";
 
+const PAGE_SIZE = 10;
+
 type Order = {
   id: number;
   customerEmail: string;
@@ -23,6 +25,12 @@ type Order = {
   paymentMethod: string;
   itemCount: number;
   createdAt: string;
+};
+
+type Stats = {
+  total: number;
+  pending: number;
+  cancelled: number;
 };
 
 type SortKey = "id" | "totalAmount" | "createdAt" | "itemCount";
@@ -58,40 +66,87 @@ function statusBadge(status: string) {
   }
 }
 
+function buildQuery(params: Record<string, string | number | boolean | undefined>) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === "" || value === "All") return;
+    qs.set(key, String(value));
+  });
+  return qs.toString();
+}
+
 export default function AdminOrdersPage() {
+  // Current page's rows only — the full order book never lives in the browser.
   const [orders, setOrders] = useState<Order[]>([]);
+  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, cancelled: 0 });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [actionError, setActionError] = useState("");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [sortConfig, setSortConfig] = useState<SortConfig<SortKey>>({
     key: "createdAt",
     direction: "desc",
   });
 
+  // Debounce search so we're not hitting the DB on every keystroke.
   useEffect(() => {
-    loadOrders();
-  }, []);
+    const timeout = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timeout);
+  }, [search]);
 
-  async function loadOrders() {
-    setIsLoading(true);
-    setErrorMessage("");
-    const token = localStorage.getItem("token");
-    try {
-      const res = await fetch("/api/admin/orders", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to load orders.");
-      setOrders(data.orders);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  // Any change to what we're querying should land back on page 1.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, filterStatus, sortConfig]);
+
+  const loadOrders = useCallback(
+    async (page: number) => {
+      setIsLoading(true);
+      setErrorMessage("");
+      const token = localStorage.getItem("token");
+      try {
+        const qs = buildQuery({
+          page,
+          limit: PAGE_SIZE,
+          search: debouncedSearch,
+          status: filterStatus,
+          sortBy: sortConfig?.key,
+          sortDir: sortConfig?.direction,
+        });
+        const res = await fetch(`/api/admin/orders?${qs}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Unable to load orders.");
+
+        setOrders(data.orders);
+        setStats(data.stats);
+        setTotalPages(data.totalPages);
+
+        // If the current page emptied out (e.g. a status update pushed a
+        // row off this filtered view), step back one page.
+        if (data.orders.length === 0 && page > 1 && data.total > 0) {
+          setCurrentPage(page - 1);
+        }
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [debouncedSearch, filterStatus, sortConfig],
+  );
+
+  useEffect(() => {
+    loadOrders(currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, loadOrders]);
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
     setUpdatingId(orderId);
@@ -108,44 +163,35 @@ export default function AdminOrdersPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) throw new Error("Unable to update order status.");
-      setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
-      );
+
+      // A status change can move the row out of the current status filter
+      // (e.g. filtering by "Pending" and marking one Shipped), so reload
+      // the page rather than patching the row in place.
+      if (filterStatus !== "All" && filterStatus !== newStatus) {
+        await loadOrders(currentPage);
+      } else {
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
+        );
+        // Pending/Cancelled counts in the stat chips just changed too.
+        setStats((prev) => ({
+          ...prev,
+          pending:
+            prev.pending +
+            (newStatus === "PENDING" ? 1 : 0) -
+            (orders.find((o) => o.id === orderId)?.status === "PENDING" ? 1 : 0),
+          cancelled:
+            prev.cancelled +
+            (newStatus === "CANCELLED" ? 1 : 0) -
+            (orders.find((o) => o.id === orderId)?.status === "CANCELLED" ? 1 : 0),
+        }));
+      }
     } catch (error) {
-      setActionError(
-        error instanceof Error ? error.message : "Something went wrong.",
-      );
+      setActionError(error instanceof Error ? error.message : "Something went wrong.");
     } finally {
       setUpdatingId(null);
     }
   };
-
-  const pendingCount = orders.filter((o) => o.status === "PENDING").length;
-  const cancelledCount = orders.filter((o) => o.status === "CANCELLED").length;
-
-  const filtered = orders.filter((o) => {
-    const q = search.toLowerCase();
-    const matchesSearch =
-      q === "" ||
-      `ta-${o.id}`.includes(q) ||
-      (o.recipientName || "").toLowerCase().includes(q) ||
-      o.customerEmail.toLowerCase().includes(q);
-    const matchesStatus = filterStatus === "All" || o.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
-  const sortedFiltered = useMemo(() => {
-    if (!sortConfig) return filtered;
-    const { key, direction } = sortConfig;
-    return [...filtered].sort((a, b) => {
-      let aVal: string | number = key === "createdAt" ? new Date(a[key]).getTime() : a[key];
-      let bVal: string | number = key === "createdAt" ? new Date(b[key]).getTime() : b[key];
-      if (aVal < bVal) return direction === "asc" ? -1 : 1;
-      if (aVal > bVal) return direction === "asc" ? 1 : -1;
-      return 0;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, sortConfig]);
 
   const hasActiveFilters = search !== "" || filterStatus !== "All";
   const clearFilters = () => {
@@ -174,31 +220,29 @@ export default function AdminOrdersPage() {
           ) : (
             <AnimatePresence mode="wait">
               <motion.span
-                key={sortedFiltered.length}
+                key={`${currentPage}-${orders.length}`}
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 4 }}
                 transition={{ duration: 0.15 }}
                 className="inline-block"
               >
-                {sortedFiltered.length} of {orders.length} orders
+                Page {currentPage} of {totalPages}
               </motion.span>
             </AnimatePresence>
           )}
         </p>
       </div>
 
-      <ErrorBanner message={errorMessage} onRetry={loadOrders} />
+      <ErrorBanner message={errorMessage} onRetry={() => loadOrders(currentPage)} />
       <ErrorBanner message={actionError} />
 
-      {/* Stat chips */}
-      {!isLoading && (
-        <div className="flex flex-wrap gap-3 mb-6">
-          <StatChip label="Total Orders" value={orders.length} />
-          <StatChip label="Pending" value={pendingCount} tone="warning" />
-          <StatChip label="Cancelled" value={cancelledCount} tone="danger" />
-        </div>
-      )}
+      {/* Stat chips — always reflect the whole order book, not just this page */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <StatChip label="Total Orders" value={stats.total} />
+        <StatChip label="Pending" value={stats.pending} tone="warning" />
+        <StatChip label="Cancelled" value={stats.cancelled} tone="danger" />
+      </div>
 
       {/* Filter toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-charcoal/10 rounded-xl px-4 py-3">
@@ -274,7 +318,7 @@ export default function AdminOrdersPage() {
 
         <div role="rowgroup">
           {isLoading &&
-            Array.from({ length: 5 }).map((_, i) => (
+            Array.from({ length: PAGE_SIZE }).map((_, i) => (
               <div
                 key={i}
                 role="row"
@@ -305,13 +349,12 @@ export default function AdminOrdersPage() {
 
           {!isLoading && (
             <AnimatePresence initial={false}>
-              {sortedFiltered.map((order, index) => {
+              {orders.map((order, index) => {
                 const badge = statusBadge(order.status);
                 return (
                   <motion.div
                     key={order.id}
                     role="row"
-                    layout
                     custom={index}
                     variants={rowVariants}
                     initial="initial"
@@ -368,7 +411,7 @@ export default function AdminOrdersPage() {
             </AnimatePresence>
           )}
 
-          {!isLoading && sortedFiltered.length === 0 && (
+          {!isLoading && orders.length === 0 && (
             <div role="row" className="px-5 py-10">
               <div role="cell" className="flex flex-col items-center gap-2 text-center">
                 <ClipboardList className="w-8 h-8 text-charcoal/20" />
@@ -380,6 +423,33 @@ export default function AdminOrdersPage() {
           )}
         </div>
       </div>
+
+      {/* Pagination */}
+      {!isLoading && orders.length > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <span className="font-body text-xs text-charcoal/50">
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

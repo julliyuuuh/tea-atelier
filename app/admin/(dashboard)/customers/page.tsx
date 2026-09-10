@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Users } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
@@ -14,6 +14,8 @@ import {
   type SortConfig,
 } from "@/components/admin/AdminUI";
 
+const PAGE_SIZE = 10;
+
 type Customer = {
   id: number;
   name: string;
@@ -23,6 +25,12 @@ type Customer = {
   orderCount: number;
   totalSpent: number;
   joinedAt: string;
+};
+
+type Stats = {
+  total: number;
+  verified: number;
+  unverified: number;
 };
 
 type SortKey = "name" | "orderCount" | "totalSpent" | "joinedAt";
@@ -37,63 +45,80 @@ const VERIFIED_OPTIONS = [
 const GRID_COLS =
   "minmax(200px,2.2fr) minmax(110px,1fr) minmax(90px,0.8fr) minmax(110px,1fr) minmax(110px,0.9fr) minmax(130px,1fr)";
 
+function buildQuery(params: Record<string, string | number | boolean | undefined>) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === "" || value === "All") return;
+    qs.set(key, String(value));
+  });
+  return qs.toString();
+}
+
 export default function AdminCustomersPage() {
+  // Current page's rows only — the full customer list never lives in the browser.
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [stats, setStats] = useState<Stats>({ total: 0, verified: 0, unverified: 0 });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterVerified, setFilterVerified] = useState("All");
   const [sortConfig, setSortConfig] = useState<SortConfig<SortKey>>(null);
 
+  // Debounce search so we're not hitting the DB on every keystroke.
   useEffect(() => {
-    loadCustomers();
-  }, []);
+    const timeout = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timeout);
+  }, [search]);
 
-  async function loadCustomers() {
-    setIsLoading(true);
-    setErrorMessage("");
-    const token = localStorage.getItem("token");
-    try {
-      const res = await fetch("/api/admin/customers", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to load customers.");
-      setCustomers(data.customers);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  // Any change to what we're querying should land back on page 1.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, filterVerified, sortConfig]);
 
-  const verifiedCount = customers.filter((c) => c.isVerified).length;
-  const unverifiedCount = customers.length - verifiedCount;
+  const loadCustomers = useCallback(
+    async (page: number) => {
+      setIsLoading(true);
+      setErrorMessage("");
+      const token = localStorage.getItem("token");
+      try {
+        const qs = buildQuery({
+          page,
+          limit: PAGE_SIZE,
+          search: debouncedSearch,
+          verified: filterVerified,
+          sortBy: sortConfig?.key,
+          sortDir: sortConfig?.direction,
+        });
+        const res = await fetch(`/api/admin/customers?${qs}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Unable to load customers.");
 
-  const filtered = customers.filter((c) => {
-    const q = search.toLowerCase();
-    const matchesSearch =
-      c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q);
-    const matchesVerified =
-      filterVerified === "All" ||
-      (filterVerified === "Verified" ? c.isVerified : !c.isVerified);
-    return matchesSearch && matchesVerified;
-  });
+        setCustomers(data.customers);
+        setStats(data.stats);
+        setTotalPages(data.totalPages);
 
-  const sortedFiltered = useMemo(() => {
-    if (!sortConfig) return filtered;
-    const { key, direction } = sortConfig;
-    return [...filtered].sort((a, b) => {
-      let aVal: string | number = key === "joinedAt" ? new Date(a[key]).getTime() : a[key];
-      let bVal: string | number = key === "joinedAt" ? new Date(b[key]).getTime() : b[key];
-      if (typeof aVal === "string") aVal = aVal.toLowerCase();
-      if (typeof bVal === "string") bVal = bVal.toLowerCase();
-      if (aVal < bVal) return direction === "asc" ? -1 : 1;
-      if (aVal > bVal) return direction === "asc" ? 1 : -1;
-      return 0;
-    });
+        if (data.customers.length === 0 && page > 1 && data.total > 0) {
+          setCurrentPage(page - 1);
+        }
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [debouncedSearch, filterVerified, sortConfig],
+  );
+
+  useEffect(() => {
+    loadCustomers(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, sortConfig]);
+  }, [currentPage, loadCustomers]);
 
   const hasActiveFilters = search !== "" || filterVerified !== "All";
   const clearFilters = () => {
@@ -122,30 +147,28 @@ export default function AdminCustomersPage() {
           ) : (
             <AnimatePresence mode="wait">
               <motion.span
-                key={sortedFiltered.length}
+                key={`${currentPage}-${customers.length}`}
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 4 }}
                 transition={{ duration: 0.15 }}
                 className="inline-block"
               >
-                {sortedFiltered.length} of {customers.length} customers
+                Page {currentPage} of {totalPages}
               </motion.span>
             </AnimatePresence>
           )}
         </p>
       </div>
 
-      <ErrorBanner message={errorMessage} onRetry={loadCustomers} />
+      <ErrorBanner message={errorMessage} onRetry={() => loadCustomers(currentPage)} />
 
-      {/* Stat chips */}
-      {!isLoading && (
-        <div className="flex flex-wrap gap-3 mb-6">
-          <StatChip label="Total Customers" value={customers.length} />
-          <StatChip label="Verified" value={verifiedCount} />
-          <StatChip label="Unverified" value={unverifiedCount} tone="warning" />
-        </div>
-      )}
+      {/* Stat chips — always reflect the whole customer base, not just this page */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <StatChip label="Total Customers" value={stats.total} />
+        <StatChip label="Verified" value={stats.verified} />
+        <StatChip label="Unverified" value={stats.unverified} tone="warning" />
+      </div>
 
       {/* Filter toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-charcoal/10 rounded-xl px-4 py-3">
@@ -221,7 +244,7 @@ export default function AdminCustomersPage() {
 
         <div role="rowgroup">
           {isLoading &&
-            Array.from({ length: 5 }).map((_, i) => (
+            Array.from({ length: PAGE_SIZE }).map((_, i) => (
               <div
                 key={i}
                 role="row"
@@ -252,11 +275,10 @@ export default function AdminCustomersPage() {
 
           {!isLoading && (
             <AnimatePresence initial={false}>
-              {sortedFiltered.map((customer, index) => (
+              {customers.map((customer, index) => (
                 <motion.div
                   key={customer.id}
                   role="row"
-                  layout
                   custom={index}
                   variants={rowVariants}
                   initial="initial"
@@ -318,7 +340,7 @@ export default function AdminCustomersPage() {
             </AnimatePresence>
           )}
 
-          {!isLoading && sortedFiltered.length === 0 && (
+          {!isLoading && customers.length === 0 && (
             <div role="row" className="px-5 py-10">
               <div role="cell" className="flex flex-col items-center gap-2 text-center">
                 <Users className="w-8 h-8 text-charcoal/20" />
@@ -330,6 +352,33 @@ export default function AdminCustomersPage() {
           )}
         </div>
       </div>
+
+      {/* Pagination */}
+      {!isLoading && customers.length > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <span className="font-body text-xs text-charcoal/50">
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
