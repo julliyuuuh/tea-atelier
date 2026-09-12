@@ -22,3 +22,18 @@ body {
   background-color: var(--color-charcoal);
   color: var(--color-cream);
 }
+
+.dark [class~="bg-white"],
+.dark [class*="bg-white/"],
+.dark [class~="bg-cream"],
+.dark [class*="bg-cream/"] {
+  background-color: #2b342d;
+}
+
+.dark [class~="text-charcoal"] {
+  color: var(--color-cream);
+}
+
+.dark [class*="text-charcoal/"] {
+  color: color-mix(in srgb, var(--color-cream) 70%, transparent);
+}
