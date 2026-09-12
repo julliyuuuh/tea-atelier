@@ -7,6 +7,7 @@ import StockErrorModal from "@/components/StockErrorModal";
 import AddedToCartModal from "@/components/AddedToCartModal";
 import Script from "next/script";
 import { WishlistProvider } from "@/lib/wishlist-context";
+import { ThemeProvider } from "@/lib/theme-context";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -38,15 +39,17 @@ export default function RootLayout({
           src="https://accounts.google.com/gsi/client"
           strategy="afterInteractive"
         />
-        <AuthProvider>
-          <CartProvider>
-            <WishlistProvider>
-              {children}
-              <StockErrorModal />
-              <AddedToCartModal />
-            </WishlistProvider>
-          </CartProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <CartProvider>
+              <WishlistProvider>
+                {children}
+                <StockErrorModal />
+                <AddedToCartModal />
+              </WishlistProvider>
+            </CartProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -14,7 +14,16 @@ import {
   OrderSkeleton,
   SecurityPanelSkeleton,
 } from "@/components/account/Skeletons";
-import { Plus, Trash2, MapPin, Package, User, Loader2, Pencil } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  MapPin,
+  Package,
+  User,
+  Loader2,
+  Pencil,
+} from "lucide-react";
+import { useTheme } from "@/lib/theme-context";
 
 type TabKey = "profile" | "orders" | "settings";
 
@@ -40,9 +49,6 @@ function AccountPageInner() {
 
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
 
-  // Tracks which tabs have been opened at least once, so Orders/Settings
-  // only mount (and fetch) the first time they're selected, then stay
-  // mounted so switching back doesn't refetch.
   const [visited, setVisited] = useState<Set<TabKey>>(new Set(["profile"]));
 
   useEffect(() => {
@@ -54,17 +60,12 @@ function AccountPageInner() {
     });
   }, [activeTab]);
 
-  // Once auth has resolved, bounce unauthenticated visits (including
-  // right after logout) straight to the login page instead of showing
-  // an in-page message.
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
     }
   }, [authLoading, user, router]);
 
-  // Refs to each tab button so arrow-key navigation can move focus
-  // directly, matching the native <select>/menu keyboard pattern.
   const tabRefs = useRef<Partial<Record<TabKey, HTMLButtonElement | null>>>({});
 
   const handleTabKeyDown = useCallback(
@@ -89,7 +90,7 @@ function AccountPageInner() {
       setActiveTab(nextKey);
       tabRefs.current[nextKey]?.focus();
     },
-    []
+    [],
   );
 
   if (authLoading || !user) {
@@ -128,7 +129,13 @@ function AccountPageInner() {
                 onKeyDown={(e) => handleTabKeyDown(e, tab.key)}
                 className="relative pb-4 font-display text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage focus-visible:ring-offset-2 focus-visible:ring-offset-cream rounded-sm"
               >
-                <span className={isActive ? "text-charcoal" : "text-charcoal/40 hover:text-charcoal/70"}>
+                <span
+                  className={
+                    isActive
+                      ? "text-charcoal"
+                      : "text-charcoal/40 hover:text-charcoal/70"
+                  }
+                >
                   {tab.label}
                 </span>
                 {isActive && (
@@ -143,11 +150,6 @@ function AccountPageInner() {
           })}
         </div>
 
-        {/* Panel, all visited panels stay mounted (a CSS grid stacks them
-            in the same cell) and we animate opacity/y directly off
-            `activeTab` state rather than mounting/unmounting via
-            AnimatePresence, since unmounting Orders/Settings would force
-            a refetch the next time they're selected. */}
         <div className="relative bg-cream border border-charcoal/10 rounded-2xl p-8 min-h-[420px] grid overflow-hidden">
           <motion.div
             id="account-panel-profile"
@@ -180,7 +182,9 @@ function AccountPageInner() {
                 y: activeTab === "orders" ? 0 : 8,
               }}
               transition={PANEL_TRANSITION}
-              style={{ pointerEvents: activeTab === "orders" ? "auto" : "none" }}
+              style={{
+                pointerEvents: activeTab === "orders" ? "auto" : "none",
+              }}
               aria-hidden={activeTab !== "orders"}
               inert={activeTab !== "orders" ? true : undefined}
             >
@@ -200,7 +204,9 @@ function AccountPageInner() {
                 y: activeTab === "settings" ? 0 : 8,
               }}
               transition={PANEL_TRANSITION}
-              style={{ pointerEvents: activeTab === "settings" ? "auto" : "none" }}
+              style={{
+                pointerEvents: activeTab === "settings" ? "auto" : "none",
+              }}
               aria-hidden={activeTab !== "settings"}
               inert={activeTab !== "settings" ? true : undefined}
             >
@@ -226,7 +232,12 @@ const listContainerVariants: Variants = {
 
 const listItemVariants: Variants = {
   hidden: { opacity: 0, y: 6, height: 0 },
-  show: { opacity: 1, y: 0, height: "auto", transition: { duration: 0.25, ease: "easeOut" } },
+  show: {
+    opacity: 1,
+    y: 0,
+    height: "auto",
+    transition: { duration: 0.25, ease: "easeOut" },
+  },
   exit: { opacity: 0, height: 0, transition: { duration: 0.18 } },
 };
 
@@ -255,10 +266,6 @@ function ProfileTab() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // The last known-saved values, used to detect unsaved edits. Reset
-  // whenever `user` loads (or reloads) and again right after a
-  // successful PATCH, so the indicator always compares against what's
-  // actually persisted rather than what was typed a moment ago.
   const [lastSaved, setLastSaved] = useState<SavedProfile | null>(null);
 
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -270,12 +277,10 @@ function ProfileTab() {
     addressLine2: "",
     addressLine3: "",
   });
-  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
+    null,
+  );
 
-  // Profile picture. Selecting or removing a photo only stages the
-  // change locally (avatarFile / avatarRemoved); the actual upload and
-  // persistence happen inside handleSaveProfile, alongside the rest of
-  // the form, rather than firing immediately on selection.
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
@@ -283,10 +288,8 @@ function ProfileTab() {
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // What's actually shown in the circle: a staged local preview takes
-  // priority, then a staged removal shows the empty state, otherwise
-  // whatever's currently saved.
-  const displayedAvatar = avatarPreviewUrl || (avatarRemoved ? null : avatarUrl);
+  const displayedAvatar =
+    avatarPreviewUrl || (avatarRemoved ? null : avatarUrl);
 
   const isDirty =
     lastSaved !== null &&
@@ -296,8 +299,6 @@ function ProfileTab() {
       avatarFile !== null ||
       avatarRemoved);
 
-  // Revoke the local object URL whenever it's replaced or the component
-  // unmounts, so we don't leak memory on repeated selections.
   useEffect(() => {
     return () => {
       if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
@@ -337,11 +338,10 @@ function ProfileTab() {
     if (user) loadAddresses();
   }, [user]);
 
-  // Uploads through the server (same pattern as product images):
-  // the file goes to /api/user/avatar-upload, which signs and streams
-  // it to Cloudinary via the shared server-side client, and hands back
-  // a secure_url.
-  const uploadAvatarFile = async (file: File, token: string | null): Promise<string> => {
+  const uploadAvatarFile = async (
+    file: File,
+    token: string | null,
+  ): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -363,8 +363,6 @@ function ProfileTab() {
     const token = localStorage.getItem("token");
 
     try {
-      // Only touch the avatar in the request if it actually changed.
-      // undefined means "leave it alone", null means "clear it".
       let nextAvatarUrl: string | null | undefined;
       if (avatarFile) {
         nextAvatarUrl = await uploadAvatarFile(avatarFile, token);
@@ -390,9 +388,6 @@ function ProfileTab() {
 
       setSaved(true);
       setLastSaved({ firstName, lastName, phone });
-      // Keep the shared auth context in sync so a remount elsewhere in
-      // the app (e.g. navigating away and back to /account) reflects
-      // the change immediately, instead of the stale snapshot from login.
       updateUser({
         firstName,
         lastName,
@@ -410,17 +405,19 @@ function ProfileTab() {
 
       setTimeout(() => setSaved(false), 2500);
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Something went wrong, try again.");
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong, try again.",
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  // Selecting a photo only stages it locally as a preview; it isn't
-  // uploaded until the form is saved.
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = ""; // allow re-selecting the same file later
+    e.target.value = "";
     if (!file) return;
 
     setAvatarError(null);
@@ -440,8 +437,6 @@ function ProfileTab() {
     setAvatarRemoved(false);
   };
 
-  // Also just stages the removal; the PATCH to actually clear it fires
-  // from handleSaveProfile.
   const handleRemoveAvatar = () => {
     if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
     setAvatarFile(null);
@@ -497,15 +492,21 @@ function ProfileTab() {
   };
 
   const formatAddressLine = (addr: Address) =>
-    [addr.address_line1, addr.address_line2, addr.address_line3].filter(Boolean).join(", ");
+    [addr.address_line1, addr.address_line2, addr.address_line3]
+      .filter(Boolean)
+      .join(", ");
 
-  const pendingDeleteAddress = addresses.find((a) => a.address_id === confirmingDeleteId);
+  const pendingDeleteAddress = addresses.find(
+    (a) => a.address_id === confirmingDeleteId,
+  );
 
   return (
     <div className="space-y-12">
       {/* Account Information */}
       <div>
-        <h2 className="font-display text-xl text-charcoal mb-6">Account Information</h2>
+        <h2 className="font-display text-xl text-charcoal mb-6">
+          Account Information
+        </h2>
 
         <form onSubmit={handleSaveProfile} className="space-y-5">
           <div className="flex gap-6 items-start">
@@ -514,7 +515,11 @@ function ProfileTab() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={saving}
-                aria-label={displayedAvatar ? "Change profile picture" : "Upload profile picture"}
+                aria-label={
+                  displayedAvatar
+                    ? "Change profile picture"
+                    : "Upload profile picture"
+                }
                 className="relative shrink-0 rounded-full cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {displayedAvatar ? (
@@ -525,7 +530,11 @@ function ProfileTab() {
                   />
                 ) : (
                   <div className="w-36 h-36 rounded-full bg-sand/50 border border-charcoal/10 flex items-center justify-center">
-                    <User size={44} className="text-charcoal/30" strokeWidth={1.5} />
+                    <User
+                      size={44}
+                      className="text-charcoal/30"
+                      strokeWidth={1.5}
+                    />
                   </div>
                 )}
 
@@ -535,7 +544,11 @@ function ProfileTab() {
                   </div>
                 ) : (
                   <div className="absolute inset-0 rounded-full bg-charcoal/20 group-hover:bg-charcoal/40 transition-colors flex items-center justify-center">
-                    <Pencil size={22} className="text-cream/90" strokeWidth={1.75} />
+                    <Pencil
+                      size={22}
+                      className="text-cream/90"
+                      strokeWidth={1.75}
+                    />
                   </div>
                 )}
               </button>
@@ -574,8 +587,18 @@ function ProfileTab() {
             </div>
 
             <div className="flex-1 flex flex-col gap-4">
-              <FormField label="First Name" value={firstName} onChange={setFirstName} required />
-              <FormField label="Last Name" value={lastName} onChange={setLastName} required />
+              <FormField
+                label="First Name"
+                value={firstName}
+                onChange={setFirstName}
+                required
+              />
+              <FormField
+                label="Last Name"
+                value={lastName}
+                onChange={setLastName}
+                required
+              />
             </div>
           </div>
 
@@ -650,7 +673,9 @@ function ProfileTab() {
       {/* Saved Addresses */}
       <div className="border-t border-charcoal/10 pt-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="font-display text-xl text-charcoal">Saved Addresses</h2>
+          <h2 className="font-display text-xl text-charcoal">
+            Saved Addresses
+          </h2>
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={() => setAddingAddress((v) => !v)}
@@ -666,7 +691,9 @@ function ProfileTab() {
         ) : (
           <>
             {addresses.length === 0 && !addingAddress && (
-              <p className="font-body text-sm text-charcoal/50">No saved addresses yet.</p>
+              <p className="font-body text-sm text-charcoal/50">
+                No saved addresses yet.
+              </p>
             )}
 
             <motion.div
@@ -685,7 +712,11 @@ function ProfileTab() {
                     className="flex items-start justify-between bg-sand/30 rounded-xl px-5 py-4 overflow-hidden"
                   >
                     <div className="flex gap-3">
-                      <MapPin size={16} className="text-sage mt-0.5 shrink-0" strokeWidth={1.75} />
+                      <MapPin
+                        size={16}
+                        className="text-sage mt-0.5 shrink-0"
+                        strokeWidth={1.75}
+                      />
                       <div>
                         <p className="font-body text-sm text-charcoal font-medium">
                           {addr.default_address ? "Default Address" : "Address"}
@@ -723,7 +754,10 @@ function ProfileTab() {
                       placeholder="Address Line 1 (Street, Building, Unit)"
                       value={newAddress.addressLine1}
                       onChange={(e) =>
-                        setNewAddress((prev) => ({ ...prev, addressLine1: e.target.value }))
+                        setNewAddress((prev) => ({
+                          ...prev,
+                          addressLine1: e.target.value,
+                        }))
                       }
                       required
                       className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
@@ -733,7 +767,10 @@ function ProfileTab() {
                       placeholder="Address Line 2 (Barangay, City)"
                       value={newAddress.addressLine2}
                       onChange={(e) =>
-                        setNewAddress((prev) => ({ ...prev, addressLine2: e.target.value }))
+                        setNewAddress((prev) => ({
+                          ...prev,
+                          addressLine2: e.target.value,
+                        }))
                       }
                       className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                     />
@@ -742,7 +779,10 @@ function ProfileTab() {
                       placeholder="Address Line 3 (Province, Postal Code)"
                       value={newAddress.addressLine3}
                       onChange={(e) =>
-                        setNewAddress((prev) => ({ ...prev, addressLine3: e.target.value }))
+                        setNewAddress((prev) => ({
+                          ...prev,
+                          addressLine3: e.target.value,
+                        }))
                       }
                       className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                     />
@@ -775,10 +815,16 @@ function ProfileTab() {
       <ConfirmDialog
         open={confirmingDeleteId !== null}
         title="Remove this address?"
-        description={pendingDeleteAddress ? formatAddressLine(pendingDeleteAddress) : undefined}
+        description={
+          pendingDeleteAddress
+            ? formatAddressLine(pendingDeleteAddress)
+            : undefined
+        }
         confirmLabel="Remove"
         destructive
-        onConfirm={() => confirmingDeleteId && handleRemoveAddress(confirmingDeleteId)}
+        onConfirm={() =>
+          confirmingDeleteId && handleRemoveAddress(confirmingDeleteId)
+        }
         onCancel={() => setConfirmingDeleteId(null)}
       />
     </div>
@@ -845,9 +891,6 @@ function OrdersTab() {
         });
 
         if (res.status === 401) {
-          // Session expired or token invalid, clear client auth state
-          // and send the user to log back in, instead of showing a
-          // confusing generic error on a page that still looks "logged in".
           logout();
           router.push("/login");
           return;
@@ -868,8 +911,6 @@ function OrdersTab() {
 
     loadOrders();
     return () => controller.abort();
-    // logout/router intentionally omitted, including them can change
-    // identity across renders and would refetch orders on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
@@ -888,8 +929,14 @@ function OrdersTab() {
   if (orders.length === 0) {
     return (
       <div className="text-center py-16">
-        <Package size={28} className="mx-auto text-charcoal/20 mb-3" strokeWidth={1.5} />
-        <p className="font-body text-sm text-charcoal/50">You haven't placed any orders yet.</p>
+        <Package
+          size={28}
+          className="mx-auto text-charcoal/20 mb-3"
+          strokeWidth={1.5}
+        />
+        <p className="font-body text-sm text-charcoal/50">
+          You haven't placed any orders yet.
+        </p>
       </div>
     );
   }
@@ -910,7 +957,9 @@ function OrdersTab() {
           >
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-4 border-b border-charcoal/10">
               <div>
-                <p className="font-body text-sm text-charcoal">Order #TA-{order.id}</p>
+                <p className="font-body text-sm text-charcoal">
+                  Order #TA-{order.id}
+                </p>
                 <p className="font-body text-xs text-charcoal/50 mt-1">
                   {new Date(order.createdAt).toLocaleDateString("en-PH", {
                     month: "long",
@@ -931,11 +980,19 @@ function OrdersTab() {
               {order.items.map((item, i) => (
                 <div key={i} className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-sand rounded-lg overflow-hidden shrink-0">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="flex-1">
-                    <p className="font-body text-sm text-charcoal">{item.name}</p>
-                    <p className="font-body text-xs text-charcoal/50">Qty {item.quantity}</p>
+                    <p className="font-body text-sm text-charcoal">
+                      {item.name}
+                    </p>
+                    <p className="font-body text-xs text-charcoal/50">
+                      Qty {item.quantity}
+                    </p>
                   </div>
                   <p className="font-body text-sm text-charcoal">
                     ₱{(item.price * item.quantity).toFixed(2)}
@@ -986,10 +1043,13 @@ function OrdersTab() {
 function SettingsTab() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
 
   const [totpEnabled, setTotpEnabled] = useState(false);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
-  const [setupStep, setSetupStep] = useState<"idle" | "scanning" | "confirming">("idle");
+  const [setupStep, setSetupStep] = useState<
+    "idle" | "scanning" | "confirming"
+  >("idle");
   const [qrCode, setQrCode] = useState("");
   const [confirmCode, setConfirmCode] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -1002,9 +1062,6 @@ function SettingsTab() {
   const [showDisableConfirm, setShowDisableConfirm] = useState(false);
 
   const handleUnauthorized = () => {
-    // Session expired or token invalid, clear client auth state and
-    // send the user to log back in, instead of showing a confusing
-    // generic error on a page that still looks "logged in".
     logout();
     router.push("/login");
   };
@@ -1032,8 +1089,6 @@ function SettingsTab() {
     }
 
     loadStatus();
-    // handleUnauthorized intentionally omitted, logout/router can change
-    // identity across renders and would refetch status on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1058,7 +1113,9 @@ function SettingsTab() {
       if (!res.ok) throw new Error(data.error || "Unable to resend email.");
       setResendMessage("A new verification email has been sent.");
     } catch (error) {
-      setResendMessage(error instanceof Error ? error.message : "Something went wrong.");
+      setResendMessage(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     } finally {
       setResendLoading(false);
     }
@@ -1085,7 +1142,9 @@ function SettingsTab() {
       setQrCode(data.qrCode);
       setSetupStep("scanning");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     }
   };
 
@@ -1119,7 +1178,9 @@ function SettingsTab() {
       setConfirmCode("");
       setSuccessMessage("Two-factor authentication is now enabled.");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -1146,7 +1207,9 @@ function SettingsTab() {
       setTotpEnabled(false);
       setSuccessMessage("Two-factor authentication has been disabled.");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     }
   };
 
@@ -1188,19 +1251,19 @@ function SettingsTab() {
         <SecurityPanelSkeleton />
       ) : (
         <div className="space-y-4">
-          {/* Email Verification, same quiet sand/charcoal panel treatment
-              as 2FA below, differentiated only by content, not a louder
-              amber block. */}
           <div className="rounded-2xl p-6 bg-sand/25 border border-charcoal/5">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-display text-lg text-charcoal">Email Verification</h3>
+              <h3 className="font-display text-lg text-charcoal">
+                Email Verification
+              </h3>
               {user?.isVerified && <Badge tone="sage">Verified</Badge>}
             </div>
 
             {!user?.isVerified && (
               <>
                 <p className="font-body text-sm text-charcoal/60 mb-4">
-                  Your email address hasn't been verified yet. Check your inbox, or request a new link below.
+                  Your email address hasn't been verified yet. Check your inbox,
+                  or request a new link below.
                 </p>
                 <motion.button
                   whileTap={{ scale: 0.98 }}
@@ -1230,11 +1293,14 @@ function SettingsTab() {
           {/* Two-Factor Authentication */}
           <div className="rounded-2xl p-6 bg-sand/25 border border-charcoal/5">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-display text-lg text-charcoal">Two-Factor Authentication</h3>
+              <h3 className="font-display text-lg text-charcoal">
+                Two-Factor Authentication
+              </h3>
               {totpEnabled && <Badge tone="sage">Enabled</Badge>}
             </div>
             <p className="font-body text-sm text-charcoal/60 mb-6">
-              Add an extra layer of security using an authenticator app like Google Authenticator.
+              Add an extra layer of security using an authenticator app like
+              Google Authenticator.
             </p>
 
             {totpEnabled ? (
@@ -1257,7 +1323,8 @@ function SettingsTab() {
             ) : setupStep === "scanning" ? (
               <div className="space-y-4">
                 <p className="font-body text-sm text-charcoal/70">
-                  Scan this QR code with Google Authenticator (or any compatible app), then enter the 6-digit code it generates.
+                  Scan this QR code with Google Authenticator (or any compatible
+                  app), then enter the 6-digit code it generates.
                 </p>
                 <motion.img
                   key={qrCode}
@@ -1276,7 +1343,9 @@ function SettingsTab() {
                     maxLength={6}
                     required
                     value={confirmCode}
-                    onChange={(e) => setConfirmCode(e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) =>
+                      setConfirmCode(e.target.value.replace(/\D/g, ""))
+                    }
                     placeholder="000000"
                     className="w-full text-center tracking-[0.3em] rounded-xl border border-charcoal/20 px-4 py-3 font-body text-lg text-charcoal outline-none focus:border-sage transition-colors"
                   />
@@ -1304,6 +1373,25 @@ function SettingsTab() {
                 </form>
               </div>
             ) : null}
+          </div>
+
+          {/* Appearance */}
+          <div className="rounded-2xl p-6 bg-sand/25 border border-charcoal/5">
+            <h3 className="font-display text-lg text-charcoal mb-2">
+              Appearance
+            </h3>
+            <p className="font-body text-sm text-charcoal/60 mb-4">
+              Choose how Tea Atelier looks on your device.
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={toggleTheme}
+              className="rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors"
+            >
+              {theme === "light"
+                ? "Switch to Dark Mode"
+                : "Switch to Light Mode"}
+            </motion.button>
           </div>
         </div>
       )}
