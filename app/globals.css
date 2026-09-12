@@ -37,3 +37,27 @@ body {
 .dark [class*="text-charcoal/"] {
   color: color-mix(in srgb, var(--color-cream) 70%, transparent);
 }
+
+.dark [class~="border-charcoal/10"],
+.dark [class~="border-charcoal/20"],
+.dark [class*="border-charcoal/"] {
+  border-color: color-mix(in srgb, var(--color-cream) 25%, transparent);
+}
+
+.dark [class~="bg-sand"],
+.dark [class*="bg-sand/"] {
+  background-color: #39443b;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #2b342d;
+  border-color: color-mix(in srgb, var(--color-cream) 25%, transparent);
+  color: var(--color-cream);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: color-mix(in srgb, var(--color-cream) 50%, transparent);
+}
