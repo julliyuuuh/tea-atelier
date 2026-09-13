@@ -93,3 +93,15 @@ body {
 .dark textarea::placeholder {
   color: color-mix(in srgb, #e3e9df 45%, transparent);
 }
+
+.dark button.bg-charcoal,
+.dark button.bg-sage {
+  background-color: #71866e;
+  color: #f0f4ed;
+}
+
+.dark button.bg-charcoal:hover,
+.dark button.bg-sage:hover {
+  background-color: #829a7e;
+  color: #202721;
+}
