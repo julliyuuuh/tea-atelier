@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark*));
+
+@theme {
+  --color-sage: #778873;
+  --color-sage-light: #a1bc98;
+  --color-sand: #dccfc0;
+  --color-cream: #fdf6ed;
+  --color-charcoal: #1f2621;
+
+  --font-display: var(--font-display), serif;
+  --font-body: var(--font-body), sans-serif;
+}
+
 body {
   background-color: var(--color-cream);
   color: var(--color-charcoal);
