@@ -12,8 +12,11 @@ import {
   Menu,
   X,
   ArrowUpRight,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme-context";
 
 const navItems = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
@@ -31,6 +34,7 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     document.title = "Tea Atelier — Admin";
@@ -145,6 +149,14 @@ export default function AdminLayout({
           >
             View storefront <ArrowUpRight size={14} />
           </Link>
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-2 font-body text-sm text-charcoal/70 hover:text-charcoal transition-colors mb-3"
+            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          >
+            {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
+            {theme === "light" ? "Dark mode" : "Light mode"}
+          </button>
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 font-body text-sm text-charcoal/70 hover:text-charcoal transition-colors"
