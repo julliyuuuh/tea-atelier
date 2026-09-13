@@ -18,6 +18,14 @@ body {
   color: var(--color-charcoal);
 }
 
+.dark {
+  --color-charcoal: #dfe7dd;
+  --color-cream: #2b342e;
+  --color-sage: #829a7e;
+  --color-sage-light: #a7bca2;
+  --color-sand: #465348;
+}
+
 .dark body {
   background-color: #202721;
   color: #e3e9df;
