@@ -3,10 +3,14 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme-context";
 
 export default function AdminLoginPage() {
   const { login, user, isLoading: authLoading } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -50,15 +54,29 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-charcoal px-8 relative overflow-hidden">
+    <main
+      className={`min-h-screen flex items-center justify-center px-8 relative overflow-hidden ${
+        isDark ? "bg-[#202721]" : "bg-[#f4f4f2]"
+      }`}
+    >
       {/* subtle radial glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(161,188,152,0.15),transparent_60%)]" />
+      <div
+        className={`absolute inset-0 ${
+          isDark
+            ? "bg-[radial-gradient(circle_at_50%_0%,rgba(161,188,152,0.15),transparent_60%)]"
+            : "bg-[radial-gradient(circle_at_50%_0%,rgba(119,136,115,0.12),transparent_60%)]"
+        }`}
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative w-full max-w-sm bg-charcoal/60 backdrop-blur rounded-3xl border border-cream/10 p-10 shadow-2xl"
+        className={`relative w-full max-w-sm backdrop-blur rounded-3xl border p-10 shadow-2xl ${
+          isDark
+            ? "bg-[#29332d]/90 border-[#c9d3c8]/20"
+            : "bg-white/90 border-charcoal/10"
+        }`}
       >
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 rounded-full bg-sage/20 flex items-center justify-center mb-4">
@@ -68,18 +86,31 @@ export default function AdminLoginPage() {
               className="text-sage-light"
             />
           </div>
-          <a href="/" className="font-display text-2xl text-cream mb-1">
+          <Link
+            href="/"
+            className={`font-display text-2xl mb-1 ${
+              isDark ? "text-[#e3e9df]" : "text-charcoal"
+            }`}
+          >
             Tea Atelier
-          </a>
-          <span className="font-body text-[10px] tracking-[0.25em] uppercase text-sage-light">
+          </Link>
+          <span className="font-body text-[10px] tracking-[0.25em] uppercase text-sage">
             Admin Portal
           </span>
         </div>
 
-        <h1 className="font-body text-lg font-medium text-cream text-center mb-1">
+        <h1
+          className={`font-body text-lg font-medium text-center mb-1 ${
+            isDark ? "text-[#e3e9df]" : "text-charcoal"
+          }`}
+        >
           Restricted Access
         </h1>
-        <p className="font-body text-sm text-cream/50 text-center mb-8">
+        <p
+          className={`font-body text-sm text-center mb-8 ${
+            isDark ? "text-[#b9c5b7]" : "text-charcoal/60"
+          }`}
+        >
           Staff sign-in only
         </p>
 
@@ -91,7 +122,11 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="font-body text-xs tracking-wide uppercase text-cream/50 block mb-2">
+            <label
+              className={`font-body text-xs tracking-wide uppercase block mb-2 ${
+                isDark ? "text-[#b9c5b7]" : "text-charcoal/60"
+              }`}
+            >
               Email
             </label>
             <input
@@ -99,12 +134,20 @@ export default function AdminLoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-cream/15 bg-cream/5 px-4 py-3 font-body text-sm text-cream focus:outline-none focus:border-sage transition-colors"
+              className={`w-full rounded-xl border px-4 py-3 font-body text-sm focus:outline-none focus:border-sage transition-colors ${
+                isDark
+                  ? "border-[#c9d3c8]/22 bg-[#202721]/40 text-[#e3e9df]"
+                  : "border-charcoal/20 bg-white text-charcoal"
+              }`}
             />
           </div>
 
           <div>
-            <label className="font-body text-xs tracking-wide uppercase text-cream/50 block mb-2">
+            <label
+              className={`font-body text-xs tracking-wide uppercase block mb-2 ${
+                isDark ? "text-[#b9c5b7]" : "text-charcoal/60"
+              }`}
+            >
               Password
             </label>
             <input
@@ -112,24 +155,40 @@ export default function AdminLoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-cream/15 bg-cream/5 px-4 py-3 font-body text-sm text-cream focus:outline-none focus:border-sage transition-colors"
+              className={`w-full rounded-xl border px-4 py-3 font-body text-sm focus:outline-none focus:border-sage transition-colors ${
+                isDark
+                  ? "border-[#c9d3c8]/22 bg-[#202721]/40 text-[#e3e9df]"
+                  : "border-charcoal/20 bg-white text-charcoal"
+              }`}
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-cream hover:text-charcoal transition-colors disabled:opacity-50"
+            className={`w-full rounded-full bg-sage font-body text-sm tracking-wide uppercase py-4 transition-colors disabled:opacity-50 ${
+              isDark
+                ? "text-[#f0f4ed] hover:bg-[#829a7e] hover:text-[#202721]"
+                : "text-cream hover:bg-charcoal"
+            }`}
           >
             {isLoading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
-        <p className="font-body text-xs text-cream/40 text-center mt-6">
+        <p
+          className={`font-body text-xs text-center mt-6 ${
+            isDark ? "text-[#aebbad]" : "text-charcoal/50"
+          }`}
+        >
           Customer?{" "}
           <a
             href="/login"
-            className="text-sage-light hover:text-cream transition-colors"
+            className={`transition-colors ${
+              isDark
+                ? "text-[#a7bca2] hover:text-[#e3e9df]"
+                : "text-sage hover:text-charcoal"
+            }`}
           >
             Click here
           </a>
