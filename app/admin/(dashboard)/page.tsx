@@ -96,8 +96,8 @@ export default function AdminOverviewPage() {
   const [lowStock, setLowStock] = useState<LowStockProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme();
-  const chartTextColor = theme === "dark" ? "#fdf6ed" : "#3a3a3a";
-  const chartGridColor = theme === "dark" ? "#fdf6ed40" : "#3a3a3a26";
+  const chartTextColor = theme === "dark" ? "#d5ded4" : "#3a3a3a";
+  const chartGridColor = theme === "dark" ? "#c9d3c833" : "#3a3a3a26";
 
   useEffect(() => {
     async function loadOverview() {
@@ -168,7 +168,7 @@ export default function AdminOverviewPage() {
         Overview
       </h1>
       <p className="font-body text-sm text-charcoal/60 mb-8">
-        Welcome back! here's what's happening with Tea Atelier.
+        Welcome back! here&apos;s what&apos;s happening with Tea Atelier.
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
