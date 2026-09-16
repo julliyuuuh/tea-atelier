@@ -12,8 +12,11 @@ import {
   Menu,
   X,
   ArrowUpRight,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme-context";
 
 const navItems = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
@@ -31,6 +34,7 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     document.title = "Tea Atelier — Admin";
@@ -65,14 +69,14 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="h-screen flex bg-[#F4F4F2] overflow-hidden">
+    <div className="h-screen flex bg-[#F4F4F2] dark:bg-[#202721] overflow-hidden">
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-charcoal/10 flex items-center justify-between px-4 py-3">
-        <span className="font-display text-lg text-charcoal">Tea Atelier</span>
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-[#2b342e] border-b border-charcoal/10 flex items-center justify-between px-4 py-3">
+        <span className="font-display text-lg text-charcoal dark:text-[#dfe7dd]">Tea Atelier</span>
         <button
           onClick={() => setMobileNavOpen(true)}
           aria-label="Open menu"
-          className="p-2 -mr-2 text-charcoal"
+          className="p-2 -mr-2 text-charcoal dark:text-[#dfe7dd]"
         >
           <Menu size={22} />
         </button>
@@ -87,7 +91,7 @@ export default function AdminLayout({
 
       <aside
         className={`
-          w-64 bg-white border-r border-charcoal/10 flex flex-col shrink-0
+          w-64 bg-white dark:bg-[#2b342e] border-r border-charcoal/10 flex flex-col shrink-0
           fixed inset-y-0 left-0 z-50 transition-transform duration-300
           lg:static lg:translate-x-0 h-screen
           ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"}
@@ -98,17 +102,17 @@ export default function AdminLayout({
             T
           </div>
           <div>
-            <span className="font-body text-base font-semibold text-charcoal block">
+            <span className="font-body text-base font-semibold text-charcoal dark:text-[#dfe7dd] block">
               Tea Atelier
             </span>
-            <span className="font-body text-[10px] tracking-[0.15em] uppercase text-charcoal/40">
+            <span className="font-body text-[10px] tracking-[0.15em] uppercase text-charcoal/40 dark:text-[#aebbad]">
               Admin
             </span>
           </div>
           <button
             onClick={() => setMobileNavOpen(false)}
             aria-label="Close menu"
-            className="lg:hidden ml-auto p-1 text-charcoal/50 hover:text-charcoal"
+            className="lg:hidden ml-auto p-1 text-charcoal/50 dark:text-[#aebbad] hover:text-charcoal dark:hover:text-[#dfe7dd]"
           >
             <X size={20} />
           </button>
@@ -124,8 +128,8 @@ export default function AdminLayout({
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-2.5 font-body text-sm rounded-xl transition-colors ${
                   isActive
-                    ? "bg-sage text-cream font-medium shadow-sm"
-                    : "text-charcoal/60 hover:text-charcoal hover:bg-sand/40"
+                    ? "bg-sage text-cream dark:bg-[#71866e] dark:text-[#f0f4ed] font-medium shadow-sm"
+                    : "text-charcoal/60 dark:text-[#b9c5b7] hover:text-charcoal dark:hover:text-[#f0f4ed] hover:bg-sand/40 dark:hover:bg-[#354038]"
                 }`}
               >
                 <Icon size={17} strokeWidth={1.75} />
@@ -136,18 +140,26 @@ export default function AdminLayout({
         </nav>
 
         <div className="px-6 py-5 border-t border-charcoal/10 shrink-0">
-          <p className="font-body text-xs text-charcoal/50 truncate mb-3">
+          <p className="font-body text-xs text-charcoal/50 dark:text-[#aebbad] truncate mb-3">
             {user.email}
           </p>
           <Link
             href="/"
-            className="flex items-center gap-1.5 font-body text-sm text-charcoal/70 hover:text-sage transition-colors mb-3"
+            className="flex items-center gap-1.5 font-body text-sm text-charcoal/70 dark:text-[#b9c5b7] hover:text-sage dark:hover:text-[#a7bca2] transition-colors mb-3"
           >
             View storefront <ArrowUpRight size={14} />
           </Link>
           <button
+            onClick={toggleTheme}
+            className="flex items-center gap-2 font-body text-sm text-charcoal/70 dark:text-[#b9c5b7] hover:text-charcoal dark:hover:text-[#f0f4ed] transition-colors mb-3"
+            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          >
+            {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
+            {theme === "light" ? "Dark mode" : "Light mode"}
+          </button>
+          <button
             onClick={handleLogout}
-            className="flex items-center gap-2 font-body text-sm text-charcoal/70 hover:text-charcoal transition-colors"
+            className="flex items-center gap-2 font-body text-sm text-charcoal/70 dark:text-[#b9c5b7] hover:text-charcoal dark:hover:text-[#f0f4ed] transition-colors"
           >
             <LogOut size={15} /> Sign out
           </button>

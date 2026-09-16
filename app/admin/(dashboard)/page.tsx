@@ -11,6 +11,7 @@ import {
   Cell,
   CartesianGrid,
 } from "recharts";
+import { useTheme } from "@/lib/theme-context";
 
 type TopProduct = {
   id: number;
@@ -94,6 +95,9 @@ export default function AdminOverviewPage() {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [lowStock, setLowStock] = useState<LowStockProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { theme } = useTheme();
+  const chartTextColor = theme === "dark" ? "#d5ded4" : "#3a3a3a";
+  const chartGridColor = theme === "dark" ? "#c9d3c833" : "#3a3a3a26";
 
   useEffect(() => {
     async function loadOverview() {
@@ -164,7 +168,7 @@ export default function AdminOverviewPage() {
         Overview
       </h1>
       <p className="font-body text-sm text-charcoal/60 mb-8">
-        Welcome back! here's what's happening with Tea Atelier.
+        Welcome back! here&apos;s what&apos;s happening with Tea Atelier.
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -257,18 +261,26 @@ export default function AdminOverviewPage() {
                   margin={{ top: 10, left: -10, right: 10, bottom: 10 }}
                   className="[&_*:focus]:outline-none"
                 >
-                  <CartesianGrid vertical={false} stroke="#3a3a3a26" />
+                  <CartesianGrid vertical={false} stroke={chartGridColor} />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
-                    axisLine={{ stroke: "#3a3a3a", strokeWidth: 1.5 }}
+                    tick={{
+                      fontSize: 11,
+                      fill: chartTextColor,
+                      fontWeight: 600,
+                    }}
+                    axisLine={{ stroke: chartTextColor, strokeWidth: 1.5 }}
                     tickLine={false}
                     interval={0}
                     tickMargin={16}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "#3a3a3a", fontWeight: 600 }}
-                    axisLine={{ stroke: "#3a3a3a", strokeWidth: 1.5 }}
+                    tick={{
+                      fontSize: 11,
+                      fill: chartTextColor,
+                      fontWeight: 600,
+                    }}
+                    axisLine={{ stroke: chartTextColor, strokeWidth: 1.5 }}
                     tickLine={false}
                     tickFormatter={(value) =>
                       value >= 1000

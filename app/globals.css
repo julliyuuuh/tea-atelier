@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark*));
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --color-sage: #778873;
@@ -18,46 +18,90 @@ body {
   color: var(--color-charcoal);
 }
 
+.dark {
+  --color-charcoal: #dfe7dd;
+  --color-cream: #2b342e;
+  --color-sage: #829a7e;
+  --color-sage-light: #a7bca2;
+  --color-sand: #465348;
+}
+
 .dark body {
-  background-color: var(--color-charcoal);
-  color: var(--color-cream);
+  background-color: #202721;
+  color: #e3e9df;
 }
 
 .dark [class~="bg-white"],
 .dark [class*="bg-white/"],
 .dark [class~="bg-cream"],
 .dark [class*="bg-cream/"] {
-  background-color: #2b342d;
+  background-color: #2b342e;
 }
 
 .dark [class~="text-charcoal"] {
-  color: var(--color-cream);
+  color: #e3e9df;
 }
 
 .dark [class*="text-charcoal/"] {
-  color: color-mix(in srgb, var(--color-cream) 70%, transparent);
+  color: color-mix(in srgb, #e3e9df 68%, transparent);
+}
+
+.dark [class~="text-cream"] {
+  color: #e3e9df;
+}
+
+.dark [class*="text-cream/"] {
+  color: color-mix(in srgb, #e3e9df 68%, transparent);
 }
 
 .dark [class~="border-charcoal/10"],
 .dark [class~="border-charcoal/20"],
 .dark [class*="border-charcoal/"] {
-  border-color: color-mix(in srgb, var(--color-cream) 25%, transparent);
+  border-color: color-mix(in srgb, #c9d3c8 18%, transparent);
 }
 
 .dark [class~="bg-sand"],
 .dark [class*="bg-sand/"] {
-  background-color: #39443b;
+  background-color: #354038;
+}
+
+.dark [class~="bg-charcoal"] {
+  background-color: #29332d;
+}
+
+.dark [class~="bg-sage"] {
+  background-color: #71866e;
+}
+
+.dark [class~="text-sage"] {
+  color: #9db398;
+}
+
+.dark [class~="text-sage-light"] {
+  color: #b4c8af;
 }
 
 .dark input,
 .dark textarea,
 .dark select {
-  background-color: #2b342d;
-  border-color: color-mix(in srgb, var(--color-cream) 25%, transparent);
-  color: var(--color-cream);
+  background-color: #2b342e;
+  border-color: color-mix(in srgb, #c9d3c8 22%, transparent);
+  color: #e3e9df;
 }
 
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: color-mix(in srgb, var(--color-cream) 50%, transparent);
+  color: color-mix(in srgb, #e3e9df 45%, transparent);
+}
+
+.dark button.bg-charcoal,
+.dark button.bg-sage {
+  background-color: #71866e;
+  color: #f0f4ed;
+}
+
+.dark button.bg-charcoal:hover,
+.dark button.bg-sage:hover {
+  background-color: #829a7e;
+  color: #202721;
 }

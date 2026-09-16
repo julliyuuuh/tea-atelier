@@ -7,6 +7,7 @@ import {
   useState,
   ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 
 type Theme = "light" | "dark";
 
@@ -18,20 +19,24 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const isAdmin = pathname.startsWith("/admin");
+  const storageKey = isAdmin ? "admin-theme" : "customer-theme";
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
-    const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored) {
-      setTheme(stored);
-      document.documentElement.classList.toggle("dark", stored === "dark");
-    }
-  }, []);
+    const stored =
+      localStorage.getItem(storageKey) ??
+      (!isAdmin ? localStorage.getItem("theme") : null);
+    const nextTheme: Theme = stored === "dark" ? "dark" : "light";
+    setTheme(nextTheme);
+    document.documentElement.classList.toggle("dark", nextTheme === "dark");
+  }, [isAdmin, storageKey]);
 
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
-    localStorage.setItem("theme", next);
+    localStorage.setItem(storageKey, next);
     document.documentElement.classList.toggle("dark", next === "dark");
   };
 
