@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
+import { ORDER_STATUSES } from "@/lib/order-status";
 
-const VALID_STATUSES = ["PENDING", "SHIPPED", "DELIVERED", "CANCELLED"];
+const VALID_STATUSES: string[] = ORDER_STATUSES.map((s) => s.value);
 
 export async function PATCH(
   req: Request,

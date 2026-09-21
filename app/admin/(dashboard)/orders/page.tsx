@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ClipboardList } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
+import { ORDER_STATUSES } from "@/lib/order-status";
 import {
   ErrorBanner,
   StatChip,
@@ -37,13 +38,10 @@ type SortKey = "id" | "totalAmount" | "createdAt" | "itemCount";
 
 const STATUS_OPTIONS = [
   { value: "All", label: "All Statuses" },
-  { value: "PENDING", label: "Pending" },
-  { value: "SHIPPED", label: "Shipped" },
-  { value: "DELIVERED", label: "Delivered" },
-  { value: "CANCELLED", label: "Cancelled" },
+  ...ORDER_STATUSES.map((s) => ({ value: s.value, label: s.label })),
 ];
 
-// Same statuses, without "All" — used for the per-row status picker where
+// Same statuses, without "All", used for the per-row status picker where
 // there's always exactly one current status, never "all of them".
 const ROW_STATUS_OPTIONS = STATUS_OPTIONS.filter((o) => o.value !== "All");
 
@@ -53,8 +51,10 @@ const GRID_COLS =
 
 function statusBadge(status: string) {
   switch (status) {
-    case "PENDING":
+    case "PLACED":
       return { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" };
+    case "PROCESSING":
+      return { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500" };
     case "SHIPPED":
       return { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" };
     case "DELIVERED":
@@ -76,7 +76,7 @@ function buildQuery(params: Record<string, string | number | boolean | undefined
 }
 
 export default function AdminOrdersPage() {
-  // Current page's rows only — the full order book never lives in the browser.
+  // Current page's rows only. the full order book never lives in the browser.
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, cancelled: 0 });
   const [currentPage, setCurrentPage] = useState(1);
@@ -178,8 +178,8 @@ export default function AdminOrdersPage() {
           ...prev,
           pending:
             prev.pending +
-            (newStatus === "PENDING" ? 1 : 0) -
-            (orders.find((o) => o.id === orderId)?.status === "PENDING" ? 1 : 0),
+            (newStatus === "PLACED" ? 1 : 0) -
+            (orders.find((o) => o.id === orderId)?.status === "PLACED" ? 1 : 0),
           cancelled:
             prev.cancelled +
             (newStatus === "CANCELLED" ? 1 : 0) -
@@ -237,10 +237,10 @@ export default function AdminOrdersPage() {
       <ErrorBanner message={errorMessage} onRetry={() => loadOrders(currentPage)} />
       <ErrorBanner message={actionError} />
 
-      {/* Stat chips — always reflect the whole order book, not just this page */}
+      {/* Stat chips, always reflect the whole order book, not just this page */}
       <div className="flex flex-wrap gap-3 mb-6">
         <StatChip label="Total Orders" value={stats.total} />
-        <StatChip label="Pending" value={stats.pending} tone="warning" />
+        <StatChip label="Order Placed" value={stats.pending} tone="warning" />
         <StatChip label="Cancelled" value={stats.cancelled} tone="danger" />
       </div>
 

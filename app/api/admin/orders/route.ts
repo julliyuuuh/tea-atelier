@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
+import { ORDER_STATUSES } from "@/lib/order-status";
 
-const VALID_STATUSES = ["PENDING", "SHIPPED", "DELIVERED", "CANCELLED"];
+const VALID_STATUSES: string[] = ORDER_STATUSES.map((s) => s.value);
 
 // Column allowlist for ORDER BY — never interpolate the sort key directly,
 // since it comes from the query string. item_count/total_amount are safe to
@@ -94,7 +95,7 @@ export async function GET(req: Request) {
   const statsResult = await pool.query(
     `SELECT
        COUNT(*)::int AS total,
-       COUNT(*) FILTER (WHERE order_status = 'PENDING')::int AS pending,
+       COUNT(*) FILTER (WHERE order_status = 'PLACED')::int AS pending,
        COUNT(*) FILTER (WHERE order_status = 'CANCELLED')::int AS cancelled
      FROM orders`,
   );
