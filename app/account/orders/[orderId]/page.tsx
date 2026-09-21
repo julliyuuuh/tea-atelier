@@ -135,6 +135,13 @@ function OrderTracker({ status }: { status: string }) {
   );
 }
 
+function Badge({ children }: { tone?: string; children: React.ReactNode }) {
+  return (
+    <span className="rounded-full bg-sage/20 px-3 py-1 font-body text-xs capitalize text-charcoal">
+      {children}
+    </span>
+  );
+}
 // ---------- page ----------
 
 export default function OrderDetailsPage({
