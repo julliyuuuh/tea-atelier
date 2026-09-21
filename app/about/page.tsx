@@ -6,29 +6,29 @@ import Footer from "@/components/Footer";
 
 const team = [
   {
-    name: "Julliyuuh",
+    name: "Jose Luis Arce",
+    role: "Co Backend Developer",
+    image: "/images/team/Jose.jpg",
+  },
+  {
+    name: "John Bryan Concepcion",
+    role: "Backend Developer",
+    image: "/images/team/JB.jpg",
+  },
+  {
+    name: "Simon Christian Carmen",
+    role: "Co Front-End Designer",
+    image: "/images/team/Simon.jpg",
+  },
+  {
+    name: "Jullia De Jesus",
     role: "Front-End Designer",
-    image: "/images/team/julliyuuh.jpg",
-  },
-  {
-    name: "Member Two",
-    role: "Backend Developer",
-    image: "/images/team/member2.jpg",
-  },
-  {
-    name: "Member Three",
-    role: "Backend Developer",
-    image: "/images/team/member3.jpg",
-  },
-  {
-    name: "Member Four",
-    role: "Backend Developer",
     image: "/images/team/member4.jpg",
   },
   {
-    name: "Member Five",
-    role: "Project Supervisor",
-    image: "/images/team/member5.jpg",
+    name: "Francheska Rabanzo",
+    role: "UI/UX Designer",
+    image: "/images/team/Francheska.jpg",
   },
 ];
 
@@ -102,7 +102,7 @@ export default function AboutPage() {
           className="relative h-80 rounded-3xl overflow-hidden bg-sand"
         >
           <img
-            src="/images/category-leaf.jpg"
+            src="/images/random-girl.png"
             alt="Tea leaves"
             className="w-full h-full object-cover"
           />
