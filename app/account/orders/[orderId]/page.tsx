@@ -5,7 +5,7 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion"; // match the import used in your other files
+import { motion } from "framer-motion"; 
 import { getStatusLabel } from "@/lib/order-status";
 import {
   ArrowLeft,
@@ -16,6 +16,7 @@ import {
   Truck,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import Badge from "@/components/account/Badge";
 // import Badge from wherever your Badge component lives
 
 // ---------- types (match /api/orders/[orderId] response) ----------
@@ -136,13 +137,6 @@ function OrderTracker({ status }: { status: string }) {
   );
 }
 
-function Badge({ children }: { tone?: string; children: React.ReactNode }) {
-  return (
-    <span className="rounded-full bg-sage/20 px-3 py-1 font-body text-xs capitalize text-charcoal">
-      {children}
-    </span>
-  );
-}
 // ---------- page ----------
 
 export default function OrderDetailsPage({
