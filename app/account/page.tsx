@@ -835,6 +835,8 @@ function ProfileTab() {
 // Orders tab, ported from OrderHistoryPage
 // ================================================================
 
+import Link from "next/link";
+
 type OrderItem = {
   name: string;
   image: string;
@@ -1007,6 +1009,14 @@ function OrdersTab() {
                 ₱{order.totalAmount.toFixed(2)}
               </span>
             </div>
+
+            {/* NEW: link to the separate order details page */}
+            <Link
+              href={`/account/orders/${order.id}`}
+              className="mt-4 block w-full rounded-lg border border-charcoal/15 py-2.5 text-center font-body text-sm text-charcoal hover:bg-charcoal hover:text-white transition-colors"
+            >
+              View Order Details
+            </Link>
           </motion.div>
         ))}
       </motion.div>
