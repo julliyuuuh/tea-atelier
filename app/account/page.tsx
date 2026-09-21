@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import ConfirmDialog from "@/components/account/ConfirmDialog";
 import Badge from "@/components/account/Badge";
 import FormField from "@/components/account/FormField";
+import { getStatusLabel } from "@/lib/order-status";
 import {
   AddressSkeleton,
   OrderSkeleton,
@@ -975,7 +976,7 @@ function OrdersTab() {
                   </p>
                 )}
               </div>
-              <Badge tone="sage">{order.status}</Badge>
+              <Badge tone="sage">{getStatusLabel(order.status)}</Badge>
             </div>
 
             <div className="space-y-3 mb-4">

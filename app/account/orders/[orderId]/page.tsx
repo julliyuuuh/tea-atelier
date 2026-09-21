@@ -6,6 +6,7 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion"; // match the import used in your other files
+import { getStatusLabel } from "@/lib/order-status";
 import {
   ArrowLeft,
   Check,
@@ -241,7 +242,7 @@ export default function OrderDetailsPage({
                   </p>
                 )}
               </div>
-              <Badge tone="sage">{order.orderStatus}</Badge>
+              <Badge tone="sage">{getStatusLabel(order.orderStatus)}</Badge>
             </div>
           </div>
 

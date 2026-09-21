@@ -118,7 +118,7 @@ export async function POST(req: Request) {
     // Create the order
     const orderResult = await client.query(
       `INSERT INTO orders (user_id, address_id, shipping_cost, total_amount, order_status, payment_method, contact_phone, recipient_name)
-      VALUES ($1, $2, $3, $4, 'PENDING', $5, $6, $7)
+      VALUES ($1, $2, $3, $4, 'PLACED', $5, $6, $7)
       RETURNING order_id, payment_status`,
       [userId, addressId, shippingCost, totalAmount, paymentMethod || "cod", phone || null, fullName || null]
     );
