@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/lib/auth-context";
 
 export default function ContactPage() {
+  const { user, isLoading: authLoading } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +29,10 @@ export default function ContactPage() {
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
         body: JSON.stringify(form),
       });
 
@@ -61,7 +67,31 @@ export default function ContactPage() {
           </p>
         </div>
 
-        {submitted ? (
+        {authLoading ? (
+          <p className="text-center font-body text-sm text-charcoal/50">
+            Loading...
+          </p>
+        ) : !user ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center bg-sand/40 rounded-2xl p-10"
+          >
+            <p className="font-display text-xl text-charcoal mb-2">
+              Log in to send a message
+            </p>
+            <p className="font-body text-sm text-charcoal/60 mb-6">
+              Create an account or sign in so we can get back to you and you
+              can track your messages.
+            </p>
+            <Link
+              href="/login"
+              className="inline-block rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-3 hover:bg-charcoal transition-colors"
+            >
+              Log In
+            </Link>
+          </motion.div>
+        ) : submitted ? (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
