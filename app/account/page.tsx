@@ -1461,6 +1461,7 @@ type ContactMessage = {
   adminReply: string | null;
   createdAt: string;
   repliedAt: string | null;
+  customerViewedAt: string | null;
 };
 
 const statusTone: Record<ContactMessage["status"], "sage" | "amber" | "neutral"> = {
@@ -1521,7 +1522,7 @@ function MessagesTab() {
   }, [page]);
 
   if (isLoading) {
-    return <OrderSkeleton />; // reuse, or swap for a MessagesSkeleton if you want it distinct
+    return <OrderSkeleton />;
   }
 
   if (errorMessage) {
@@ -1548,51 +1549,51 @@ function MessagesTab() {
         variants={listContainerVariants}
         initial="hidden"
         animate="show"
-        className="space-y-6"
+        className="space-y-4"
       >
-        {messages.map((m) => (
-          <motion.div
-            key={m.id}
-            variants={listItemVariants}
-            className="bg-sand/30 rounded-xl p-6"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-3 border-b border-charcoal/10">
-              <div>
-                <p className="font-body text-sm text-charcoal">
-                  {m.subject || "(No subject)"}
+        {messages.map((m) => {
+          const isUnread = !m.customerViewedAt;
+          return (
+            <motion.div key={m.id} variants={listItemVariants}>
+              <Link
+                href={`/account/messages/${m.id}`}
+                className={`block rounded-xl p-6 transition-colors ${
+                  isUnread
+                    ? "bg-sand/50 hover:bg-sand/60"
+                    : "bg-sand/15 hover:bg-sand/25"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4 mb-2">
+                  <p
+                    className={`font-display text-base text-charcoal ${
+                      isUnread ? "font-medium" : ""
+                    }`}
+                  >
+                    {m.subject || "(No subject)"}
+                  </p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isUnread && (
+                      <span className="w-2 h-2 rounded-full bg-sage" aria-label="Unread" />
+                    )}
+                    <Badge tone={statusTone[m.status]}>{m.status}</Badge>
+                  </div>
+                </div>
+
+                <p className="font-body text-sm text-charcoal/60 truncate">
+                  {m.message}
                 </p>
-                <p className="font-body text-xs text-charcoal/50 mt-1">
+
+                <p className="font-body text-xs text-charcoal/40 mt-3">
                   {new Date(m.createdAt).toLocaleDateString("en-PH", {
                     month: "long",
                     day: "numeric",
                     year: "numeric",
                   })}
                 </p>
-              </div>
-              <Badge tone={statusTone[m.status]}>{m.status}</Badge>
-            </div>
-
-            <p className="font-body text-sm text-charcoal/70">{m.message}</p>
-
-            {m.adminReply && (
-              <div className="mt-4 pt-4 border-t border-charcoal/10">
-                <p className="font-body text-xs uppercase tracking-wide text-sage mb-1">
-                  Reply
-                </p>
-                <p className="font-body text-sm text-charcoal/80">{m.adminReply}</p>
-                {m.repliedAt && (
-                  <p className="font-body text-xs text-charcoal/40 mt-2">
-                    {new Date(m.repliedAt).toLocaleDateString("en-PH", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </p>
-                )}
-              </div>
-            )}
-          </motion.div>
-        ))}
+              </Link>
+            </motion.div>
+          );
+        })}
       </motion.div>
 
       {totalPages > 1 && (

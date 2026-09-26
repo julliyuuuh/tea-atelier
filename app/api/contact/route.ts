@@ -22,11 +22,11 @@ export async function GET(req: Request) {
   const totalPages = Math.ceil(totalMessages / pageSize);
 
   const messagesResult = await pool.query(
-    `SELECT message_id, subject, message, status, admin_reply, created_at, replied_at
-     FROM contact_messages
-     WHERE user_id = $1
-     ORDER BY created_at DESC
-     LIMIT $2 OFFSET $3`,
+    `SELECT message_id, subject, message, status, admin_reply, created_at, replied_at, customer_viewed_at
+    FROM contact_messages
+    WHERE user_id = $1
+    ORDER BY created_at DESC
+    LIMIT $2 OFFSET $3`,
     [userId, pageSize, offset]
   );
 
@@ -38,8 +38,9 @@ export async function GET(req: Request) {
     adminReply: m.admin_reply,
     createdAt: m.created_at,
     repliedAt: m.replied_at,
+    customerViewedAt: m.customer_viewed_at,
   }));
-
+  
   return NextResponse.json({ messages, totalPages, currentPage: page });
 }
 
