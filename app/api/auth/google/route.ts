@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         await sendWelcomeEmail(user.email, user.first_name);
       } catch (emailError) {
         console.error("Failed to send welcome email:", emailError);
-        // Don't fail signup just because the email didn't send
+        // Don't fail signup just because the email didn't send.
       }
     }
 
