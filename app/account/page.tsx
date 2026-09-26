@@ -26,12 +26,13 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/lib/theme-context";
 
-type TabKey = "profile" | "orders" | "settings";
+type TabKey = "profile" | "orders" | "settings" | "messages";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "profile", label: "Profile" },
   { key: "orders", label: "My Orders" },
   { key: "settings", label: "Settings" },
+  { key: "messages", label: "My Messages" },
 ];
 
 const PANEL_TRANSITION = { duration: 0.25, ease: [0.16, 1, 0.3, 1] as const };
@@ -212,6 +213,28 @@ function AccountPageInner() {
               inert={activeTab !== "settings" ? true : undefined}
             >
               <SettingsTab />
+            </motion.div>
+          )}
+          {visited.has("messages") && (
+            <motion.div
+              id="account-panel-messages"
+              role="tabpanel"
+              aria-labelledby="account-tab-messages"
+              tabIndex={0}
+              className="col-start-1 row-start-1"
+              initial={false}
+              animate={{
+                opacity: activeTab === "messages" ? 1 : 0,
+                y: activeTab === "messages" ? 0 : 8,
+              }}
+              transition={PANEL_TRANSITION}
+              style={{
+                pointerEvents: activeTab === "messages" ? "auto" : "none",
+              }}
+              aria-hidden={activeTab !== "messages"}
+              inert={activeTab !== "messages" ? true : undefined}
+            >
+              <MessagesTab />
             </motion.div>
           )}
         </div>
