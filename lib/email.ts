@@ -62,3 +62,33 @@ export async function sendWelcomeEmail(to: string, firstName: string) {
     `,
   });
 }
+
+export async function sendContactReplyEmail(
+  to: string,
+  firstName: string,
+  subject: string,
+  originalMessage: string,
+  reply: string
+) {
+  await resend.emails.send({
+    from: `Tea Atelier <${process.env.EMAIL_FROM}>`,
+    to,
+    subject: `Re: ${subject}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <h2>Hi ${firstName},</h2>
+        <p>Thanks for reaching out! Here's our reply to your message:</p>
+        <blockquote style="border-left: 3px solid #8a9a7e; margin: 16px 0; padding: 8px 16px; color: #555;">
+          ${originalMessage}
+        </blockquote>
+        <p style="white-space: pre-wrap;">${reply}</p>
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/account" style="display: inline-block; background: #8a9a7e; color: #fff; padding: 12px 24px; text-decoration: none; margin-top: 16px;">
+          View in Your Account
+        </a>
+        <p style="color: #888; font-size: 12px; margin-top: 24px;">
+          You can also read this reply anytime from the Messages tab in your account.
+        </p>
+      </div>
+    `,
+  });
+}

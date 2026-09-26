@@ -55,3 +55,14 @@ CREATE TABLE order_items (
   quantity INT DEFAULT 1,
   price DECIMAL(10,2) NOT NULL
 );
+
+CREATE TABLE contact_messages (
+  message_id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(user_id),
+  subject VARCHAR(255),
+  message TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'new', -- new / read / replied
+  admin_reply TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  replied_at TIMESTAMP
+);

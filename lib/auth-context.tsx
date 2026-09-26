@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (!res.ok) {
-          // Token's expired/invalid/user deleted — clear it out
+          // Token's expired/invalid/user deleted, clear it out
           localStorage.removeItem("token");
           setUser(null);
           return;

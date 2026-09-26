@@ -833,7 +833,7 @@ function ProfileTab() {
 }
 
 // ================================================================
-// Orders tab, ported from OrderHistoryPage
+// Orders tab
 // ================================================================
 
 import Link from "next/link";
@@ -1048,7 +1048,7 @@ function OrdersTab() {
 }
 
 // ================================================================
-// Settings tab, ported from SettingsPage
+// Settings tab
 // ================================================================
 
 function SettingsTab() {
@@ -1422,6 +1422,177 @@ function SettingsTab() {
         onConfirm={confirmDisable2FA}
         onCancel={() => setShowDisableConfirm(false)}
       />
+    </div>
+  );
+}
+
+// ================================================================
+// Messages Tab
+// ================================================================
+
+type ContactMessage = {
+  id: number;
+  subject: string | null;
+  message: string;
+  status: "new" | "read" | "replied";
+  adminReply: string | null;
+  createdAt: string;
+  repliedAt: string | null;
+};
+
+const statusTone: Record<ContactMessage["status"], "sage" | "amber" | "neutral"> = {
+  new: "amber",
+  read: "neutral",
+  replied: "sage",
+};
+
+function MessagesTab() {
+  const { logout } = useAuth();
+  const router = useRouter();
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadMessages() {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setErrorMessage("Please sign in to view your messages.");
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const res = await fetch(`/api/contact?page=${page}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+
+        if (res.status === 401) {
+          logout();
+          router.push("/login");
+          return;
+        }
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Unable to load messages.");
+        setMessages(data.messages);
+        setTotalPages(data.totalPages);
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          setErrorMessage(error.message);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadMessages();
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  if (isLoading) {
+    return <OrderSkeleton />; // reuse, or swap for a MessagesSkeleton if you want it distinct
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="text-center py-16">
+        <p className="font-body text-sm text-red-600">{errorMessage}</p>
+      </div>
+    );
+  }
+
+  if (messages.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <p className="font-body text-sm text-charcoal/50">
+          You haven't sent any messages yet.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <motion.div
+        variants={listContainerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-6"
+      >
+        {messages.map((m) => (
+          <motion.div
+            key={m.id}
+            variants={listItemVariants}
+            className="bg-sand/30 rounded-xl p-6"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-3 border-b border-charcoal/10">
+              <div>
+                <p className="font-body text-sm text-charcoal">
+                  {m.subject || "(No subject)"}
+                </p>
+                <p className="font-body text-xs text-charcoal/50 mt-1">
+                  {new Date(m.createdAt).toLocaleDateString("en-PH", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              </div>
+              <Badge tone={statusTone[m.status]}>{m.status}</Badge>
+            </div>
+
+            <p className="font-body text-sm text-charcoal/70">{m.message}</p>
+
+            {m.adminReply && (
+              <div className="mt-4 pt-4 border-t border-charcoal/10">
+                <p className="font-body text-xs uppercase tracking-wide text-sage mb-1">
+                  Reply
+                </p>
+                <p className="font-body text-sm text-charcoal/80">{m.adminReply}</p>
+                {m.repliedAt && (
+                  <p className="font-body text-xs text-charcoal/40 mt-2">
+                    {new Date(m.repliedAt).toLocaleDateString("en-PH", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                )}
+              </div>
+            )}
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 mt-10">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="font-body text-lg uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            &lt;
+          </button>
+          <span className="font-body text-base text-charcoal/50">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="font-body text-lg uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            &gt;
+          </button>
+        </div>
+      )}
     </div>
   );
 }

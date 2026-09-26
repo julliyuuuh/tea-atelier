@@ -8,6 +8,7 @@ import {
   Package,
   ShoppingBag,
   Users,
+  Mail,
   LogOut,
   Menu,
   X,
@@ -15,6 +16,7 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
+
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 
@@ -23,6 +25,7 @@ const navItems = [
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { label: "Customers", href: "/admin/customers", icon: Users },
+  { label: "Contact Messages", href: "/admin/contact", icon: Mail },
 ];
 
 export default function AdminLayout({

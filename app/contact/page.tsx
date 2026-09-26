@@ -7,7 +7,9 @@ import Footer from "@/components/Footer";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({ subject: "", message: "" });
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -16,9 +18,29 @@ export default function ContactPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Something went wrong.");
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,34 +71,27 @@ export default function ContactPage() {
               Message sent
             </p>
             <p className="font-body text-sm text-charcoal/60">
-              We'll get back to you within 1-2 business days.
+              We'll get back to you within 1-2 business days. You can track
+              this message from your account page.
             </p>
           </motion.div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                required
-                value={form.name}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-charcoal/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-              />
-            </div>
+            {error && (
+              <p className="font-body text-sm text-red-600 text-center">
+                {error}
+              </p>
+            )}
 
             <div>
               <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
-                Email
+                Subject
               </label>
               <input
-                type="email"
-                name="email"
+                type="text"
+                name="subject"
                 required
-                value={form.email}
+                value={form.subject}
                 onChange={handleChange}
                 className="w-full rounded-xl border border-charcoal/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
               />
@@ -98,9 +113,10 @@ export default function ContactPage() {
 
             <button
               type="submit"
-              className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
+              disabled={loading}
+              className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:opacity-50"
             >
-              Send Message
+              {loading ? "Sending..." : "Send Message"}
             </button>
           </form>
         )}
