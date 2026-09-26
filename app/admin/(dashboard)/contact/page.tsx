@@ -11,7 +11,7 @@ import {
   CustomSelect,
   rowVariants,
 } from "@/components/admin/AdminUI";
-import Badge from "@/components/Badge";
+import Badge from "@/components/account/Badge";
 
 const PAGE_SIZE = 10;
 
