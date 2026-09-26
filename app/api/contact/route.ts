@@ -48,39 +48,36 @@ export async function POST(req: Request) {
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { subject, message } = await req.json();
+  try {
+    const { subject, message } = await req.json();
 
-  if (!subject || typeof subject !== "string" || !subject.trim()) {
-    return NextResponse.json({ error: "Subject is required." }, { status: 400 });
-  }
+    if (!subject || typeof subject !== "string" || !subject.trim()) {
+      return NextResponse.json({ error: "Subject is required." }, { status: 400 });
+    }
+    if (!message || typeof message !== "string" || !message.trim()) {
+      return NextResponse.json({ error: "Message is required." }, { status: 400 });
+    }
 
-  if (!message || typeof message !== "string" || !message.trim()) {
-    return NextResponse.json({ error: "Message is required." }, { status: 400 });
-  }
+    const trimmedSubject = subject.trim();
+    const trimmedMessage = message.trim();
 
-  const trimmedSubject = subject.trim();
-  const trimmedMessage = message.trim();
+    if (trimmedSubject.length > 255) {
+      return NextResponse.json({ error: "Subject must be under 255 characters." }, { status: 400 });
+    }
+    if (trimmedMessage.length > 5000) {
+      return NextResponse.json({ error: "Message must be under 5000 characters." }, { status: 400 });
+    }
 
-  if (trimmedSubject.length > SUBJECT_MAX_LENGTH) {
-    return NextResponse.json(
-      { error: `Subject must be under ${SUBJECT_MAX_LENGTH} characters.` },
-      { status: 400 }
+    const result = await pool.query(
+      `INSERT INTO contact_messages (user_id, subject, message)
+       VALUES ($1, $2, $3)
+       RETURNING message_id, subject, message, status, created_at`,
+      [userId, trimmedSubject, trimmedMessage]
     );
+
+    return NextResponse.json(result.rows[0], { status: 201 });
+  } catch (err) {
+    console.error("POST /api/contact failed:", err);
+    return NextResponse.json({ error: "Unable to send message." }, { status: 500 });
   }
-
-  if (trimmedMessage.length > MESSAGE_MAX_LENGTH) {
-    return NextResponse.json(
-      { error: `Message must be under ${MESSAGE_MAX_LENGTH} characters.` },
-      { status: 400 }
-    );
-  }
-
-  const result = await pool.query(
-    `INSERT INTO contact_messages (user_id, subject, message)
-     VALUES ($1, $2, $3)
-     RETURNING message_id, subject, message, status, created_at`,
-    [userId, trimmedSubject, trimmedMessage]
-  );
-
-  return NextResponse.json(result.rows[0], { status: 201 });
 }
