@@ -41,11 +41,8 @@ const STATUS_OPTIONS = [
   ...ORDER_STATUSES.map((s) => ({ value: s.value, label: s.label })),
 ];
 
-// Same statuses, without "All", used for the per-row status picker where
-// there's always exactly one current status, never "all of them".
 const ROW_STATUS_OPTIONS = STATUS_OPTIONS.filter((o) => o.value !== "All");
 
-// Shared column layout so the header, skeleton rows, and data rows always line up.
 const GRID_COLS =
   "minmax(90px,0.7fr) minmax(200px,2fr) minmax(70px,0.6fr) minmax(100px,0.9fr) minmax(110px,0.9fr) minmax(150px,1.1fr)";
 
@@ -94,13 +91,11 @@ export default function AdminOrdersPage() {
     direction: "desc",
   });
 
-  // Debounce search so we're not hitting the DB on every keystroke.
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timeout);
   }, [search]);
 
-  // Any change to what we're querying should land back on page 1.
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearch, filterStatus, sortConfig]);
@@ -129,8 +124,6 @@ export default function AdminOrdersPage() {
         setStats(data.stats);
         setTotalPages(data.totalPages);
 
-        // If the current page emptied out (e.g. a status update pushed a
-        // row off this filtered view), step back one page.
         if (data.orders.length === 0 && page > 1 && data.total > 0) {
           setCurrentPage(page - 1);
         }
@@ -173,7 +166,6 @@ export default function AdminOrdersPage() {
         setOrders((prev) =>
           prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
         );
-        // Pending/Cancelled counts in the stat chips just changed too.
         setStats((prev) => ({
           ...prev,
           pending:

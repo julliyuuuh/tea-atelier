@@ -69,7 +69,7 @@ export function StatChip({
 
   return (
     <div
-      className={`flex items-center gap-2 rounded-xl px-4 py-3 border border-charcoal/10 ${toneClasses}`}
+      className={`flex items-center gap-2 rounded-md px-4 py-3 border border-charcoal/10 ${toneClasses}`}
     >
       <span className="font-body text-lg font-semibold leading-none">
         {value}
