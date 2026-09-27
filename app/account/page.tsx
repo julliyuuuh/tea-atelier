@@ -152,13 +152,13 @@ function AccountPageInner() {
           })}
         </div>
 
-        <div className="relative bg-cream border border-charcoal/10 rounded-2xl p-8 min-h-[420px] grid overflow-hidden">
+        <div className="relative bg-cream border border-charcoal/10 rounded-2xl p-8 min-h-[420px] grid grid-cols-1 overflow-hidden">
           <motion.div
             id="account-panel-profile"
             role="tabpanel"
             aria-labelledby="account-tab-profile"
             tabIndex={0}
-            className="col-start-1 row-start-1"
+            className="col-start-1 row-start-1 min-w-0"
             initial={false}
             animate={{
               opacity: activeTab === "profile" ? 1 : 0,
@@ -177,7 +177,7 @@ function AccountPageInner() {
               role="tabpanel"
               aria-labelledby="account-tab-orders"
               tabIndex={0}
-              className="col-start-1 row-start-1"
+              className="col-start-1 row-start-1 min-w-0"
               initial={false}
               animate={{
                 opacity: activeTab === "orders" ? 1 : 0,
@@ -199,7 +199,7 @@ function AccountPageInner() {
               role="tabpanel"
               aria-labelledby="account-tab-settings"
               tabIndex={0}
-              className="col-start-1 row-start-1"
+              className="col-start-1 row-start-1 min-w-0"
               initial={false}
               animate={{
                 opacity: activeTab === "settings" ? 1 : 0,
@@ -221,7 +221,7 @@ function AccountPageInner() {
               role="tabpanel"
               aria-labelledby="account-tab-messages"
               tabIndex={0}
-              className="col-start-1 row-start-1"
+              className="col-start-1 row-start-1 min-w-0"
               initial={false}
               animate={{
                 opacity: activeTab === "messages" ? 1 : 0,
@@ -1557,10 +1557,10 @@ function MessagesTab() {
             <motion.div key={m.id} variants={listItemVariants}>
               <Link
                 href={`/account/messages/${m.id}`}
-                className={`block rounded-xl p-6 transition-colors ${
+                className={`block rounded-xl p-6 transition-colors border ${
                   isUnread
-                    ? "bg-sand/50 hover:bg-sand/60"
-                    : "bg-sand/15 hover:bg-sand/25"
+                    ? "bg-sand/50 border-sand/70 hover:bg-sand/60"
+                    : "bg-transparent border-charcoal/10 hover:bg-sand/10"
                 }`}
               >
                 <div className="flex items-start justify-between gap-4 mb-2">
