@@ -27,7 +27,7 @@ const navItems = [
   { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { label: "Customers", href: "/admin/customers", icon: Users },
   { label: "Contact Messages", href: "/admin/contact", icon: Mail },
-  { label: "Homepage Content", href: "/admin/cms", icon: FileText },
+  { label: "Content Management", href: "/admin/cms", icon: FileText },
 ];
 
 export default function AdminLayout({
@@ -42,7 +42,7 @@ export default function AdminLayout({
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
-    document.title = "Tea Atelier — Admin";
+    document.title = "Tea Atelier - Admin";
   }, []);
 
   useEffect(() => {
