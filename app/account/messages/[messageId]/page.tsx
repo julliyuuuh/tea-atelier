@@ -101,7 +101,7 @@ export default function MessageDetailsPage({
           className="space-y-6"
         >
           {/* header */}
-          <div className="bg-sand/30 rounded-xl p-6">
+          <div className="bg-sand/30 border border-sand/50 rounded-xl p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-display text-lg text-charcoal">
