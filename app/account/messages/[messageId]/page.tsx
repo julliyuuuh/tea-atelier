@@ -129,16 +129,17 @@ export default function MessageDetailsPage({
                 {data.message}
             </p>
             </div>
-
-            <div className="bg-sage/10 rounded-xl p-6">
-            <h3 className="font-display text-base text-charcoal mb-4">Reply</h3>
+            
+            {/* admin reply */}
+            <div className="bg-sage/15 border border-sage/25 rounded-xl p-6">
+            <h3 className="font-display text-base text-sage mb-4">Reply</h3>
             {data.adminReply ? (
                 <>
                 <p className="font-body text-sm text-charcoal/80 whitespace-pre-wrap">
                     {data.adminReply}
                 </p>
                 {data.repliedAt && (
-                    <p className="font-body text-xs text-charcoal/50 mt-3 pt-3 border-t border-sage/20">
+                    <p className="font-body text-xs text-charcoal/50 mt-3 pt-3 border-t border-sage/25">
                     Replied on{" "}
                     {new Date(data.repliedAt).toLocaleDateString("en-PH", {
                         month: "long",
