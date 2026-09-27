@@ -68,6 +68,8 @@ CREATE TABLE contact_messages (
 );
 
 
+-- Uhh next time lets use headless CMS :D 
+-- For now though this is fine lol.
 
 -- For Content Management System (CMS)
 CREATE TABLE homepage_hero (
@@ -112,6 +114,54 @@ CREATE TABLE homepage_reviews (
   quote TEXT NOT NULL,
   name TEXT NOT NULL,
   rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE about_hero (
+  id SERIAL PRIMARY KEY,
+  heading TEXT NOT NULL,
+  subheading TEXT NOT NULL
+);
+
+CREATE TABLE about_story (
+  id SERIAL PRIMARY KEY,
+  eyebrow TEXT NOT NULL,
+  heading TEXT NOT NULL,
+  paragraph_1 TEXT NOT NULL,
+  paragraph_2 TEXT NOT NULL,
+  image_url TEXT NOT NULL
+);
+
+CREATE TABLE about_pillars (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  copy TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE about_team (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  image TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE collections_intro (
+  id SERIAL PRIMARY KEY,
+  eyebrow TEXT NOT NULL,
+  heading TEXT NOT NULL,
+  subheading TEXT NOT NULL
+);
+
+CREATE TABLE collections_items (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  image TEXT NOT NULL,
+  href TEXT NOT NULL,
   sort_order INT NOT NULL DEFAULT 0,
   is_active BOOLEAN NOT NULL DEFAULT true
 );

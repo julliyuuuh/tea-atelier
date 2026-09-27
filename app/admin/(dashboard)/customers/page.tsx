@@ -59,7 +59,6 @@ function buildQuery(params: Record<string, string | number | boolean | undefined
 }
 
 export default function AdminCustomersPage() {
-  // Current page's rows only — the full customer list never lives in the browser.
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [stats, setStats] = useState<Stats>({ total: 0, verified: 0, unverified: 0 });
   const [currentPage, setCurrentPage] = useState(1);
