@@ -13,6 +13,8 @@ import {
   rowVariants,
   type SortConfig,
 } from "@/components/admin/AdminUI";
+import ConfirmDialog from "@/components/account/ConfirmDialog";
+import CustomerDetailPanel from "@/components/admin/CustomerDetailPanel";
 
 const PAGE_SIZE = 10;
 
@@ -22,8 +24,7 @@ type Customer = {
   email: string;
   phone: string | null;
   isVerified: boolean;
-  orderCount: number;
-  totalSpent: number;
+  isSuspended: boolean;
   joinedAt: string;
 };
 
@@ -33,7 +34,10 @@ type Stats = {
   unverified: number;
 };
 
-type SortKey = "name" | "orderCount" | "totalSpent" | "joinedAt";
+type SortKey = "name" | "joinedAt";
+
+// What we're confirming: suspending or unsuspending a single customer.
+type ConfirmTarget = { id: number; suspend: boolean } | null;
 
 const VERIFIED_OPTIONS = [
   { value: "All", label: "All Customers" },
@@ -43,7 +47,7 @@ const VERIFIED_OPTIONS = [
 
 // Shared column layout so the header, skeleton rows, and data rows always line up.
 const GRID_COLS =
-  "minmax(200px,2.2fr) minmax(110px,1fr) minmax(90px,0.8fr) minmax(110px,1fr) minmax(110px,0.9fr) minmax(130px,1fr)";
+  "minmax(220px,2.4fr) minmax(130px,1fr) minmax(120px,0.9fr) minmax(120px,0.9fr) minmax(160px,1.1fr)";
 
 function buildQuery(params: Record<string, string | number | boolean | undefined>) {
   const qs = new URLSearchParams();
@@ -63,10 +67,16 @@ export default function AdminCustomersPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [actionError, setActionError] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterVerified, setFilterVerified] = useState("All");
   const [sortConfig, setSortConfig] = useState<SortConfig<SortKey>>(null);
+
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [viewingId, setViewingId] = useState<number | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget>(null);
+  const [isSuspending, setIsSuspending] = useState(false);
 
   // Debounce search so we're not hitting the DB on every keystroke.
   useEffect(() => {
@@ -135,6 +145,45 @@ export default function AdminCustomersPage() {
     });
   };
 
+  const openView = (id: number) => {
+    setViewingId(id);
+    setPanelOpen(true);
+  };
+
+  const closeView = () => {
+    setPanelOpen(false);
+  };
+
+  const handleConfirmedSuspend = async () => {
+    if (!confirmTarget) return;
+    const { id, suspend } = confirmTarget;
+    setConfirmTarget(null);
+    setIsSuspending(true);
+    setActionError("");
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch(`/api/admin/customers/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ suspend }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to update customer.");
+
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, isSuspended: data.isSuspended } : c)),
+      );
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Something went wrong.");
+    } finally {
+      setIsSuspending(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-10">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
@@ -171,6 +220,7 @@ export default function AdminCustomersPage() {
       </div>
 
       <ErrorBanner message={errorMessage} onRetry={() => loadCustomers(currentPage)} />
+      <ErrorBanner message={actionError} />
 
       {/* Filter toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-charcoal/10 rounded-xl px-4 py-3">
@@ -221,26 +271,13 @@ export default function AdminCustomersPage() {
             <SortHeader label="Customer" sortKeyName="name" sortConfig={sortConfig} onSort={handleSort} />
             <PlainHeader label="Phone" />
             <SortHeader
-              label="Orders"
-              sortKeyName="orderCount"
-              sortConfig={sortConfig}
-              onSort={handleSort}
-              align="right"
-            />
-            <SortHeader
-              label="Total Spent"
-              sortKeyName="totalSpent"
-              sortConfig={sortConfig}
-              onSort={handleSort}
-              align="right"
-            />
-            <SortHeader
               label="Joined"
               sortKeyName="joinedAt"
               sortConfig={sortConfig}
               onSort={handleSort}
             />
             <PlainHeader label="Verified" />
+            <PlainHeader label="Actions" align="right" />
           </div>
         </div>
 
@@ -260,17 +297,15 @@ export default function AdminCustomersPage() {
                 <div className="px-5">
                   <SkeletonBlock className="h-4 w-20" />
                 </div>
-                <div className="px-5 flex justify-end">
-                  <SkeletonBlock className="h-4 w-6" />
-                </div>
-                <div className="px-5 flex justify-end">
-                  <SkeletonBlock className="h-4 w-16" />
-                </div>
                 <div className="px-5">
                   <SkeletonBlock className="h-4 w-20" />
                 </div>
                 <div className="px-5">
                   <SkeletonBlock className="h-6 w-20 rounded-full" />
+                </div>
+                <div className="px-5 flex justify-end gap-3">
+                  <SkeletonBlock className="h-4 w-10" />
+                  <SkeletonBlock className="h-4 w-14" />
                 </div>
               </div>
             ))}
@@ -302,16 +337,6 @@ export default function AdminCustomersPage() {
                       {customer.phone || "—"}
                     </span>
                   </div>
-                  <div role="cell" className="px-5 text-right">
-                    <span className="font-body text-sm text-charcoal/70 tabular-nums">
-                      {customer.orderCount}
-                    </span>
-                  </div>
-                  <div role="cell" className="px-5 text-right">
-                    <span className="font-body text-sm text-charcoal/70 tabular-nums">
-                      ₱{customer.totalSpent.toFixed(2)}
-                    </span>
-                  </div>
                   <div role="cell" className="px-5">
                     <span className="font-body text-xs text-charcoal/50">
                       {new Date(customer.joinedAt).toLocaleDateString("en-PH", {
@@ -336,6 +361,23 @@ export default function AdminCustomersPage() {
                       />
                       {customer.isVerified ? "Verified" : "Unverified"}
                     </span>
+                  </div>
+                  <div role="cell" className="px-5 flex items-center justify-end gap-4">
+                    <button
+                      onClick={() => openView(customer.id)}
+                      className="font-body text-xs text-charcoal/60 hover:text-sage hover:scale-105 transition-all"
+                    >
+                      View
+                    </button>
+                    <button
+                      disabled={isSuspending}
+                      onClick={() =>
+                        setConfirmTarget({ id: customer.id, suspend: !customer.isSuspended })
+                      }
+                      className="font-body text-xs text-charcoal/60 hover:text-red-600 hover:scale-105 transition-all disabled:opacity-50"
+                    >
+                      {customer.isSuspended ? "Unsuspend" : "Suspend"}
+                    </button>
                   </div>
                 </motion.div>
               ))}
@@ -381,6 +423,21 @@ export default function AdminCustomersPage() {
           </div>
         </div>
       )}
+
+      <CustomerDetailPanel open={panelOpen} customerId={viewingId} onClose={closeView} />
+
+      <ConfirmDialog
+        open={confirmTarget !== null}
+        title={
+          confirmTarget?.suspend
+            ? "Suspend this customer?"
+            : "Restore this customer's access?"
+        }
+        confirmLabel={confirmTarget?.suspend ? "Suspend" : "Unsuspend"}
+        destructive={confirmTarget?.suspend}
+        onConfirm={handleConfirmedSuspend}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }
