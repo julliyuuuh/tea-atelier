@@ -92,3 +92,53 @@ export async function sendContactReplyEmail(
     `,
   });
 }
+
+type OrderConfirmationItem = {
+  name: string;
+  quantity: number;
+  price: number;
+};
+
+export async function sendOrderConfirmationEmail(
+  to: string,
+  recipientName: string,
+  orderId: number,
+  items: OrderConfirmationItem[],
+  totalAmount: number
+) {
+  const itemsHtml = items
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding: 8px 0; color: #333;">${item.name} × ${item.quantity}</td>
+          <td style="padding: 8px 0; text-align: right; color: #333;">₱${(item.price * item.quantity).toFixed(2)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  await resend.emails.send({
+    from: `Tea Atelier <${process.env.EMAIL_FROM}>`,
+    to,
+    subject: `Your Tea Atelier order #${orderId} is confirmed`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <h2>Thanks for your order, ${recipientName}!</h2>
+        <p>We've received order #${orderId} and we're getting it ready.</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+          ${itemsHtml}
+          <tr>
+            <td style="padding: 12px 0 0; border-top: 1px solid #eee; font-weight: bold; color: #333;">Total</td>
+            <td style="padding: 12px 0 0; border-top: 1px solid #eee; text-align: right; font-weight: bold; color: #333;">₱${totalAmount.toFixed(2)}</td>
+          </tr>
+        </table>
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/account" style="display: inline-block; background: #8a9a7e; color: #fff; padding: 12px 24px; text-decoration: none; margin-top: 16px;">
+          Track Your Order
+        </a>
+        <p style="color: #888; font-size: 12px; margin-top: 24px;">
+          You'll get another email when your order ships.
+        </p>
+      </div>
+    `,
+  });
+}

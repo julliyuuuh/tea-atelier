@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getUserId } from "@/lib/api-auth";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 
 export async function GET(req: Request) {
   const userId = getUserId(req);
@@ -142,7 +143,36 @@ export async function POST(req: Request) {
     // Clear the cart
     await client.query("DELETE FROM cart WHERE user_id = $1", [userId]);
 
+    // Grab the email to send the confirmation to, in the same transaction
+    // so it's consistent with everything else we just committed.
+    const userResult = await client.query(
+      `SELECT email FROM users WHERE user_id = $1`,
+      [userId]
+    );
+    const userEmail = userResult.rows[0]?.email as string | undefined;
+
     await client.query("COMMIT");
+
+    // Fire the confirmation email after the order is safely committed.
+    // A failure here shouldn't turn an already-placed order into a 500,
+    // the order exists either way, so just log and move on like life :/
+    if (userEmail) {
+      try {
+        await sendOrderConfirmationEmail(
+          userEmail,
+          fullName || "there",
+          orderId,
+          cartResult.rows.map((item) => ({
+            name: item.product_name,
+            quantity: item.quantity,
+            price: parseFloat(item.price),
+          })),
+          totalAmount
+        );
+      } catch (emailError) {
+        console.error(`Order ${orderId} placed, but confirmation email failed:`, emailError);
+      }
+    }
 
     return NextResponse.json({
       orderId,
