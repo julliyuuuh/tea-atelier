@@ -1,33 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 
-const categories = [
-  {
-    name: "Leaf Tea",
-    image: "/images/leaf-tea-ph.png",
-    description:
-      "Whole-leaf blends steeped slow, from first-flush greens to deep, malty oolongs.",
-  },
-  {
-    name: "Matcha",
-    image: "/images/matcha-ph.png",
-    description:
-      "Stone-ground ceremonial and culinary grades, whisked fresh from small Uji harvests.",
-  },
-  {
-    name: "Tea Accessories",
-    image: "/images/tea-accessories-ph.png",
-    description:
-      "Cast iron pots, hand-thrown cups, and the small tools that make the ritual worth keeping.",
-  },
-];
+interface Category {
+  id: number;
+  name: string;
+  image: string;
+  description: string;
+  sort_order: number;
+}
 
 export default function Categories() {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [flippedIndex, setFlippedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadCategories() {
+      try {
+        const res = await fetch("/api/cms/categories", { signal: controller.signal });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Unable to load categories.");
+        setCategories(data.categories);
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error(error.message);
+        }
+      }
+    }
+
+    loadCategories();
+    return () => controller.abort();
+  }, []);
+
+  if (categories.length === 0) return null;
 
   return (
     <section className="max-w-7xl mx-auto px-8 py-16 md:py-24">
@@ -44,15 +54,13 @@ export default function Categories() {
 
           return (
             <motion.div
-              key={cat.name}
+              key={cat.id}
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: "easeOut", delay: i * 0.08 }}
               className="group h-[420px] [perspective:1400px]"
             >
-              {/* Tapping/clicking the card toggles the flip. State-driven
-                  (not CSS hover) so it works the same on touch and desktop. */}
               <div
                 role="button"
                 tabIndex={0}
@@ -73,7 +81,6 @@ export default function Categories() {
                   transition: "transform 0.7s ease-out",
                 }}
               >
-                {/* Front face — photo + label, same as before */}
                 <div
                   className="absolute inset-0 overflow-hidden bg-sand"
                   style={{
@@ -94,7 +101,6 @@ export default function Categories() {
                   </span>
                 </div>
 
-                {/* Back face — blurb + CTA */}
                 <div
                   className="absolute inset-0 bg-charcoal flex flex-col justify-between p-6"
                   style={{

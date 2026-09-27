@@ -66,3 +66,52 @@ CREATE TABLE contact_messages (
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   replied_at TIMESTAMP
 );
+
+
+
+-- For Content Management System (CMS)
+CREATE TABLE homepage_hero (
+  id SERIAL PRIMARY KEY,
+  volume_label TEXT NOT NULL,
+  eyebrow TEXT NOT NULL,
+  heading TEXT NOT NULL,
+  subheading TEXT NOT NULL,
+  cta_text TEXT NOT NULL,
+  cta_link TEXT NOT NULL,
+  image_url TEXT NOT NULL,
+  image_caption TEXT NOT NULL
+);
+
+CREATE TABLE homepage_promo (
+  id SERIAL PRIMARY KEY,
+  label TEXT NOT NULL,
+  heading TEXT NOT NULL,
+  image_url TEXT NOT NULL,
+  cta_text TEXT NOT NULL,
+  cta_link TEXT NOT NULL
+);
+
+CREATE TABLE homepage_why_choose_us (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  copy TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE homepage_categories (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  image TEXT NOT NULL,
+  description TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE homepage_reviews (
+  id SERIAL PRIMARY KEY,
+  quote TEXT NOT NULL,
+  name TEXT NOT NULL,
+  rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true
+);

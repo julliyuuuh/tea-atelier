@@ -1,31 +1,40 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
-const reasons = [
-  {
-    number: "01",
-    title: "Premium Quality",
-    copy: "Hand-selected leaves, sourced at peak harvest for exceptional flavor.",
-  },
-  {
-    number: "02",
-    title: "Sustainable Sourcing",
-    copy: "Partnering with growers who protect the land tea calls home.",
-  },
-  {
-    number: "03",
-    title: "Fast Delivery",
-    copy: "Fresh from our atelier to your doorstep, without the wait.",
-  },
-  {
-    number: "04",
-    title: "Secure Payment",
-    copy: "Every order protected with encrypted, trusted checkout.",
-  },
-];
+interface Reason {
+  id: number;
+  title: string;
+  copy: string;
+  sort_order: number;
+}
 
 export default function WhyChooseUs() {
+  const [reasons, setReasons] = useState<Reason[]>([]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadReasons() {
+      try {
+        const res = await fetch("/api/cms/why-choose-us", { signal: controller.signal });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Unable to load reasons.");
+        setReasons(data.reasons);
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error(error.message);
+        }
+      }
+    }
+
+    loadReasons();
+    return () => controller.abort();
+  }, []);
+
+  if (reasons.length === 0) return null;
+
   return (
     <section className="max-w-7xl mx-auto px-8 py-16 md:py-24 border-t border-charcoal/10">
       <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-4 block">
@@ -38,7 +47,7 @@ export default function WhyChooseUs() {
       <div className="grid grid-cols-1 md:grid-cols-4">
         {reasons.map((reason, i) => (
           <motion.div
-            key={reason.number}
+            key={reason.id}
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
@@ -48,7 +57,7 @@ export default function WhyChooseUs() {
             }`}
           >
             <span className="font-display text-3xl text-sage">
-              {reason.number}
+              {String(i + 1).padStart(2, "0")}
             </span>
             <h3 className="font-display text-xl text-charcoal mt-4 mb-2">
               {reason.title}

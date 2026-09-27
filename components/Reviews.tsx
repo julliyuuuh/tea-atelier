@@ -1,29 +1,41 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
-const reviews = [
-  {
-    quote:
-      "The Da Hong Pao completely changed how I think about tea. Rich, smoky, unforgettable.",
-    name: "Amara L.",
-    rating: 5,
-  },
-  {
-    quote:
-      "Packaging alone feels like a gift. The matcha is silky and vibrant every time.",
-    name: "Julien P.",
-    rating: 5,
-  },
-  {
-    quote:
-      "Fast shipping, beautiful tins, and the oolong is now a daily ritual for me.",
-    name: "Priya S.",
-    rating: 4,
-  },
-];
+interface Review {
+  id: number;
+  quote: string;
+  name: string;
+  rating: number;
+  sort_order: number;
+}
 
 export default function Reviews() {
+  const [reviews, setReviews] = useState<Review[]>([]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadReviews() {
+      try {
+        const res = await fetch("/api/cms/reviews", { signal: controller.signal });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Unable to load reviews.");
+        setReviews(data.reviews);
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error(error.message);
+        }
+      }
+    }
+
+    loadReviews();
+    return () => controller.abort();
+  }, []);
+
+  if (reviews.length === 0) return null;
+
   return (
     <section className="max-w-7xl mx-auto px-8 py-16 md:py-24 border-t border-charcoal/10">
       <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-4 block">
@@ -36,7 +48,7 @@ export default function Reviews() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-14">
         {reviews.map((review, i) => (
           <motion.div
-            key={review.name}
+            key={review.id}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
