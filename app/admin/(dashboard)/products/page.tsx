@@ -316,7 +316,7 @@ export default function AdminProductsPage() {
 
   return (
     <div className="p-10">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
             Products
@@ -340,24 +340,27 @@ export default function AdminProductsPage() {
             )}
           </p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="flex items-center gap-1.5 bg-charcoal text-cream font-body text-sm px-5 py-2.5 hover:bg-sage transition-colors rounded-full shadow-sm"
-        >
-          <span className="text-base leading-none">+</span>
-          Add Product
-        </button>
+
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Stat chips — always reflect the whole catalog, not just this page */}
+          <div className="flex flex-wrap gap-1.5">
+            <StatChip label="Active Products" value={stats.active} />
+            <StatChip label="Low Stock" value={stats.lowStock} tone="warning" />
+            <StatChip label="Out of Stock" value={stats.outOfStock} tone="danger" />
+          </div>
+
+          <button
+            onClick={openAddModal}
+            className="flex items-center gap-1.5 bg-charcoal text-cream font-body text-sm px-5 py-2.5 hover:bg-sage transition-colors rounded-full shadow-sm"
+          >
+            <span className="text-base leading-none">+</span>
+            Add Product
+          </button>
+        </div>
       </div>
 
       <ErrorBanner message={errorMessage} onRetry={() => loadProducts(currentPage)} />
       <ErrorBanner message={actionError} />
-
-      {/* Stat chips — always reflect the whole catalog, not just this page */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <StatChip label="Active Products" value={stats.active} />
-        <StatChip label="Low Stock" value={stats.lowStock} tone="warning" />
-        <StatChip label="Out of Stock" value={stats.outOfStock} tone="danger" />
-      </div>
 
       {/* Filter toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-charcoal/10 rounded-xl px-4 py-3">
