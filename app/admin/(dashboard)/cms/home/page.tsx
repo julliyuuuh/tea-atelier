@@ -1,6 +1,8 @@
+// app/admin/(dashboard)/cms/home/page.tsx
 "use client";
 
 import { useState } from "react";
+import { ErrorBanner } from "@/components/admin/AdminUI";
 import HeroTab from "./HeroTab";
 import PromoTab from "./PromoTab";
 import WhyChooseUsTab from "./WhyChooseUsTab";
@@ -10,48 +12,55 @@ import ReviewsTab from "./ReviewsTab";
 const TABS = ["Hero", "Promo", "Why Choose Us", "Categories", "Reviews"] as const;
 type Tab = (typeof TABS)[number];
 
-export default function AdminCmsPage() {
+export default function AdminHomeCmsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("Hero");
+  const [errorMessage, setErrorMessage] = useState("");
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold text-charcoal dark:text-[#dfe7dd] mb-6">
-        Homepage Content
-      </h1>
+    <div className="p-4 sm:p-6 lg:p-10">
+      <div className="mb-6">
+        <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
+          Home Page Content
+        </h1>
+        <p className="font-body text-sm text-charcoal/60">
+          Manage the sections shown on your storefront's homepage.
+        </p>
+      </div>
 
-      <div className="bg-white dark:bg-[#2b342e] rounded-2xl shadow-sm border border-charcoal/10 dark:border-white/5 p-6">
-        <div className="flex gap-2 border-b border-charcoal/10 dark:border-white/10 mb-6">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab
-                  ? "border-sage text-sage"
-                  : "border-transparent text-charcoal/50 dark:text-[#aebbad] hover:text-charcoal dark:hover:text-[#dfe7dd]"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+      <ErrorBanner message={errorMessage} />
+
+      <div className="flex flex-wrap items-center gap-1 mb-4 bg-white border border-charcoal/10 rounded-xl px-3 py-2">
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`font-body text-sm px-4 py-2 rounded-full transition-colors ${
+              activeTab === tab
+                ? "bg-sage text-cream"
+                : "text-charcoal/60 hover:text-charcoal hover:bg-sand/30"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white border border-charcoal/10 rounded-xl p-6">
+        <div className={activeTab === "Hero" ? "block" : "hidden"}>
+          <HeroTab onError={setErrorMessage} />
         </div>
-
-        <div className="grid grid-cols-1">
-          <div className={activeTab === "Hero" ? "block" : "hidden"}>
-            <HeroTab />
-          </div>
-          <div className={activeTab === "Promo" ? "block" : "hidden"}>
-            <PromoTab />
-          </div>
-          <div className={activeTab === "Why Choose Us" ? "block" : "hidden"}>
-            <WhyChooseUsTab />
-          </div>
-          <div className={activeTab === "Categories" ? "block" : "hidden"}>
-            <CategoriesTab />
-          </div>
-          <div className={activeTab === "Reviews" ? "block" : "hidden"}>
-            <ReviewsTab />
-          </div>
+        <div className={activeTab === "Promo" ? "block" : "hidden"}>
+          <PromoTab onError={setErrorMessage} />
+        </div>
+        <div className={activeTab === "Why Choose Us" ? "block" : "hidden"}>
+          <WhyChooseUsTab onError={setErrorMessage} />
+        </div>
+        <div className={activeTab === "Categories" ? "block" : "hidden"}>
+          <CategoriesTab onError={setErrorMessage} />
+        </div>
+        <div className={activeTab === "Reviews" ? "block" : "hidden"}>
+          <ReviewsTab onError={setErrorMessage} />
         </div>
       </div>
     </div>

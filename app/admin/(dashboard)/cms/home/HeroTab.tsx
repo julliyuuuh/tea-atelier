@@ -1,9 +1,8 @@
-// app/admin/(dashboard)/cms/HeroTab.tsx
+// app/admin/(dashboard)/cms/home/HeroTab.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { ErrorBanner } from "@/components/admin/AdminUI";
-import {SkeletonBlock} from "@/components/Skeleton";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 interface HeroData {
   volume_label: string;
@@ -27,11 +26,19 @@ const FIELDS: { key: keyof HeroData; label: string; multiline?: boolean }[] = [
   { key: "image_caption", label: "Image Caption" },
 ];
 
-export default function HeroTab() {
+const inputClass =
+  "w-full border border-charcoal/20 px-3 py-2 text-sm rounded focus:outline-none focus:border-sage";
+const labelClass = "block text-sm font-medium text-charcoal/70 mb-1";
+
+function authHeaders() {
+  const token = localStorage.getItem("token");
+  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+}
+
+export default function HeroTab({ onError }: { onError: (msg: string) => void }) {
   const [form, setForm] = useState<HeroData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -42,12 +49,13 @@ export default function HeroTab() {
         if (!res.ok) throw new Error(data.error || "Unable to load hero.");
         setForm(data.hero);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unable to load hero.");
+        onError(err instanceof Error ? err.message : "Unable to load hero.");
       } finally {
         setIsLoading(false);
       }
     }
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function updateField(key: keyof HeroData, value: string) {
@@ -58,16 +66,10 @@ export default function HeroTab() {
   async function handleSave() {
     if (!form) return;
     setIsSaving(true);
-    setError(null);
-
     try {
-      const token = localStorage.getItem("token");
       const res = await fetch("/api/cms/admin/hero", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: authHeaders(),
         body: JSON.stringify(form),
       });
       const data = await res.json();
@@ -75,37 +77,33 @@ export default function HeroTab() {
       setForm(data.hero);
       setSaved(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save hero.");
+      onError(err instanceof Error ? err.message : "Unable to save hero.");
     } finally {
       setIsSaving(false);
     }
   }
 
   if (isLoading) return <SkeletonBlock className="h-96" />;
-  if (!form) return <ErrorBanner message={error ?? "Hero content not found."} />;
+  if (!form) return null;
 
   return (
     <div className="max-w-2xl space-y-5">
-      {error && <ErrorBanner message={error} />}
-
       {FIELDS.map(({ key, label, multiline }) => (
         <div key={key}>
-          <label className="block text-sm font-medium text-charcoal/70 mb-1">
-            {label}
-          </label>
+          <label className={labelClass}>{label}</label>
           {multiline ? (
             <textarea
               value={form[key]}
               onChange={(e) => updateField(key, e.target.value)}
               rows={3}
-              className="w-full border border-charcoal/20 px-3 py-2 text-sm rounded focus:outline-none focus:border-sage"
+              className={inputClass}
             />
           ) : (
             <input
               type="text"
               value={form[key]}
               onChange={(e) => updateField(key, e.target.value)}
-              className="w-full border border-charcoal/20 px-3 py-2 text-sm rounded focus:outline-none focus:border-sage"
+              className={inputClass}
             />
           )}
         </div>

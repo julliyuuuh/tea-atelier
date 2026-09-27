@@ -1,8 +1,8 @@
+// app/admin/(dashboard)/cms/home/ReviewsTab.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
-import { ErrorBanner } from "@/components/admin/AdminUI";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 interface Review {
@@ -15,19 +15,17 @@ interface Review {
 }
 
 const inputClass =
-  "w-full border border-charcoal/20 dark:border-white/10 bg-white dark:bg-[#202721] text-charcoal dark:text-[#dfe7dd] px-3 py-2 text-sm rounded focus:outline-none focus:border-sage";
-const labelClass =
-  "block text-xs font-medium text-charcoal/60 dark:text-[#aebbad] mb-1";
+  "w-full border border-charcoal/20 px-3 py-2 text-sm rounded focus:outline-none focus:border-sage";
+const labelClass = "block text-xs font-medium text-charcoal/60 mb-1";
 
 function authHeaders() {
   const token = localStorage.getItem("token");
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
-export default function ReviewsTab() {
+export default function ReviewsTab({ onError }: { onError: (msg: string) => void }) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<number | "new" | null>(null);
 
   async function load() {
@@ -38,7 +36,7 @@ export default function ReviewsTab() {
       if (!res.ok) throw new Error(data.error || "Unable to load.");
       setReviews(data.reviews);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load.");
+      onError(err instanceof Error ? err.message : "Unable to load.");
     } finally {
       setIsLoading(false);
     }
@@ -46,6 +44,7 @@ export default function ReviewsTab() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function updateLocal<K extends keyof Review>(id: number, field: K, value: Review[K]) {
@@ -54,7 +53,6 @@ export default function ReviewsTab() {
 
   async function handleSave(review: Review) {
     setSavingId(review.id);
-    setError(null);
     try {
       const res = await fetch(`/api/cms/admin/reviews/${review.id}`, {
         method: "PATCH",
@@ -70,7 +68,7 @@ export default function ReviewsTab() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to save.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save.");
+      onError(err instanceof Error ? err.message : "Unable to save.");
     } finally {
       setSavingId(null);
     }
@@ -78,7 +76,6 @@ export default function ReviewsTab() {
 
   async function handleDelete(id: number) {
     if (!confirm("Delete this review?")) return;
-    setError(null);
     try {
       const res = await fetch(`/api/cms/admin/reviews/${id}`, {
         method: "DELETE",
@@ -87,13 +84,12 @@ export default function ReviewsTab() {
       if (!res.ok) throw new Error("Unable to delete.");
       setReviews((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to delete.");
+      onError(err instanceof Error ? err.message : "Unable to delete.");
     }
   }
 
   async function handleAdd() {
     setSavingId("new");
-    setError(null);
     try {
       const res = await fetch("/api/cms/admin/reviews", {
         method: "POST",
@@ -109,7 +105,7 @@ export default function ReviewsTab() {
       if (!res.ok) throw new Error(data.error || "Unable to add.");
       setReviews((prev) => [...prev, data.review]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to add.");
+      onError(err instanceof Error ? err.message : "Unable to add.");
     } finally {
       setSavingId(null);
     }
@@ -145,18 +141,13 @@ export default function ReviewsTab() {
 
   return (
     <div className="space-y-4">
-      {error && <ErrorBanner message={error} />}
-
       {reviews.map((review, i) => (
-        <div
-          key={review.id}
-          className="border border-charcoal/10 dark:border-white/10 rounded-xl p-4 flex gap-4"
-        >
+        <div key={review.id} className="border border-charcoal/10 rounded-xl p-4 flex gap-4">
           <div className="flex flex-col gap-1 pt-1">
             <button
               onClick={() => handleMove(i, -1)}
               disabled={i === 0}
-              className="text-charcoal/40 dark:text-[#aebbad] hover:text-sage disabled:opacity-20"
+              className="text-charcoal/40 hover:text-sage disabled:opacity-20"
               aria-label="Move up"
             >
               <ChevronUp size={16} />
@@ -164,7 +155,7 @@ export default function ReviewsTab() {
             <button
               onClick={() => handleMove(i, 1)}
               disabled={i === reviews.length - 1}
-              className="text-charcoal/40 dark:text-[#aebbad] hover:text-sage disabled:opacity-20"
+              className="text-charcoal/40 hover:text-sage disabled:opacity-20"
               aria-label="Move down"
             >
               <ChevronDown size={16} />
@@ -206,7 +197,7 @@ export default function ReviewsTab() {
                 </select>
               </div>
             </div>
-            <label className="flex items-center gap-2 text-xs text-charcoal/60 dark:text-[#aebbad]">
+            <label className="flex items-center gap-2 text-xs text-charcoal/60">
               <input
                 type="checkbox"
                 checked={review.is_active}
@@ -226,7 +217,7 @@ export default function ReviewsTab() {
             </button>
             <button
               onClick={() => handleDelete(review.id)}
-              className="text-charcoal/40 dark:text-[#aebbad] hover:text-red-500 self-center"
+              className="text-charcoal/40 hover:text-red-500 self-center"
               aria-label="Delete"
             >
               <Trash2 size={15} />
@@ -238,7 +229,7 @@ export default function ReviewsTab() {
       <button
         onClick={handleAdd}
         disabled={savingId === "new"}
-        className="flex items-center gap-1.5 text-sm text-sage hover:text-charcoal dark:hover:text-[#dfe7dd] transition-colors"
+        className="flex items-center gap-1.5 text-sm text-sage hover:text-charcoal transition-colors"
       >
         <Plus size={16} /> Add Review
       </button>
