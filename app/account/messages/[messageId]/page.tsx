@@ -120,41 +120,40 @@ export default function MessageDetailsPage({
             </div>
           </div>
 
-          {/* original message */}
-          <div className="bg-sand/30 rounded-xl p-6">
+          {/* message */}
+            <div className="bg-cream border border-charcoal/10 rounded-xl p-6">
             <h3 className="font-display text-base text-charcoal mb-4">
-              Your Message
+                Your Message
             </h3>
             <p className="font-body text-sm text-charcoal/80 whitespace-pre-wrap">
-              {data.message}
+                {data.message}
             </p>
-          </div>
+            </div>
 
-          {/* reply */}
-          <div className="bg-sand/30 rounded-xl p-6">
+            <div className="bg-sage/10 rounded-xl p-6">
             <h3 className="font-display text-base text-charcoal mb-4">Reply</h3>
             {data.adminReply ? (
-              <>
+                <>
                 <p className="font-body text-sm text-charcoal/80 whitespace-pre-wrap">
-                  {data.adminReply}
+                    {data.adminReply}
                 </p>
                 {data.repliedAt && (
-                  <p className="font-body text-xs text-charcoal/50 mt-3 pt-3 border-t border-charcoal/10">
+                    <p className="font-body text-xs text-charcoal/50 mt-3 pt-3 border-t border-sage/20">
                     Replied on{" "}
                     {new Date(data.repliedAt).toLocaleDateString("en-PH", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
                     })}
-                  </p>
+                    </p>
                 )}
-              </>
+                </>
             ) : (
-              <p className="font-body text-sm text-charcoal/50">
+                <p className="font-body text-sm text-charcoal/50">
                 We haven&apos;t replied yet — we&apos;ll get back to you soon.
-              </p>
+                </p>
             )}
-          </div>
+            </div>
         </motion.div>
       )}
     </main>
