@@ -58,7 +58,7 @@ export async function GET(req: Request) {
   const dataResult = await pool.query(
     `SELECT
        u.user_id, u.first_name, u.last_name, u.email, u.phone_number,
-       u.is_verified, u.date_created,
+       u.is_verified, u.is_suspended, u.date_created,
        COUNT(o.order_id) AS order_count,
        COALESCE(SUM(o.total_amount), 0) AS total_spent
      FROM users u
@@ -76,6 +76,7 @@ export async function GET(req: Request) {
     email: row.email,
     phone: row.phone_number,
     isVerified: row.is_verified,
+    isSuspended: row.is_suspended,
     orderCount: parseInt(row.order_count, 10),
     totalSpent: parseFloat(row.total_spent),
     joinedAt: row.date_created,

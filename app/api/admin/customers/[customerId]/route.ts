@@ -12,7 +12,7 @@ export async function GET(
   const { customerId } = await params;
 
   const customerResult = await pool.query(
-    `SELECT user_id, first_name, last_name, email, phone_number, is_verified, is_suspended, date_created
+    `SELECT user_id, first_name, last_name, email, phone_number, avatar_url, is_verified, is_suspended, date_created
      FROM users
      WHERE user_id = $1 AND role = 'customer'`,
     [customerId]
@@ -37,6 +37,7 @@ export async function GET(
       name: `${customer.first_name} ${customer.last_name}`,
       email: customer.email,
       phone: customer.phone_number,
+      avatarUrl: customer.avatar_url,
       isVerified: customer.is_verified,
       isSuspended: customer.is_suspended,
       joinedAt: customer.date_created,

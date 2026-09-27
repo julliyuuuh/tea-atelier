@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Loader2, ShoppingBag } from "lucide-react";
+import { X, ShoppingBag } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 type CustomerDetail = {
@@ -10,6 +10,7 @@ type CustomerDetail = {
   name: string;
   email: string;
   phone: string | null;
+  avatarUrl: string | null;
   isVerified: boolean;
   isSuspended: boolean;
   joinedAt: string;
@@ -123,6 +124,7 @@ export default function CustomerDetailPanel({
             <div className="px-6 py-6">
               {isLoading && (
                 <div className="space-y-3">
+                  <SkeletonBlock className="w-16 h-16 rounded-full" />
                   <SkeletonBlock className="h-5 w-40" />
                   <SkeletonBlock className="h-4 w-56" />
                   <SkeletonBlock className="h-4 w-32" />
@@ -136,10 +138,28 @@ export default function CustomerDetailPanel({
               {!isLoading && customer && (
                 <>
                   <div className="mb-8">
-                    <h3 className="font-body text-xl text-charcoal mb-1">
-                      {customer.name}
-                    </h3>
-                    <p className="font-body text-sm text-charcoal/60">{customer.email}</p>
+                    <div className="flex items-center gap-4 mb-4">
+                      {customer.avatarUrl ? (
+                        <img
+                          src={customer.avatarUrl}
+                          alt={customer.name}
+                          className="w-16 h-16 rounded-full object-cover shrink-0 bg-sand"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-sage/20 text-sage flex items-center justify-center font-body text-xl font-medium shrink-0">
+                          {customer.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <h3 className="font-body text-xl text-charcoal truncate">
+                          {customer.name}
+                        </h3>
+                        <p className="font-body text-sm text-charcoal/60 truncate">
+                          {customer.email}
+                        </p>
+                      </div>
+                    </div>
+
                     <p className="font-body text-sm text-charcoal/60">
                       {customer.phone || "No phone on file"}
                     </p>
