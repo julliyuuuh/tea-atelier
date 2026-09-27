@@ -210,39 +210,41 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-10">
-      <div className="mb-6">
-        <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
-          Orders
-        </h1>
-        <p className="font-body text-sm text-charcoal/60">
-          {isLoading ? (
-            "Loading..."
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={`${currentPage}-${orders.length}`}
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
-                transition={{ duration: 0.15 }}
-                className="inline-block"
-              >
-                Page {currentPage} of {totalPages}
-              </motion.span>
-            </AnimatePresence>
-          )}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
+            Orders
+          </h1>
+          <p className="font-body text-sm text-charcoal/60">
+            {isLoading ? (
+              "Loading..."
+            ) : (
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={`${currentPage}-${orders.length}`}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{ duration: 0.15 }}
+                  className="inline-block"
+                >
+                  Page {currentPage} of {totalPages}
+                </motion.span>
+              </AnimatePresence>
+            )}
+          </p>
+        </div>
+
+        {/* Stat chips, always reflect the whole order book, not just this page */}
+        <div className="flex flex-wrap gap-1.5">
+          <StatChip label="Total Orders" value={stats.total} />
+          <StatChip label="Order Placed" value={stats.pending} tone="warning" />
+          <StatChip label="Cancelled" value={stats.cancelled} tone="danger" />
+        </div>
       </div>
 
       <ErrorBanner message={errorMessage} onRetry={() => loadOrders(currentPage)} />
       <ErrorBanner message={actionError} />
-
-      {/* Stat chips, always reflect the whole order book, not just this page */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <StatChip label="Total Orders" value={stats.total} />
-        <StatChip label="Order Placed" value={stats.pending} tone="warning" />
-        <StatChip label="Cancelled" value={stats.cancelled} tone="danger" />
-      </div>
 
       {/* Filter toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-charcoal/10 rounded-xl px-4 py-3">
