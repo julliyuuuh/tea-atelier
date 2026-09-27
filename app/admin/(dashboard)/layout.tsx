@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   Users,
   Mail,
+  FileText,
   LogOut,
   Menu,
   X,
@@ -26,6 +27,7 @@ const navItems = [
   { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { label: "Customers", href: "/admin/customers", icon: Users },
   { label: "Contact Messages", href: "/admin/contact", icon: Mail },
+  { label: "Homepage Content", href: "/admin/cms", icon: FileText },
 ];
 
 export default function AdminLayout({
