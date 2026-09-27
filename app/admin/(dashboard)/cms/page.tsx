@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Info, Layers } from "lucide-react";
+import { Home, Info, Layers, HelpCircle } from "lucide-react";
 
 const SECTIONS = [
   {
@@ -22,6 +22,12 @@ const SECTIONS = [
     icon: Layers,
     description: "Intro and collection cards",
   },
+  {
+    label: "FAQ",
+    href: "/admin/cms/faq",
+    icon: HelpCircle,
+    description: "Questions and answers",
+  },
 ];
 
 export default function AdminCmsIndexPage() {
@@ -36,7 +42,7 @@ export default function AdminCmsIndexPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {SECTIONS.map((section) => {
           const Icon = section.icon;
           return (
