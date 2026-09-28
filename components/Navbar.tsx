@@ -193,15 +193,6 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
-
-              <Link
-                href="/login"
-                className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors"
-                aria-label="Account"
-              >
-                <User size={18} strokeWidth={1.5} />
-              </Link>
-
             <Link
               href="/cart"
               className="relative w-9 h-9 flex items-center justify-center rounded-full bg-sage text-cream hover:bg-charcoal transition-colors"
