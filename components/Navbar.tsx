@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, ShoppingBag, Settings, LogOut, Heart, HelpCircle } from "lucide-react";
+import { User, ShoppingBag, Settings, LogOut, Heart, HelpCircle, LogIn } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import ConfirmDialog from "@/components/account/ConfirmDialog";
@@ -104,75 +104,96 @@ export default function Navbar() {
 
           {/* Desktop Icons */}
           <div className="hidden md:flex items-center gap-3">
-            {user ? (
-              <div className="relative" ref={accountMenuRef}>
-                <button
-                  onClick={() => setAccountMenuOpen((prev) => !prev)}
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors overflow-hidden border border-transparent hover:border-charcoal/10 cursor-pointer"
-                  aria-label="Account"
-                >
-                  {user.avatarUrl ? (
-                    <img
-                      src={user.avatarUrl}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={18} strokeWidth={1.5} />
-                  )}
-                </button>
+            <div className="relative" ref={accountMenuRef}>
+              <button
+                onClick={() => setAccountMenuOpen((prev) => !prev)}
+                className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors overflow-hidden border border-transparent hover:border-charcoal/10 cursor-pointer"
+                aria-label="Account"
+              >
+                {user?.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User size={18} strokeWidth={1.5} />
+                )}
+              </button>
 
-                <AnimatePresence>
-                  {accountMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
-                    >
-                      <Link
-                        href="/account"
-                        onClick={() => setAccountMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                      >
-                        <Settings size={16} strokeWidth={1.5} /> Account
-                      </Link>
-                      {showWishlist && (
+              <AnimatePresence>
+                {accountMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
+                  >
+                    {user ? (
+                      <>
                         <Link
-                          href="/wishlist"
+                          href="/account"
                           onClick={() => setAccountMenuOpen(false)}
                           className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
                         >
-                          <Heart size={16} strokeWidth={1.5} /> Wishlist
-                          {wishlistItems.length > 0 && (
-                            <span className="ml-auto bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-                              {wishlistItems.length}
-                            </span>
-                          )}
+                          <Settings size={16} strokeWidth={1.5} /> Account
                         </Link>
-                      )}
-                      <Link
-                        href="/faq"
-                        onClick={() => setAccountMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                      >
-                        <HelpCircle size={16} strokeWidth={1.5} /> FAQ
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setShowLogoutConfirm(true);
-                          setAccountMenuOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                      >
-                        <LogOut size={16} strokeWidth={1.5} /> Log Out
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
+                        {showWishlist && (
+                          <Link
+                            href="/wishlist"
+                            onClick={() => setAccountMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                          >
+                            <Heart size={16} strokeWidth={1.5} /> Wishlist
+                            {wishlistItems.length > 0 && (
+                              <span className="ml-auto bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                                {wishlistItems.length}
+                              </span>
+                            )}
+                          </Link>
+                        )}
+                        <Link
+                          href="/faq"
+                          onClick={() => setAccountMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                        >
+                          <HelpCircle size={16} strokeWidth={1.5} /> FAQ
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setShowLogoutConfirm(true);
+                            setAccountMenuOpen(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                        >
+                          <LogOut size={16} strokeWidth={1.5} /> Log Out
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          href="/login"
+                          onClick={() => setAccountMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                        >
+                          <LogIn size={16} strokeWidth={1.5} /> Log In
+                        </Link>
+                        <Link
+                          href="/faq"
+                          onClick={() => setAccountMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                        >
+                          <HelpCircle size={16} strokeWidth={1.5} /> FAQ
+                        </Link>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+
               <Link
                 href="/login"
                 className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors"
@@ -180,7 +201,6 @@ export default function Navbar() {
               >
                 <User size={18} strokeWidth={1.5} />
               </Link>
-            )}
 
             <Link
               href="/cart"
@@ -240,91 +260,108 @@ export default function Navbar() {
                   </li>
                 ))}
                 <li className="pt-3 border-t border-charcoal/10">
-                  {user ? (
-                    <div>
-                      <button
-                        onClick={() => setAccountMenuOpen((prev) => !prev)}
-                        className="flex items-center gap-2 font-body text-sm text-charcoal/80"
-                      >
-                        {user.avatarUrl ? (
-                          <img
-                            src={user.avatarUrl}
-                            alt=""
-                            className="w-5 h-5 rounded-full object-cover border border-charcoal/10"
-                          />
-                        ) : (
-                          <User size={16} strokeWidth={1.5} />
-                        )}
-                        Account
-                      </button>
+                  <div>
+                    <button
+                      onClick={() => setAccountMenuOpen((prev) => !prev)}
+                      className="flex items-center gap-2 font-body text-sm text-charcoal/80"
+                    >
+                      {user?.avatarUrl ? (
+                        <img
+                          src={user.avatarUrl}
+                          alt=""
+                          className="w-5 h-5 rounded-full object-cover border border-charcoal/10"
+                        />
+                      ) : (
+                        <User size={16} strokeWidth={1.5} />
+                      )}
+                      Account
+                    </button>
 
-                      <AnimatePresence>
-                        {accountMenuOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="flex flex-col gap-3 mt-3 pl-6">
-                              {showWishlist && (
+                    <AnimatePresence>
+                      {accountMenuOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="flex flex-col gap-3 mt-3 pl-6">
+                            {user ? (
+                              <>
+                                {showWishlist && (
+                                  <Link
+                                    href="/wishlist"
+                                    onClick={() => {
+                                      setAccountMenuOpen(false);
+                                      setMenuOpen(false);
+                                    }}
+                                    className="flex items-center gap-2 font-body text-sm text-charcoal/70"
+                                  >
+                                    <Heart size={16} strokeWidth={1.5} /> Wishlist (
+                                    {wishlistItems.length})
+                                  </Link>
+                                )}
                                 <Link
-                                  href="/wishlist"
+                                  href="/faq"
                                   onClick={() => {
                                     setAccountMenuOpen(false);
                                     setMenuOpen(false);
                                   }}
                                   className="flex items-center gap-2 font-body text-sm text-charcoal/70"
                                 >
-                                  <Heart size={16} strokeWidth={1.5} /> Wishlist (
-                                  {wishlistItems.length})
+                                  <HelpCircle size={16} strokeWidth={1.5} /> FAQ
                                 </Link>
-                              )}
-                              <Link
-                                href="/faq"
-                                onClick={() => {
-                                  setAccountMenuOpen(false);
-                                  setMenuOpen(false);
-                                }}
-                                className="flex items-center gap-2 font-body text-sm text-charcoal/70"
-                              >
-                                <HelpCircle size={16} strokeWidth={1.5} /> FAQ
-                              </Link>
-                              <Link
-                                href="/account"
-                                onClick={() => {
-                                  setAccountMenuOpen(false);
-                                  setMenuOpen(false);
-                                }}
-                                className="flex items-center gap-2 font-body text-sm text-charcoal/70"
-                              >
-                                <Settings size={16} strokeWidth={1.5} /> Account
-                              </Link>
-                              <button
-                                onClick={() => {
-                                  setShowLogoutConfirm(true);
-                                  setAccountMenuOpen(false);
-                                  setMenuOpen(false);
-                                }}
-                                className="flex items-center gap-2 font-body text-sm text-charcoal/70"
-                              >
-                                <LogOut size={16} strokeWidth={1.5} /> Log Out
-                              </button>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ) : (
-                    <Link
-                      href="/login"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2 font-body text-sm text-charcoal/80"
-                    >
-                      <User size={16} strokeWidth={1.5} /> Account
-                    </Link>
-                  )}
+                                <Link
+                                  href="/account"
+                                  onClick={() => {
+                                    setAccountMenuOpen(false);
+                                    setMenuOpen(false);
+                                  }}
+                                  className="flex items-center gap-2 font-body text-sm text-charcoal/70"
+                                >
+                                  <Settings size={16} strokeWidth={1.5} /> Account
+                                </Link>
+                                <button
+                                  onClick={() => {
+                                    setShowLogoutConfirm(true);
+                                    setAccountMenuOpen(false);
+                                    setMenuOpen(false);
+                                  }}
+                                  className="flex items-center gap-2 font-body text-sm text-charcoal/70"
+                                >
+                                  <LogOut size={16} strokeWidth={1.5} /> Log Out
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <Link
+                                  href="/login"
+                                  onClick={() => {
+                                    setAccountMenuOpen(false);
+                                    setMenuOpen(false);
+                                  }}
+                                  className="flex items-center gap-2 font-body text-sm text-charcoal/70"
+                                >
+                                  <LogIn size={16} strokeWidth={1.5} /> Log In
+                                </Link>
+                                <Link
+                                  href="/faq"
+                                  onClick={() => {
+                                    setAccountMenuOpen(false);
+                                    setMenuOpen(false);
+                                  }}
+                                  className="flex items-center gap-2 font-body text-sm text-charcoal/70"
+                                >
+                                  <HelpCircle size={16} strokeWidth={1.5} /> FAQ
+                                </Link>
+                              </>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </li>
                 <li>
                   <Link
