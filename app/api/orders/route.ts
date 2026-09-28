@@ -74,6 +74,21 @@ export async function POST(req: Request) {
   try {
     await client.query("BEGIN");
 
+    // Block suspended accounts, even if they still hold a token issued
+    // before they were suspended. Also grab the email for the confirmation.
+    const userResult = await client.query(
+      `SELECT email, is_suspended FROM users WHERE user_id = $1`,
+      [userId]
+    );
+    if (userResult.rows[0]?.is_suspended) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        { error: "Your account has been suspended. Please contact support." },
+        { status: 403 }
+      );
+    }
+    const userEmail = userResult.rows[0]?.email as string | undefined;
+
     // Get the user's current cart, with live prices/stock based from products table
     const cartResult = await client.query(
       `SELECT c.product_id, c.quantity, p.price, p.stock_quantity, p.product_name
@@ -143,19 +158,11 @@ export async function POST(req: Request) {
     // Clear the cart
     await client.query("DELETE FROM cart WHERE user_id = $1", [userId]);
 
-    // Grab the email to send the confirmation to, in the same transaction
-    // so it's consistent with everything else we just committed.
-    const userResult = await client.query(
-      `SELECT email FROM users WHERE user_id = $1`,
-      [userId]
-    );
-    const userEmail = userResult.rows[0]?.email as string | undefined;
-
     await client.query("COMMIT");
 
     // Fire the confirmation email after the order is safely committed.
-    // A failure here shouldn't turn an already-placed order into a 500,
-    // the order exists either way, so just log and move on like life :/
+    // A failure here shouldn't turn an already-placed order into a 500 —
+    // the order exists either way, so just log and move on.
     if (userEmail) {
       try {
         await sendOrderConfirmationEmail(

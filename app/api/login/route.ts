@@ -22,6 +22,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
   }
 
+  // Checked only after the password is verified, so someone who doesn't know
+  // the password can't use this to find out which accounts are suspended.
+  if (user.is_suspended) {
+    return NextResponse.json(
+      { error: "Your account has been suspended. Please contact support." },
+      { status: 403 }
+    );
+  }
+
   if (user.totp_enabled) {
     if (!totpCode) {
       return NextResponse.json({ requiresTotp: true }, { status: 200 });

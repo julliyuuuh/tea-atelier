@@ -42,6 +42,6 @@ async function authorize(req: Request, allowedRoles: string[], deniedMessage: st
 export const requireAdmin = (req: Request) =>
   authorize(req, ADMIN_ROLES, "Admins only.");
 
-// Even more Strict (because super admin :D): also re-checks the DB so a demoted/deleted admin loses access immediately
+// Even more Strict (because super admin :D) also re-checks the DB so a demoted/deleted admin loses access immediately
 export const requireSuperAdmin = (req: Request) =>
   authorize(req, ["super_admin"], "Super admins only.");
