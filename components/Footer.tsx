@@ -24,27 +24,24 @@ export default function Footer() {
           </h4>
           <ul className="space-y-2 font-body text-sm text-cream/80">
             <li>
-              <Link
-                href="#"
-                className="hover:text-sage-light transition-colors"
-              >
+              <Link href="/" className="hover:text-sage-light transition-colors">
                 Home
               </Link>
             </li>
             <li>
-              <a href="#" className="hover:text-sage-light transition-colors">
+              <Link href="/shop" className="hover:text-sage-light transition-colors">
                 Shop
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#" className="hover:text-sage-light transition-colors">
+              <Link href="/collections" className="hover:text-sage-light transition-colors">
                 Collections
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#" className="hover:text-sage-light transition-colors">
+              <Link href="/about" className="hover:text-sage-light transition-colors">
                 About
-              </a>
+              </Link>
             </li>
           </ul>
         </div>
@@ -56,14 +53,14 @@ export default function Footer() {
           </h4>
           <ul className="space-y-2 font-body text-sm text-cream/80">
             <li>
-              <a href="#" className="hover:text-sage-light transition-colors">
+              <Link href="/faq" className="hover:text-sage-light transition-colors">
                 FAQs
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#" className="hover:text-sage-light transition-colors">
+              <Link href="/privacy" className="hover:text-sage-light transition-colors">
                 Privacy Policy
-              </a>
+              </Link>
             </li>
             <li>
               <a href="#" className="hover:text-sage-light transition-colors">
@@ -71,9 +68,9 @@ export default function Footer() {
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-sage-light transition-colors">
+              <Link href="/contact" className="hover:text-sage-light transition-colors">
                 Contact Us
-              </a>
+              </Link>
             </li>
           </ul>
         </div>

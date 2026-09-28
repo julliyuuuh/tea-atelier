@@ -165,3 +165,18 @@ CREATE TABLE collections_items (
   sort_order INT NOT NULL DEFAULT 0,
   is_active BOOLEAN NOT NULL DEFAULT true
 );
+
+CREATE TABLE privacy_intro (
+  id SERIAL PRIMARY KEY,
+  heading TEXT NOT NULL,
+  intro TEXT NOT NULL,
+  last_updated TEXT NOT NULL
+);
+
+CREATE TABLE privacy_sections (
+  id SERIAL PRIMARY KEY,
+  heading TEXT NOT NULL,
+  body TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true
+);
