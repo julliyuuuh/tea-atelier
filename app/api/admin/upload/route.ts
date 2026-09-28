@@ -3,7 +3,7 @@ import cloudinary from "@/lib/cloudinary";
 import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST(req: Request) {
-  const { error } = requireAdmin(req);
+  const { error } = await requireAdmin(req);
   if (error) return error;
 
   const formData = await req.formData();

@@ -3,7 +3,7 @@ import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 
 export async function GET(req: Request) {
-  const { error } = requireAdmin(req);
+  const { error } = await requireAdmin(req);
   if (error) return error;
 
   // Bottom 5 products by stock quantity (active only aka not deleted/archived)

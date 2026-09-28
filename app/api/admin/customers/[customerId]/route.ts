@@ -6,7 +6,7 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ customerId: string }> }
 ) {
-  const { error } = requireAdmin(req);
+  const { error } = await requireAdmin(req);
   if (error) return error;
 
   const { customerId } = await params;
@@ -55,7 +55,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ customerId: string }> }
 ) {
-  const { error } = requireAdmin(req);
+  const { error } = await requireAdmin(req);
   if (error) return error;
 
   const { customerId } = await params;

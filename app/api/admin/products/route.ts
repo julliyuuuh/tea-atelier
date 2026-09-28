@@ -3,7 +3,7 @@ import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST(req: Request) {
-  const { error } = requireAdmin(req);
+  const { error } = await requireAdmin(req);
   if (error) return error;
 
   const { name, category, subCategory, type, price, image, description, stockQuantity } =
@@ -54,7 +54,7 @@ const SORT_COLUMNS: Record<string, string> = {
 };
 
 export async function GET(req: Request) {
-  const { error } = requireAdmin(req);
+  const { error } = await requireAdmin(req);
   if (error) return error;
 
   const url = new URL(req.url);
