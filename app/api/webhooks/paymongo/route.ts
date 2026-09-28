@@ -13,10 +13,16 @@ export async function POST(req: Request) {
   if (event.data.attributes.type === "source.chargeable") {
     const sourceId = event.data.attributes.data.id;
     const orderRes = await pool.query(
-      `SELECT order_id FROM orders WHERE paymongo_source_id = $1`, [sourceId]
+      `SELECT order_id, payment_status FROM orders WHERE paymongo_source_id = $1`,
+      [sourceId]
     );
     const order = orderRes.rows[0];
     if (!order) return new Response("ok", { status: 200 });
+
+    // Already processed (e.g. a retried webhook delivery), skip re-charging
+    if (order.payment_status === "paid") {
+      return new Response("ok", { status: 200 });
+    }
 
     const payRes = await fetch("https://api.paymongo.com/v1/payments", {
       method: "POST",

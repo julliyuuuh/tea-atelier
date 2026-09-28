@@ -166,10 +166,10 @@ export async function POST(req: Request) {
 
     await client.query("COMMIT");
 
-    // Fire the confirmation email after the order is safely committed.
-    // A failure here shouldn't turn an already-placed order into a 500 —
-    // the order exists either way, so just log and move on.
-    if (userEmail) {
+    // Fire the confirmation email only for COD, where the order is genuinely
+    // final at this point. For e-wallets, the order isn't paid yet, the
+    // webhook sends the confirmation once payment_status flips to 'paid'.
+    if (userEmail && isCod) {
       try {
         await sendOrderConfirmationEmail(
           userEmail,
