@@ -61,7 +61,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   values.push(id);
   const { rows } = await pool.query(
     `UPDATE users SET ${fields.join(", ")} WHERE user_id = $${values.length}
-     RETURNING user_id, first_name, last_name, email, role, created_at`,
+     RETURNING user_id, first_name, last_name, email, role, date_created AS created_at`,
     values
   );
   return NextResponse.json({ account: rows[0] });
