@@ -25,13 +25,13 @@ export default function Newsletter() {
           Stay Steeped In
         </h2>
         <p className="font-body text-sm text-charcoal/70 mb-8">
-          New arrivals, seasonal blends, and stories from the atelier — straight
+          New arrivals, seasonal blends, and stories from the atelier, straight
           to your inbox.
         </p>
 
         {submitted ? (
           <p className="font-body text-sm text-sage">
-            Thank you — you're on the list.
+            Thank you! you're on the list.
           </p>
         ) : (
           <form
