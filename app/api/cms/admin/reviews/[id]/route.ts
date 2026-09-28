@@ -8,7 +8,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { error } = await requireAdmin(req);
-  if (error) return NextResponse.json({ error }, { status: 403 });
+  if (error) return error;
 
   const { id } = await params;
   const { quote, name, rating, sort_order, is_active } = await req.json();
@@ -33,7 +33,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { error } = await requireAdmin(req);
-  if (error) return NextResponse.json({ error }, { status: 403 });
+  if (error) return error;
 
   const { id } = await params;
   await pool.query("DELETE FROM homepage_reviews WHERE id = $1", [id]);

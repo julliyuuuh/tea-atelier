@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(req: NextRequest) {
   const { error } = await requireAdmin(req);
-  if (error) return NextResponse.json({ error }, { status: 403 });
+  if (error) return error;
 
   const body = await req.json();
   const {

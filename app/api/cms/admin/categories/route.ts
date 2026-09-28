@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 // List all (including inactive, for admin view)
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req);
-  if (error) return NextResponse.json({ error }, { status: 403 });
+  if (error) return error;
 
   const result = await pool.query(
     "SELECT * FROM homepage_categories ORDER BY sort_order ASC"
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 // Create new
 export async function POST(req: NextRequest) {
   const { error } = await requireAdmin(req);
-  if (error) return NextResponse.json({ error }, { status: 403 });
+  if (error) return error;
 
   const { name, image, description, sort_order } = await req.json();
 

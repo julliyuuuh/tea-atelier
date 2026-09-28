@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req);
-  if (error) return NextResponse.json({ error }, { status: 403 });
+  if (error) return error;
 
   const result = await pool.query("SELECT * FROM about_team ORDER BY sort_order ASC");
   return NextResponse.json({ team: result.rows });
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const { error } = await requireAdmin(req);
-  if (error) return NextResponse.json({ error }, { status: 403 });
+  if (error) return error;
 
   const { name, role, image, sort_order } = await req.json();
 
