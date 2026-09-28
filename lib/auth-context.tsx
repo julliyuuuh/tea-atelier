@@ -45,7 +45,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (!res.ok) {
-          // Token's expired/invalid/user deleted, clear it out
+          // A 403 means the account was suspended: keep the message so the
+          // login page can show it (read once, then cleared there).
+          if (res.status === 403) {
+            const data = await res.json().catch(() => null);
+            if (data?.error) {
+              sessionStorage.setItem("authNotice", data.error);
+            }
+          }
+
+          // Token's expired/invalid/user deleted/suspended, clear it out
           localStorage.removeItem("token");
           setUser(null);
           return;

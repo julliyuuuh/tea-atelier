@@ -35,8 +35,18 @@ export async function POST(req: Request) {
     let user;
 
     if (existing.rows.length > 0) {
-      // Existing account (password-based or previously Google), link automatically
       user = existing.rows[0];
+
+      // Checked before linking the Google ID, so a suspended account isn't
+      // modified and never gets a token.
+      if (user.is_suspended) {
+        return NextResponse.json(
+          { error: "Your account has been suspended. Please contact support." },
+          { status: 403 }
+        );
+      }
+
+      // Existing account (password-based or previously Google), link automatically
       if (!user.google_id) {
         await pool.query("UPDATE users SET google_id = $1 WHERE user_id = $2", [googleId, user.user_id]);
       }

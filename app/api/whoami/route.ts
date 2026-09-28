@@ -14,13 +14,21 @@ export async function GET(req: Request) {
     const decoded = verifyToken(token);
 
     const result = await pool.query(
-      "SELECT user_id, first_name, last_name, email, role, phone_number, is_verified, avatar_url FROM users WHERE user_id = $1",
+      "SELECT user_id, first_name, last_name, email, role, phone_number, is_verified, is_suspended, avatar_url FROM users WHERE user_id = $1",
       [decoded.userId]
     );
 
     const user = result.rows[0];
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
+
+    // The frontend's AuthProvider clears the session and shows this message.
+    if (user.is_suspended) {
+      return NextResponse.json(
+        { error: "Your account has been suspended. Please contact support." },
+        { status: 403 }
+      );
     }
 
     return NextResponse.json({
