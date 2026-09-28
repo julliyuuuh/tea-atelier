@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { verifyToken } from "@/lib/auth-server";
+import { requireUser } from "@/lib/require-user";
 
 export async function PATCH(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+    // Verifies the token and rejects deleted or suspended accounts.
+    const { userId, error } = await requireUser(req);
+    if (error) return error;
 
-    const decoded = verifyToken(token); // should return { userId, email, role } or throw
     const { firstName, lastName, phoneNumber, avatarUrl } = await req.json();
 
     // An avatar-only request (upload or removal) comes through as just
@@ -48,7 +45,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "No fields to update." }, { status: 400 });
     }
 
-    values.push(decoded.userId);
+    values.push(userId);
 
     const result = await pool.query(
       `UPDATE users
