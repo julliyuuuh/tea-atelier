@@ -173,18 +173,18 @@ export default function Navbar() {
                     ) : (
                       <>
                         <Link
-                          href="/login"
-                          onClick={() => setAccountMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                        >
-                          <LogIn size={16} strokeWidth={1.5} /> Log In
-                        </Link>
-                        <Link
                           href="/faq"
                           onClick={() => setAccountMenuOpen(false)}
                           className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
                         >
                           <HelpCircle size={16} strokeWidth={1.5} /> FAQ
+                        </Link>
+                        <Link
+                          href="/login"
+                          onClick={() => setAccountMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                        >
+                          <LogIn size={16} strokeWidth={1.5} /> Log In
                         </Link>
                       </>
                     )}
