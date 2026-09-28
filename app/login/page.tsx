@@ -56,7 +56,7 @@ function LoginForm() {
   };
 
   useEffect(() => {
-    if (!authLoading && user && user.role !== "admin") {
+    if (  !authLoading && user && user.role !== "admin" && user.role !== "super_admin") {
       window.location.href = redirectTo || "/";
     }
   }, [user, authLoading, redirectTo]);
@@ -134,7 +134,7 @@ function LoginForm() {
         return;
       }
 
-      if (data.user.role === "admin") {
+      if (data.user.role === "admin" || data.user.role === "super_admin") {
         setErrorMessage(
           "Administrators must sign in through the admin portal.",
         );

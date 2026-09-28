@@ -15,16 +15,19 @@ import { useAuth } from "@/lib/auth-context";
 export default function Home() {
   const { user, isLoading } = useAuth();
 
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+
   // Directs to admin dashboard if admin
   useEffect(() => {
-    if (!isLoading && user?.role === "admin") {
+    if (!isLoading && isAdmin) {
       window.location.href = "/admin";
     }
-  }, [user, isLoading]);
+  }, [isAdmin, isLoading]);
 
-  if (isLoading || user?.role === "admin") {
+  if (isLoading || isAdmin) {
     return null;
   }
+
 
   return (
     <main className="min-h-screen">

@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       }
     }
 
-    if (user.role === "admin") {
+    if (user.role === "admin" || user.role === "super_admin") {
       return NextResponse.json({ error: "Administrators must sign in through the admin portal." }, { status: 403 });
     }
 

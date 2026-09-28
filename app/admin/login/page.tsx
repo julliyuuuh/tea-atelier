@@ -18,7 +18,8 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      window.location.href = user.role === "admin" ? "/admin" : "/";
+      const isAdmin = user.role === "admin" || user.role === "super_admin";
+      window.location.href = isAdmin ? "/admin" : "/";
     }
   }, [user, authLoading]);
 
@@ -36,7 +37,7 @@ export default function AdminLoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed.");
 
-      if (data.user.role !== "admin") {
+      if (data.user.role !== "admin" && data.user.role !== "super_admin") {
         setErrorMessage("This login is for administrators only.");
         setIsLoading(false);
         return;
