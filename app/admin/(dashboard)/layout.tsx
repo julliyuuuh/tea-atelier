@@ -16,18 +16,27 @@ import {
   ArrowUpRight,
   Moon,
   Sun,
+  ShieldCheck
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 
-const navItems = [
+type NavItem = {
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  superAdminOnly?: boolean;
+};
+
+const navItems: NavItem[] = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { label: "Customers", href: "/admin/customers", icon: Users },
   { label: "Contact Messages", href: "/admin/contact", icon: Mail },
   { label: "Content Management", href: "/admin/cms", icon: FileText },
+  { label: "Admin Accounts", href: "/admin/accounts", icon: ShieldCheck, superAdminOnly: true },
 ];
 
 export default function AdminLayout({
@@ -51,7 +60,7 @@ export default function AdminLayout({
       router.push("/admin/login");
       return;
     }
-    if (user.role !== "admin") {
+    if (user.role !== "admin" && user.role !== "super_admin") {
       router.push("/");
     }
   }, [user, isLoading, router]);
@@ -60,7 +69,7 @@ export default function AdminLayout({
     setMobileNavOpen(false);
   }, [pathname]);
 
-  if (isLoading || !user || user.role !== "admin") {
+  if (isLoading || !user || (user.role !== "admin" && user.role !== "super_admin")) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F4F4F2]">
         <p className="font-body text-sm text-charcoal/60">Loading...</p>
@@ -124,7 +133,9 @@ export default function AdminLayout({
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItems
+            .filter((item) => !item.superAdminOnly || user.role === "super_admin")
+            .map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
