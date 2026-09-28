@@ -35,10 +35,36 @@ export async function POST(req: Request) {
     const payment = await payRes.json();
 
     if (payRes.ok && payment.data.attributes.status === "paid") {
-      await pool.query(
-        `UPDATE orders SET payment_status = 'paid' WHERE order_id = $1 AND payment_status != 'paid'`,
-        [order.order_id]
-      );
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        const upd = await client.query(
+          `UPDATE orders SET payment_status = 'paid'
+          WHERE order_id = $1 AND payment_status != 'paid'
+          RETURNING user_id`,
+          [order.order_id]
+        );
+
+        // Only runs the first time (guards against duplicate webhook deliveries)
+        if (upd.rows.length > 0) {
+          await client.query(
+            `UPDATE products p
+            SET stock_quantity = GREATEST(p.stock_quantity - oi.quantity, 0)
+            FROM order_items oi
+            WHERE oi.order_id = $1 AND oi.product_id = p.product_id`,
+            [order.order_id]
+          );
+          await client.query("DELETE FROM cart WHERE user_id = $1", [upd.rows[0].user_id]);
+        }
+
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
     } else {
       await pool.query(`UPDATE orders SET payment_status = 'failed' WHERE order_id = $1`, [order.order_id]);
     }

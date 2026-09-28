@@ -142,21 +142,27 @@ export async function POST(req: Request) {
     const paymentStatus = orderResult.rows[0].payment_status;
 
     // Create order_items and decrement stock for each cart item
+    const isCod = (paymentMethod || "cod") === "cod";
+
     for (const item of cartResult.rows) {
       await client.query(
         `INSERT INTO order_items (order_id, product_id, quantity, price)
-         VALUES ($1, $2, $3, $4)`,
+        VALUES ($1, $2, $3, $4)`,
         [orderId, item.product_id, item.quantity, item.price]
       );
 
-      await client.query(
-        `UPDATE products SET stock_quantity = stock_quantity - $1 WHERE product_id = $2`,
-        [item.quantity, item.product_id]
-      );
+      if (isCod) {
+        await client.query(
+          `UPDATE products SET stock_quantity = stock_quantity - $1 WHERE product_id = $2`,
+          [item.quantity, item.product_id]
+        );
+      }
     }
 
     // Clear the cart
-    await client.query("DELETE FROM cart WHERE user_id = $1", [userId]);
+    if (isCod) {
+      await client.query("DELETE FROM cart WHERE user_id = $1", [userId]);
+    }
 
     await client.query("COMMIT");
 
