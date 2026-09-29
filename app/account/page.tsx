@@ -1000,14 +1000,13 @@ function OrdersTab() {
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              {order.paymentMethod !== "cod" && order.paymentStatus !== "paid" && (
-                <Badge tone="amber">
-                  {order.paymentStatus === "failed" ? "Payment Failed" : "Payment Pending"}
-                </Badge>
-              )}
+            {order.paymentMethod !== "cod" && order.paymentStatus !== "paid" ? (
+              <Badge tone="amber">
+                {order.paymentStatus === "failed" ? "Payment Failed" : "Awaiting Payment"}
+              </Badge>
+            ) : (
               <Badge tone="sage">{getStatusLabel(order.status)}</Badge>
-            </div>
+            )}
           </div>
 
             <div className="space-y-3 mb-4">
