@@ -44,8 +44,6 @@ const METHOD_LABELS: Record<string, string> = {
   grabpay: "GrabPay",
 };
 
-const HEADING = "font-body text-xs uppercase tracking-wide text-charcoal/50 mb-3";
-
 const peso = (n: number) =>
   `₱${n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -76,9 +74,18 @@ function paymentBadge(status: string) {
   }
 }
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="border border-charcoal/10 rounded-xl p-4">
+      <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/50 mb-2">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-1.5">
+    <div className="flex items-start justify-between gap-4 py-1">
       <span className="font-body text-xs text-charcoal/50 shrink-0">{label}</span>
       <span className="font-body text-sm text-charcoal text-right break-words min-w-0">
         {value || "—"}
@@ -125,7 +132,7 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
     [orderId],
   );
 
-  // Fresh load every time an order is opened.
+  // Fresh load every time a different order is opened.
   useEffect(() => {
     if (orderId === null) return;
     setData(null);
@@ -135,19 +142,24 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
   }, [orderId, load]);
 
   const handleClose = useCallback(() => {
-    // Refresh the list behind the panel once, on close, if anything was edited.
+    // Refresh the list behind the modal once, on close, if anything was edited.
     if (changedRef.current) onChanged();
     onClose();
   }, [onChanged, onClose]);
 
-  // Escape to close.
+  // Escape to close + lock background scroll while open.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") handleClose();
     };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [open, handleClose]);
 
   const patch = async (body: { status?: string; paymentStatus?: string }) => {
@@ -174,12 +186,12 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
   const renderBody = () => {
     if (isLoading && !data) {
       return (
-        <div className="space-y-3">
-          <SkeletonBlock className="h-6 w-40" />
-          <SkeletonBlock className="h-4 w-32" />
-          <SkeletonBlock className="h-16 w-full rounded-xl" />
-          <SkeletonBlock className="h-24 w-full rounded-xl" />
-          <SkeletonBlock className="h-24 w-full rounded-xl" />
+        <div className="space-y-4">
+          <SkeletonBlock className="h-10 w-full rounded-xl" />
+          <div className="grid gap-4 md:grid-cols-5">
+            <SkeletonBlock className="h-56 md:col-span-3 rounded-xl" />
+            <SkeletonBlock className="h-56 md:col-span-2 rounded-xl" />
+          </div>
         </div>
       );
     }
@@ -192,8 +204,7 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
     const sBadge = statusBadge(order.status);
     const pBadge = paymentBadge(order.paymentStatus);
     const cancelled = order.status === "CANCELLED";
-    const cod = isCod(order.paymentMethod);
-    const paymentEditable = cod && !cancelled;
+    const paymentEditable = isCod(order.paymentMethod) && !cancelled;
     const currentStep = TRACK_STEPS.findIndex((s) => s.value === order.status);
 
     return (
@@ -201,57 +212,34 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
         <ErrorBanner message={errorMessage} onRetry={() => load()} />
         <ErrorBanner message={actionError} />
 
-        {/* Summary */}
-        <div className="mb-8">
-          <h3 className="font-body text-xl text-charcoal">Order TA-{order.id}</h3>
-          <p className="font-body text-xs text-charcoal/40 mt-1">
-            Placed {formatDate(order.createdAt, true)}
-          </p>
-          <div className="flex flex-wrap gap-2 mt-4">
-            <span className={`inline-flex font-body text-xs px-3 py-1 rounded-full ${sBadge.bg} ${sBadge.text}`}>
-              {ORDER_STATUSES.find((s) => s.value === order.status)?.label ?? order.status}
-            </span>
-            <span className={`inline-flex font-body text-xs px-3 py-1 rounded-full ${pBadge.bg} ${pBadge.text}`}>
-              Payment:{" "}
-              {PAYMENT_STATUSES.find((s) => s.value === order.paymentStatus)?.label ??
-                order.paymentStatus}
-            </span>
-          </div>
-        </div>
-
         {/* Progress */}
-        <div className="mb-8">
-          <h4 className={HEADING}>Progress</h4>
+        <div className="border border-charcoal/10 rounded-xl p-4 mb-4 overflow-x-auto">
           {cancelled ? (
-            <p className="font-body text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">
-              This order was cancelled.
-            </p>
+            <p className="font-body text-sm text-red-600">This order was cancelled.</p>
           ) : (
-            <ol className="flex">
+            <ol className="flex items-center min-w-[420px]">
               {TRACK_STEPS.map((step, idx) => {
                 const done = idx <= currentStep;
                 const last = idx === TRACK_STEPS.length - 1;
                 return (
-                  <li key={step.value} className="relative flex-1 flex flex-col items-center">
-                    {!last && (
-                      <span
-                        className={`absolute top-1.5 left-1/2 w-full h-px ${
-                          idx < currentStep ? "bg-sage" : "bg-charcoal/15"
-                        }`}
-                      />
-                    )}
+                  <li key={step.value} className={`flex items-center gap-2 ${last ? "" : "flex-1"}`}>
                     <span
-                      className={`relative z-10 w-3 h-3 rounded-full ${
-                        done ? "bg-sage" : "bg-charcoal/15"
-                      }`}
+                      className={`w-3 h-3 rounded-full shrink-0 ${done ? "bg-sage" : "bg-charcoal/15"}`}
                     />
                     <span
-                      className={`mt-2 font-body text-[11px] text-center ${
+                      className={`font-body text-xs whitespace-nowrap ${
                         done ? "text-charcoal" : "text-charcoal/40"
                       }`}
                     >
                       {step.label}
                     </span>
+                    {!last && (
+                      <span
+                        className={`flex-1 h-px mx-2 ${
+                          idx < currentStep ? "bg-sage" : "bg-charcoal/15"
+                        }`}
+                      />
+                    )}
                   </li>
                 );
               })}
@@ -259,168 +247,194 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
           )}
         </div>
 
-        {/* Manage */}
-        <div className="mb-8">
-          <h4 className={HEADING}>Manage Order</h4>
-          <div className="space-y-3">
-            <div>
-              <p className="font-body text-xs text-charcoal/50 mb-1.5">Order status</p>
-              <CustomSelect
-                id="panel-status"
-                value={order.status}
-                onChange={(value) => patch({ status: value })}
-                options={STATUS_OPTIONS}
-                disabled={isUpdating}
-                triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${sBadge.bg} ${sBadge.text}`}
-              />
-            </div>
-            {paymentEditable && (
-              <div>
-                <p className="font-body text-xs text-charcoal/50 mb-1.5">Payment status</p>
-                <CustomSelect
-                  id="panel-payment"
-                  value={order.paymentStatus}
-                  onChange={(value) => patch({ paymentStatus: value })}
-                  options={MANUAL_PAYMENT_OPTIONS}
-                  disabled={isUpdating}
-                  triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${pBadge.bg} ${pBadge.text}`}
-                />
+        <div className="grid gap-4 md:grid-cols-5 items-start">
+          {/* Left: items + totals */}
+          <div className="md:col-span-3">
+            <Section title={`Items (${items.length})`}>
+              <div className="divide-y divide-charcoal/5">
+                {items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 py-2.5">
+                    <div className="w-11 h-11 rounded-lg bg-sand overflow-hidden shrink-0">
+                      {item.image && (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-body text-sm text-charcoal truncate">{item.name}</p>
+                      <p className="font-body text-xs text-charcoal/50">
+                        {peso(item.price)} × {item.quantity}
+                      </p>
+                    </div>
+                    <p className="font-body text-sm text-charcoal tabular-nums">
+                      {peso(item.price * item.quantity)}
+                    </p>
+                  </div>
+                ))}
               </div>
-            )}
-            {!cod && (
-              <p className="font-body text-xs text-charcoal/40">
-                Online payments are updated automatically by PayMongo.
-              </p>
-            )}
-          </div>
-        </div>
 
-        {/* Items */}
-        <div className="mb-8">
-          <h4 className={HEADING}>Items ({items.length})</h4>
-          <div className="space-y-2">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-3 border border-charcoal/10 rounded-xl px-4 py-3"
-              >
-                <div className="w-10 h-10 rounded-lg bg-sand overflow-hidden shrink-0">
-                  {item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      loading="lazy"
-                      className="w-full h-full object-cover"
+              <div className="mt-1 pt-3 border-t border-charcoal/10 space-y-1.5 font-body text-sm text-charcoal/70">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span className="tabular-nums">{peso(subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Delivery fee</span>
+                  <span className="tabular-nums">{peso(deliveryFee)}</span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-charcoal/10 text-charcoal font-medium">
+                  <span>Total</span>
+                  <span className="tabular-nums">{peso(total)}</span>
+                </div>
+              </div>
+            </Section>
+          </div>
+
+          {/* Right: manage, customer, delivery, payment */}
+          <div className="md:col-span-2 space-y-4">
+            <Section title="Manage order">
+              <div className="space-y-3">
+                <div>
+                  <p className="font-body text-xs text-charcoal/50 mb-1.5">Order status</p>
+                  <CustomSelect
+                    id="modal-status"
+                    value={order.status}
+                    onChange={(value) => patch({ status: value })}
+                    options={STATUS_OPTIONS}
+                    disabled={isUpdating}
+                    triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${sBadge.bg} ${sBadge.text}`}
+                  />
+                </div>
+                {paymentEditable && (
+                  <div>
+                    <p className="font-body text-xs text-charcoal/50 mb-1.5">Payment status</p>
+                    <CustomSelect
+                      id="modal-payment"
+                      value={order.paymentStatus}
+                      onChange={(value) => patch({ paymentStatus: value })}
+                      options={MANUAL_PAYMENT_OPTIONS}
+                      disabled={isUpdating}
+                      triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${pBadge.bg} ${pBadge.text}`}
                     />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-body text-sm text-charcoal truncate">{item.name}</p>
-                  <p className="font-body text-xs text-charcoal/50">
-                    {peso(item.price)} × {item.quantity}
-                  </p>
-                </div>
-                <span className="font-body text-sm text-charcoal/70 tabular-nums">
-                  {peso(item.price * item.quantity)}
-                </span>
+                  </div>
+                )}
               </div>
-            ))}
+            </Section>
+
+            <Section title="Customer">
+              <Row label="Name" value={customer.name} />
+              <Row label="Email" value={customer.email} />
+              <Row label="Phone" value={customer.phone} />
+              <Row
+                label="Member since"
+                value={customer.joinedAt ? formatDate(customer.joinedAt) : null}
+              />
+            </Section>
+
+            <Section title="Delivery">
+              {delivery.length === 0 ? (
+                <p className="font-body text-sm text-charcoal/40">No delivery details on file.</p>
+              ) : (
+                delivery.map((d) => <Row key={d.label} label={d.label} value={d.value} />)
+              )}
+            </Section>
+
+            <Section title="Payment">
+              <Row
+                label="Method"
+                value={METHOD_LABELS[order.paymentMethod?.toLowerCase()] ?? order.paymentMethod}
+              />
+              <Row
+                label="Status"
+                value={
+                  PAYMENT_STATUSES.find((s) => s.value === order.paymentStatus)?.label ??
+                  order.paymentStatus
+                }
+              />
+              {order.paymongoSourceId && (
+                <Row label="PayMongo ref" value={order.paymongoSourceId} />
+              )}
+            </Section>
           </div>
-          <div className="mt-3 px-1 space-y-1.5 font-body text-sm text-charcoal/70">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span className="tabular-nums">{peso(subtotal)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Delivery fee</span>
-              <span className="tabular-nums">{peso(deliveryFee)}</span>
-            </div>
-            <div className="flex justify-between pt-2 border-t border-charcoal/10 text-charcoal font-medium">
-              <span>Total</span>
-              <span className="tabular-nums">{peso(total)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Customer */}
-        <div className="mb-8">
-          <h4 className={HEADING}>Customer</h4>
-          <Row label="Name" value={customer.name} />
-          <Row label="Email" value={customer.email} />
-          <Row label="Phone" value={customer.phone} />
-          <Row
-            label="Member since"
-            value={customer.joinedAt ? formatDate(customer.joinedAt) : null}
-          />
-        </div>
-
-        {/* Delivery */}
-        <div className="mb-8">
-          <h4 className={HEADING}>Delivery</h4>
-          {delivery.length === 0 ? (
-            <p className="font-body text-sm text-charcoal/40">No delivery details on file.</p>
-          ) : (
-            delivery.map((d) => <Row key={d.label} label={d.label} value={d.value} />)
-          )}
-        </div>
-
-        {/* Payment */}
-        <div>
-          <h4 className={HEADING}>Payment</h4>
-          <Row
-            label="Method"
-            value={METHOD_LABELS[order.paymentMethod?.toLowerCase()] ?? order.paymentMethod}
-          />
-          <Row
-            label="Status"
-            value={
-              PAYMENT_STATUSES.find((s) => s.value === order.paymentStatus)?.label ??
-              order.paymentStatus
-            }
-          />
-          {order.paymongoSourceId && <Row label="PayMongo ref" value={order.paymongoSourceId} />}
         </div>
       </>
     );
   };
 
+  const sBadgeHeader = data ? statusBadge(data.order.status) : null;
+  const pBadgeHeader = data ? paymentBadge(data.order.paymentStatus) : null;
+
   return (
     <AnimatePresence>
       {open && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={handleClose}
-            className="fixed inset-0 bg-charcoal/30 z-[150]"
-          />
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) handleClose();
+          }}
+        >
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Order details"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed top-0 right-0 h-full w-full max-w-md bg-white z-[151] shadow-xl overflow-y-auto"
+            aria-label={`Order TA-${orderId}`}
+            className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ duration: 0.18 }}
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-charcoal/10">
-              <h2 className="font-body text-lg font-medium text-charcoal">Order Details</h2>
-              <button
-                type="button"
-                onClick={handleClose}
-                aria-label="Close panel"
-                className="text-charcoal/50 hover:text-charcoal transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-charcoal/10">
+              <div className="min-w-0">
+                <h2 className="font-body text-lg font-medium text-charcoal">
+                  Order TA-{orderId}
+                </h2>
+                {data && (
+                  <p className="font-body text-xs text-charcoal/50 mt-0.5">
+                    Placed {formatDate(data.order.createdAt, true)}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {data && sBadgeHeader && pBadgeHeader && (
+                  <>
+                    <span
+                      className={`hidden sm:inline-flex font-body text-xs px-3 py-1 rounded-full ${sBadgeHeader.bg} ${sBadgeHeader.text}`}
+                    >
+                      {ORDER_STATUSES.find((s) => s.value === data.order.status)?.label ??
+                        data.order.status}
+                    </span>
+                    <span
+                      className={`hidden sm:inline-flex font-body text-xs px-3 py-1 rounded-full ${pBadgeHeader.bg} ${pBadgeHeader.text}`}
+                    >
+                      {PAYMENT_STATUSES.find((s) => s.value === data.order.paymentStatus)?.label ??
+                        data.order.paymentStatus}
+                    </span>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  aria-label="Close"
+                  className="p-1.5 rounded-full text-charcoal/50 hover:text-charcoal hover:bg-sand/40 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            <div className="px-6 py-6">{renderBody()}</div>
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-5">{renderBody()}</div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
