@@ -20,11 +20,11 @@ export async function GET(req: Request) {
   const totalPages = Math.ceil(totalOrders / pageSize);
 
   const ordersResult = await pool.query(
-    `SELECT order_id, shipping_cost, total_amount, order_status, payment_method, recipient_name, created_at
-     FROM orders
-     WHERE user_id = $1
-     ORDER BY created_at DESC
-     LIMIT $2 OFFSET $3`,
+    `SELECT order_id, shipping_cost, total_amount, order_status, payment_status, payment_method, recipient_name, created_at
+    FROM orders
+    WHERE user_id = $1
+    ORDER BY created_at DESC
+    LIMIT $2 OFFSET $3`,
     [userId, pageSize, offset]
   );
 
@@ -41,6 +41,7 @@ export async function GET(req: Request) {
       return {
         id: order.order_id,
         status: order.order_status,
+        paymentStatus: order.payment_status,
         paymentMethod: order.payment_method,
         recipientName: order.recipient_name,
         shippingCost: parseFloat(order.shipping_cost),

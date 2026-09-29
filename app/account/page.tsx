@@ -868,16 +868,17 @@ type OrderItem = {
   price: number;
 };
 
-type Order = {
-  id: number;
-  status: string;
-  paymentMethod: string;
-  recipientName: string | null;
-  shippingCost: number;
-  totalAmount: number;
-  createdAt: string;
-  items: OrderItem[];
-};
+  type Order = {
+    id: number;
+    status: string;
+    paymentStatus: string;
+    paymentMethod: string;
+    recipientName: string | null;
+    shippingCost: number;
+    totalAmount: number;
+    createdAt: string;
+    items: OrderItem[];
+  };
 
 function formatPaymentMethod(method: string): string {
   const labels: Record<string, string> = {
@@ -981,26 +982,33 @@ function OrdersTab() {
             variants={listItemVariants}
             className="bg-sand/30 rounded-xl p-6"
           >
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-4 border-b border-charcoal/10">
-              <div>
-                <p className="font-body text-sm text-charcoal">
-                  Order #TA-{order.id}
-                </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-4 border-b border-charcoal/10">
+            <div>
+              <p className="font-body text-sm text-charcoal">
+                Order #TA-{order.id}
+              </p>
+              <p className="font-body text-xs text-charcoal/50 mt-1">
+                {new Date(order.createdAt).toLocaleDateString("en-PH", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+              {order.recipientName && (
                 <p className="font-body text-xs text-charcoal/50 mt-1">
-                  {new Date(order.createdAt).toLocaleDateString("en-PH", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+                  For: {order.recipientName}
                 </p>
-                {order.recipientName && (
-                  <p className="font-body text-xs text-charcoal/50 mt-1">
-                    For: {order.recipientName}
-                  </p>
-                )}
-              </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {order.paymentMethod !== "cod" && order.paymentStatus !== "paid" && (
+                <Badge tone="amber">
+                  {order.paymentStatus === "failed" ? "Payment Failed" : "Payment Pending"}
+                </Badge>
+              )}
               <Badge tone="sage">{getStatusLabel(order.status)}</Badge>
             </div>
+          </div>
 
             <div className="space-y-3 mb-4">
               {order.items.map((item, i) => (
