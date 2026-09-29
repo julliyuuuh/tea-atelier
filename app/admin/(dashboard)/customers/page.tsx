@@ -364,7 +364,7 @@ export default function AdminCustomersPage() {
                   <div role="cell" className="px-5 flex items-center justify-end gap-4">
                     <button
                       onClick={() => openView(customer.id)}
-                      className="font-body text-xs text-charcoal/60 hover:text-sage hover:scale-105 transition-all"
+                      className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal hover:bg-sand/30 transition-colors"
                     >
                       View
                     </button>
@@ -373,7 +373,7 @@ export default function AdminCustomersPage() {
                       onClick={() =>
                         setConfirmTarget({ id: customer.id, suspend: !customer.isSuspended })
                       }
-                      className="font-body text-xs text-charcoal/60 hover:text-red-600 hover:scale-105 transition-all disabled:opacity-50"
+                      className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal hover:bg-sand/30 transition-colors"
                     >
                       {customer.isSuspended ? "Unsuspend" : "Suspend"}
                     </button>

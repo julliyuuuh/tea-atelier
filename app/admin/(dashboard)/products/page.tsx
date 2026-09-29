@@ -632,7 +632,7 @@ export default function AdminProductsPage() {
                     <div role="cell" className="px-5 flex items-center justify-end gap-4">
                       <button
                         onClick={() => openEditModal(product)}
-                        className="font-body text-xs text-charcoal/60 hover:text-sage hover:scale-105 transition-all"
+                        className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal hover:bg-sand/30 transition-colors"
                       >
                         Edit
                       </button>
@@ -640,7 +640,7 @@ export default function AdminProductsPage() {
                         onClick={() =>
                           setConfirmTarget({ type: "single", id: product.id })
                         }
-                        className="font-body text-xs text-charcoal/60 hover:text-red-600 hover:scale-105 transition-all"
+                        className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal hover:bg-sand/30 transition-colors"
                       >
                         Delete
                       </button>
