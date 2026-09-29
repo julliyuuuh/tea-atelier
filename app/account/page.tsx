@@ -998,7 +998,7 @@ function OrdersTab() {
                 <p className="font-body text-xs text-charcoal/50 mt-1">
                   For: {order.recipientName}
                 </p>
-              )}
+              )}  
             </div>
             {order.paymentMethod !== "cod" && order.paymentStatus !== "paid" ? (
               <Badge tone="amber">

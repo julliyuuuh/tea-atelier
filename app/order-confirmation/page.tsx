@@ -60,6 +60,29 @@ function OrderConfirmationContent() {
     const maxAttempts = 10; // ~20s of polling
     let cancelled = false;
 
+    const checkWithPaymongo = () => {
+      fetch("/api/payments/paymongo/check", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ orderId: Number(orderId) }),
+      })
+        .then((res) => res.json())
+        .then((result: { paymentStatus: string }) => {
+          if (cancelled) return;
+          if (result.paymentStatus === "failed") {
+            setOrder((prev) =>
+              prev ? { ...prev, paymentStatus: "failed" } : prev,
+            );
+          }
+        })
+        .catch(() => {
+          // best-effort — leave the order as pending if this fails
+        });
+    };
+
     const poll = () => {
       fetch(`/api/orders/${orderId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -81,9 +104,14 @@ function OrderConfirmationContent() {
             clearCart();
           }
 
-          if (!isCod && data.paymentStatus === "pending" && attempts < maxAttempts) {
-            attempts++;
-            setTimeout(poll, 2000);
+          if (!isCod && data.paymentStatus === "pending") {
+            if (attempts < maxAttempts) {
+              attempts++;
+              setTimeout(poll, 2000);
+            } else {
+              // Polling window ran out — ask PayMongo directly whether it actually failed
+              checkWithPaymongo();
+            }
           }
         })
         .catch(() => {
