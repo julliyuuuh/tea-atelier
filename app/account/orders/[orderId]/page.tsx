@@ -46,6 +46,7 @@ function formatPaymentMethod(method: string): string {
   const labels: Record<string, string> = {
     cod: "Cash on Delivery",
     gcash: "GCash",
+    grabpay: "GrabPay",
     credit: "Credit Card",
     paypal: "PayPal",
   };
@@ -74,11 +75,39 @@ function getStepIndex(status: string): number {
 
 // ---------- tracker ----------
 
-function OrderTracker({ status }: { status: string }) {
+function OrderTracker({
+  status,
+  paymentFailed,
+  paymentPending,
+}: {
+  status: string;
+  paymentFailed: boolean;
+  paymentPending: boolean;
+}) {
   if (status.toLowerCase() === "cancelled") {
     return (
       <div className="rounded-xl bg-red-50 p-4">
         <p className="font-body text-sm text-red-600">This order was cancelled.</p>
+      </div>
+    );
+  }
+
+  if (paymentFailed) {
+    return (
+      <div className="rounded-xl bg-red-50 p-4">
+        <p className="font-body text-sm text-red-600">
+          This order's payment didn't go through, so it hasn't been processed.
+        </p>
+      </div>
+    );
+  }
+
+  if (paymentPending) {
+    return (
+      <div className="rounded-xl bg-amber-50 p-4">
+        <p className="font-body text-sm text-amber-700">
+          Waiting for payment confirmation from your payment provider.
+        </p>
       </div>
     );
   }
@@ -207,96 +236,114 @@ export default function OrderDetailsPage({
         </p>
       )}
 
-      {order && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          {/* header */}
-          <div className="bg-sand/30 rounded-xl p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-display text-lg text-charcoal">
-                  Order #TA-{order.orderId}
-                </p>
-                <p className="font-body text-xs text-charcoal/50 mt-1">
-                  Placed on{" "}
-                  {new Date(order.createdAt).toLocaleDateString("en-PH", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </p>
-                {order.recipientName && (
-                  <p className="font-body text-xs text-charcoal/50 mt-1">
-                    For: {order.recipientName}
+      {order && (() => {
+        const isCod = order.paymentMethod === "cod";
+        const paymentFailed = !isCod && order.paymentStatus === "failed";
+        const paymentPending = !isCod && order.paymentStatus === "pending";
+
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            {/* header */}
+            <div className="bg-sand/30 rounded-xl p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-display text-lg text-charcoal">
+                    Order #TA-{order.orderId}
                   </p>
+                  <p className="font-body text-xs text-charcoal/50 mt-1">
+                    Placed on{" "}
+                    {new Date(order.createdAt).toLocaleDateString("en-PH", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                  {order.recipientName && (
+                    <p className="font-body text-xs text-charcoal/50 mt-1">
+                      For: {order.recipientName}
+                    </p>
+                  )}
+                </div>
+                {paymentFailed || paymentPending ? (
+                  <Badge tone="amber">
+                    {paymentFailed ? "Payment Failed" : "Awaiting Payment"}
+                  </Badge>
+                ) : (
+                  <Badge tone="sage">{getStatusLabel(order.orderStatus)}</Badge>
                 )}
               </div>
-              <Badge tone="sage">{getStatusLabel(order.orderStatus)}</Badge>
             </div>
-          </div>
 
-          {/* tracking */}
-          <div className="bg-sand/30 rounded-xl p-6">
-            <h3 className="font-display text-base text-charcoal mb-6">
-              Order Progress
-            </h3>
-            <OrderTracker status={order.orderStatus} />
-          </div>
+            {/* tracking */}
+            <div className="bg-sand/30 rounded-xl p-6">
+              <h3 className="font-display text-base text-charcoal mb-6">
+                Order Progress
+              </h3>
+              <OrderTracker
+                status={order.orderStatus}
+                paymentFailed={paymentFailed}
+                paymentPending={paymentPending}
+              />
+            </div>
 
-          {/* items + summary */}
-          <div className="bg-sand/30 rounded-xl p-6">
-            <h3 className="font-display text-base text-charcoal mb-4">Items</h3>
-            <div className="space-y-3 mb-4 pb-4 border-b border-charcoal/10">
-              {order.items.map((item) => (
-                <div key={item.productId} className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-sand rounded-lg overflow-hidden shrink-0">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-body text-sm text-charcoal">{item.name}</p>
-                    <p className="font-body text-xs text-charcoal/50">
-                      Qty {item.quantity}
+            {/* items + summary */}
+            <div className="bg-sand/30 rounded-xl p-6">
+              <h3 className="font-display text-base text-charcoal mb-4">Items</h3>
+              <div className="space-y-3 mb-4 pb-4 border-b border-charcoal/10">
+                {order.items.map((item) => (
+                  <div key={item.productId} className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-sand rounded-lg overflow-hidden shrink-0">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-body text-sm text-charcoal">{item.name}</p>
+                      <p className="font-body text-xs text-charcoal/50">
+                        Qty {item.quantity}
+                      </p>
+                    </div>
+                    <p className="font-body text-sm text-charcoal">
+                      ₱{(item.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
-                  <p className="font-body text-sm text-charcoal">
-                    ₱{(item.price * item.quantity).toFixed(2)}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <div className="space-y-2 font-body text-sm text-charcoal/70">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>₱{order.subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Delivery fee</span>
-                <span>₱{order.deliveryFee.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Payment</span>
-                <span>
-                  {formatPaymentMethod(order.paymentMethod)} · {order.paymentStatus}
-                </span>
-              </div>
-              <div className="flex justify-between pt-3 border-t border-charcoal/10">
-                <span className="text-charcoal">Total</span>
-                <span className="font-display text-base text-charcoal">
-                  ₱{order.total.toFixed(2)}
-                </span>
+              <div className="space-y-2 font-body text-sm text-charcoal/70">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>₱{order.subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Delivery fee</span>
+                  <span>₱{order.deliveryFee.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Payment</span>
+                  <span>
+                    {formatPaymentMethod(order.paymentMethod)} · {order.paymentStatus}
+                  </span>
+                </div>
+                <div className="flex justify-between pt-3 border-t border-charcoal/10">
+                  <span className="text-charcoal">
+                    {paymentFailed || paymentPending ? "Total Due" : "Total"}
+                  </span>
+                  <span className="font-display text-base text-charcoal">
+                    ₱{order.total.toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        );
+      })()}
     </main>
   );
 }
