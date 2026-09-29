@@ -52,7 +52,7 @@ export async function POST(req: Request) {
           [order.order_id]
         );
 
-        // Only runs the first time (guards against duplicate webhook deliveries)
+        // Only runs the first time (which guards against duplicate webhook deliveries)
         if (upd.rows.length > 0) {
           await client.query(
             `UPDATE products p
