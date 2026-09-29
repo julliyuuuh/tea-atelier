@@ -60,7 +60,7 @@ const MANUAL_PAYMENT_OPTIONS = PAYMENT_STATUSES.filter((s) =>
 ).map((s) => ({ value: s.value, label: s.label }));
 
 const GRID_COLS =
-  "minmax(90px,0.7fr) minmax(200px,2fr) minmax(70px,0.6fr) minmax(100px,0.9fr) minmax(110px,0.9fr) minmax(150px,1.1fr) minmax(140px,1fr)";
+  "minmax(90px,0.7fr) minmax(200px,2fr) minmax(70px,0.6fr) minmax(100px,0.9fr) minmax(110px,0.9fr) minmax(150px,1.1fr) minmax(100px,0.6fr)";
 
 const METHOD_LABELS: Record<string, string> = {
   cod: "COD",
@@ -392,7 +392,7 @@ export default function AdminOrdersPage() {
               onSort={handleSort}
             />
             <PlainHeader label="Status" />
-            <PlainHeader label="Payment" />
+            <PlainHeader label="Actions" align="right" />
           </div>
         </div>
 
@@ -424,8 +424,8 @@ export default function AdminOrdersPage() {
                 <div className="px-5">
                   <SkeletonBlock className="h-6 w-24 rounded-full" />
                 </div>
-                <div className="px-5">
-                  <SkeletonBlock className="h-6 w-20 rounded-full" />
+                <div className="px-5 flex justify-end">
+                  <SkeletonBlock className="h-7 w-14 rounded-full" />
                 </div>
               </div>
             ))}
@@ -495,27 +495,14 @@ export default function AdminOrdersPage() {
                         triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${badge.bg} ${badge.text}`}
                       />
                     </div>
-                    <div role="cell" className="px-5 min-w-0">
-                      {paymentEditable ? (
-                        <CustomSelect
-                          id={`order-payment-${order.id}`}
-                          value={order.paymentStatus}
-                          onChange={(value) => handlePaymentChange(order.id, value)}
-                          options={MANUAL_PAYMENT_OPTIONS}
-                          disabled={updatingId === order.id}
-                          triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${pBadge.bg} ${pBadge.text}`}
-                        />
-                      ) : (
-                        <span
-                          className={`inline-flex font-body text-xs px-3 py-1.5 rounded-full ${pBadge.bg} ${pBadge.text}`}
-                        >
-                          {PAYMENT_STATUSES.find((s) => s.value === order.paymentStatus)
-                            ?.label ?? order.paymentStatus}
-                        </span>
-                      )}
-                      <p className="font-body text-[11px] text-charcoal/40 mt-1 truncate">
-                        {methodLabel(order.paymentMethod)}
-                      </p>
+                    <div role="cell" className="px-5 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setViewingOrderId(order.id)}
+                        className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal hover:bg-sand/30 transition-colors"
+                      >
+                        View
+                      </button>
                     </div>
                   </motion.div>
                 );
