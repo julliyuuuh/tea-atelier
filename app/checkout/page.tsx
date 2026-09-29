@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
@@ -10,10 +10,11 @@ import { useAuth } from "@/lib/auth-context";
 
 const deliveryFee = 5;
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const { items, subtotal, clearCart } = useCart();
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [showConfirm, setShowConfirm] = useState(false);
   const [formData, setFormData] = useState({
@@ -24,6 +25,9 @@ export default function CheckoutPage() {
     city: "",
     province: "",
   });
+
+  const paymentFailed = searchParams.get("payment") === "failed";
+  const failedOrderId = searchParams.get("orderId");
 
   useEffect(() => {
     if (user) {
@@ -61,14 +65,27 @@ export default function CheckoutPage() {
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          street: formData.street, city: formData.city, province: formData.province,
-          deliveryFee, paymentMethod, phone: formData.phone, fullName: formData.fullName,
+          street: formData.street,
+          city: formData.city,
+          province: formData.province,
+          deliveryFee,
+          paymentMethod,
+          phone: formData.phone,
+          fullName: formData.fullName,
         }),
       });
+
       const data = await res.json();
-      if (!res.ok) { alert(data.error || "Unable to place order."); return; }
+
+      if (!res.ok) {
+        alert(data.error || "Unable to place order.");
+        return;
+      }
 
       if (paymentMethod === "cod") {
         clearCart();
@@ -76,12 +93,21 @@ export default function CheckoutPage() {
       } else {
         const src = await fetch("/api/payments/paymongo/source", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ orderId: data.orderId, amount: data.total, type: paymentMethod }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            orderId: data.orderId,
+            amount: data.total,
+            type: paymentMethod,
+          }),
         });
         const srcData = await src.json();
-        if (!src.ok) { alert(srcData.error || "Payment initiation failed."); return; }
-        // don't clearCart() yet, only after payment is confirmed
+        if (!src.ok) {
+          alert(srcData.error || "Payment initiation failed.");
+          return;
+        }
         window.location.href = srcData.checkoutUrl;
       }
     } catch {
@@ -106,6 +132,16 @@ export default function CheckoutPage() {
             order.
           </p>
         </div>
+
+        {paymentFailed && (
+          <div className="mb-8 rounded-xl border border-red-300 bg-red-50 px-6 py-4">
+            <p className="font-body text-sm text-charcoal/80">
+              Your payment didn't go through
+              {failedOrderId ? ` for order #TA-${failedOrderId}` : ""}. Your
+              cart items are still saved below, feel free to try again.
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-10">
           <form
@@ -228,18 +264,30 @@ export default function CheckoutPage() {
                   </span>
                 </label>
                 <label className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer">
-                  <input type="radio" name="payment" value="gcash"
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="gcash"
                     checked={paymentMethod === "gcash"}
                     onChange={() => setPaymentMethod("gcash")}
-                    className="accent-sage" />
-                  <span className="font-body text-sm text-charcoal">GCash</span>
+                    className="accent-sage"
+                  />
+                  <span className="font-body text-sm text-charcoal">
+                    GCash
+                  </span>
                 </label>
                 <label className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer">
-                  <input type="radio" name="payment" value="grabpay"
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="grabpay"
                     checked={paymentMethod === "grabpay"}
                     onChange={() => setPaymentMethod("grabpay")}
-                    className="accent-sage" />
-                  <span className="font-body text-sm text-charcoal">GrabPay</span>
+                    className="accent-sage"
+                  />
+                  <span className="font-body text-sm text-charcoal">
+                    GrabPay
+                  </span>
                 </label>
               </div>
             </div>
@@ -340,5 +388,13 @@ export default function CheckoutPage() {
 
       <Footer />
     </main>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-cream" />}>
+      <CheckoutContent />
+    </Suspense>
   );
 }
