@@ -884,6 +884,7 @@ function formatPaymentMethod(method: string): string {
   const labels: Record<string, string> = {
     cod: "Cash on Delivery",
     gcash: "GCash",
+    grabpay: "GrabPay",
     credit: "Credit Card",
     paypal: "PayPal",
   };
@@ -923,10 +924,21 @@ function OrdersTab() {
           return;
         }
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Unable to load orders.");
-        setOrders(data.orders);
-        setTotalPages(data.totalPages);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to load orders.");
+      setOrders(data.orders);
+      setTotalPages(data.totalPages);
+
+      // Ask PayMongo about any orders stuck on pending payment
+      data.orders
+        .filter((o: Order) => o.paymentMethod !== "cod" && o.paymentStatus === "pending")
+        .forEach((o: Order) => {
+          fetch("/api/payments/paymongo/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ orderId: o.id }),
+          }).catch(() => {});
+        });
       } catch (error) {
         if (error instanceof Error && error.name !== "AbortError") {
           setErrorMessage(error.message);
