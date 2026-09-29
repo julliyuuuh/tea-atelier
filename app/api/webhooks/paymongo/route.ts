@@ -66,8 +66,7 @@ export async function POST(req: Request) {
             WHERE oi.order_id = $1 AND oi.product_id = p.product_id`,
             [order.order_id]
           );
-
-          // Grab items + email now, before the cart is cleared
+          
           const emailRes = await client.query(
             `SELECT u.email, oi.quantity, oi.price, p.product_name
              FROM order_items oi
