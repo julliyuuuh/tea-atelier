@@ -1,5 +1,6 @@
 import { verifyPaymongoSignature } from "@/lib/paymongo";
 import { pool } from "@/lib/db";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   const rawBody = await req.text();
@@ -13,7 +14,8 @@ export async function POST(req: Request) {
   if (event.data.attributes.type === "source.chargeable") {
     const sourceId = event.data.attributes.data.id;
     const orderRes = await pool.query(
-      `SELECT order_id, payment_status FROM orders WHERE paymongo_source_id = $1`,
+      `SELECT order_id, user_id, payment_status, total_amount, recipient_name
+       FROM orders WHERE paymongo_source_id = $1`,
       [sourceId]
     );
     const order = orderRes.rows[0];
@@ -42,6 +44,9 @@ export async function POST(req: Request) {
 
     if (payRes.ok && payment.data.attributes.status === "paid") {
       const client = await pool.connect();
+      let itemsForEmail: { name: string; quantity: number; price: number }[] = [];
+      let userEmail: string | undefined;
+
       try {
         await client.query("BEGIN");
 
@@ -52,7 +57,7 @@ export async function POST(req: Request) {
           [order.order_id]
         );
 
-        // Only runs the first time (which guards against duplicate webhook deliveries)
+        // Only runs the first time (guards against duplicate webhook deliveries)
         if (upd.rows.length > 0) {
           await client.query(
             `UPDATE products p
@@ -61,6 +66,25 @@ export async function POST(req: Request) {
             WHERE oi.order_id = $1 AND oi.product_id = p.product_id`,
             [order.order_id]
           );
+
+          // Grab items + email now, before the cart is cleared
+          const emailRes = await client.query(
+            `SELECT u.email, oi.quantity, oi.price, p.product_name
+             FROM order_items oi
+             JOIN products p ON p.product_id = oi.product_id
+             JOIN users u ON u.user_id = $2
+             WHERE oi.order_id = $1`,
+            [order.order_id, upd.rows[0].user_id]
+          );
+          if (emailRes.rows.length > 0) {
+            userEmail = emailRes.rows[0].email;
+            itemsForEmail = emailRes.rows.map((row) => ({
+              name: row.product_name,
+              quantity: row.quantity,
+              price: parseFloat(row.price),
+            }));
+          }
+
           await client.query("DELETE FROM cart WHERE user_id = $1", [upd.rows[0].user_id]);
         }
 
@@ -70,6 +94,22 @@ export async function POST(req: Request) {
         throw e;
       } finally {
         client.release();
+      }
+
+      // Send the confirmation email after commit, a failure here shouldn't
+      // undo the payment confirmation, so just log and move on.
+      if (userEmail) {
+        try {
+          await sendOrderConfirmationEmail(
+            userEmail,
+            order.recipient_name || "there",
+            order.order_id,
+            itemsForEmail,
+            parseFloat(order.total_amount)
+          );
+        } catch (emailError) {
+          console.error(`Order ${order.order_id} paid, but confirmation email failed:`, emailError);
+        }
       }
     } else {
       await pool.query(`UPDATE orders SET payment_status = 'failed' WHERE order_id = $1`, [order.order_id]);
