@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 import { ORDER_STATUSES } from "@/lib/order-status";
+import { PAYMENT_STATUSES } from "@/lib/payment-status";
 
 const VALID_STATUSES: string[] = ORDER_STATUSES.map((s) => s.value);
+const VALID_PAYMENT_STATUSES: string[] = PAYMENT_STATUSES.map((s) => s.value);
 
 // Column allowlist for ORDER BY — never interpolate the sort key directly,
 // since it comes from the query string. item_count/total_amount are safe to
@@ -24,6 +26,7 @@ export async function GET(req: Request) {
   const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") || "10", 10) || 10));
   const search = url.searchParams.get("search")?.trim() || "";
   const status = url.searchParams.get("status") || "All";
+  const paymentStatus = url.searchParams.get("paymentStatus") || "All";
   const sortByParam = url.searchParams.get("sortBy") || "";
   const sortDir = url.searchParams.get("sortDir") === "desc" ? "DESC" : "ASC";
 
@@ -51,6 +54,15 @@ export async function GET(req: Request) {
     i++;
   }
 
+  if (paymentStatus !== "All") {
+    if (!VALID_PAYMENT_STATUSES.includes(paymentStatus)) {
+      return NextResponse.json({ error: "Invalid payment status filter." }, { status: 400 });
+    }
+    conditions.push(`o.payment_status = $${i}`);
+    values.push(paymentStatus);
+    i++;
+  }
+
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   // Count query doesn't need order_items — none of the filters touch item_count.
@@ -66,7 +78,7 @@ export async function GET(req: Request) {
   const offset = (page - 1) * limit;
   const dataResult = await pool.query(
     `SELECT
-       o.order_id, o.total_amount, o.order_status, o.payment_method,
+       o.order_id, o.total_amount, o.order_status, o.payment_method, o.payment_status,
        o.recipient_name, o.created_at,
        u.email AS customer_email,
        COUNT(oi.order_items_id) AS item_count
@@ -87,10 +99,10 @@ export async function GET(req: Request) {
     totalAmount: parseFloat(row.total_amount),
     status: row.order_status,
     paymentMethod: row.payment_method,
+    paymentStatus: row.payment_status,
     itemCount: parseInt(row.item_count, 10),
     createdAt: row.created_at,
   }));
-
 
   const statsResult = await pool.query(
     `SELECT

@@ -6,6 +6,11 @@ import { ClipboardList } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { ORDER_STATUSES } from "@/lib/order-status";
 import {
+  PAYMENT_STATUSES,
+  MANUAL_PAYMENT_STATUSES,
+  isCod,
+} from "@/lib/payment-status";
+import {
   ErrorBanner,
   StatChip,
   SortHeader,
@@ -24,6 +29,7 @@ type Order = {
   totalAmount: number;
   status: string;
   paymentMethod: string;
+  paymentStatus: string;
   itemCount: number;
   createdAt: string;
 };
@@ -43,8 +49,28 @@ const STATUS_OPTIONS = [
 
 const ROW_STATUS_OPTIONS = STATUS_OPTIONS.filter((o) => o.value !== "All");
 
+const PAYMENT_FILTER_OPTIONS = [
+  { value: "All", label: "All Payments" },
+  ...PAYMENT_STATUSES.map((s) => ({ value: s.value, label: s.label })),
+];
+
+const MANUAL_PAYMENT_OPTIONS = PAYMENT_STATUSES.filter((s) =>
+  MANUAL_PAYMENT_STATUSES.includes(s.value),
+).map((s) => ({ value: s.value, label: s.label }));
+
 const GRID_COLS =
-  "minmax(90px,0.7fr) minmax(200px,2fr) minmax(70px,0.6fr) minmax(100px,0.9fr) minmax(110px,0.9fr) minmax(150px,1.1fr)";
+  "minmax(90px,0.7fr) minmax(200px,2fr) minmax(70px,0.6fr) minmax(100px,0.9fr) minmax(110px,0.9fr) minmax(150px,1.1fr) minmax(140px,1fr)";
+
+const METHOD_LABELS: Record<string, string> = {
+  cod: "COD",
+  gcash: "GCash",
+  paymaya: "Maya",
+  grabpay: "GrabPay",
+};
+
+function methodLabel(method: string) {
+  return METHOD_LABELS[method?.toLowerCase()] ?? method;
+}
 
 function statusBadge(status: string) {
   switch (status) {
@@ -60,6 +86,17 @@ function statusBadge(status: string) {
       return { bg: "bg-red-50", text: "text-red-600", dot: "bg-red-500" };
     default:
       return { bg: "bg-charcoal/10", text: "text-charcoal/60", dot: "bg-charcoal/40" };
+  }
+}
+
+function paymentBadge(status: string) {
+  switch (status) {
+    case "paid":
+      return { bg: "bg-green-100", text: "text-green-700" };
+    case "failed":
+      return { bg: "bg-red-50", text: "text-red-600" };
+    default:
+      return { bg: "bg-amber-50", text: "text-amber-700" };
   }
 }
 
@@ -86,6 +123,7 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [filterPayment, setFilterPayment] = useState("All");
   const [sortConfig, setSortConfig] = useState<SortConfig<SortKey>>({
     key: "createdAt",
     direction: "desc",
@@ -98,7 +136,7 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, filterStatus, sortConfig]);
+  }, [debouncedSearch, filterStatus, filterPayment, sortConfig]);
 
   const loadOrders = useCallback(
     async (page: number) => {
@@ -111,6 +149,7 @@ export default function AdminOrdersPage() {
           limit: PAGE_SIZE,
           search: debouncedSearch,
           status: filterStatus,
+          paymentStatus: filterPayment,
           sortBy: sortConfig?.key,
           sortDir: sortConfig?.direction,
         });
@@ -133,7 +172,7 @@ export default function AdminOrdersPage() {
         setIsLoading(false);
       }
     },
-    [debouncedSearch, filterStatus, sortConfig],
+    [debouncedSearch, filterStatus, filterPayment, sortConfig],
   );
 
   useEffect(() => {
@@ -185,10 +224,47 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const hasActiveFilters = search !== "" || filterStatus !== "All";
+  const handlePaymentChange = async (orderId: number, newPaymentStatus: string) => {
+    setUpdatingId(orderId);
+    setActionError("");
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ paymentStatus: newPaymentStatus }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Unable to update payment status.");
+
+      // Same idea as status changes: if the row no longer matches the
+      // active payment filter, reload instead of patching in place.
+      if (filterPayment !== "All" && filterPayment !== newPaymentStatus) {
+        await loadOrders(currentPage);
+      } else {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId ? { ...o, paymentStatus: newPaymentStatus } : o,
+          ),
+        );
+      }
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Something went wrong.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const hasActiveFilters =
+    search !== "" || filterStatus !== "All" || filterPayment !== "All";
   const clearFilters = () => {
     setSearch("");
     setFilterStatus("All");
+    setFilterPayment("All");
   };
 
   const handleSort = (key: SortKey) => {
@@ -256,6 +332,14 @@ export default function AdminOrdersPage() {
           triggerClassName="min-w-[170px] bg-white border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
         />
 
+        <CustomSelect
+          id="filter-payment"
+          value={filterPayment}
+          onChange={setFilterPayment}
+          options={PAYMENT_FILTER_OPTIONS}
+          triggerClassName="min-w-[160px] bg-white border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
+        />
+
         <AnimatePresence>
           {hasActiveFilters && (
             <motion.button
@@ -307,6 +391,7 @@ export default function AdminOrdersPage() {
               onSort={handleSort}
             />
             <PlainHeader label="Status" />
+            <PlainHeader label="Payment" />
           </div>
         </div>
 
@@ -338,6 +423,9 @@ export default function AdminOrdersPage() {
                 <div className="px-5">
                   <SkeletonBlock className="h-6 w-24 rounded-full" />
                 </div>
+                <div className="px-5">
+                  <SkeletonBlock className="h-6 w-20 rounded-full" />
+                </div>
               </div>
             ))}
 
@@ -345,6 +433,9 @@ export default function AdminOrdersPage() {
             <AnimatePresence initial={false}>
               {orders.map((order, index) => {
                 const badge = statusBadge(order.status);
+                const pBadge = paymentBadge(order.paymentStatus);
+                const paymentEditable =
+                  isCod(order.paymentMethod) && order.status !== "CANCELLED";
                 return (
                   <motion.div
                     key={order.id}
@@ -398,6 +489,28 @@ export default function AdminOrdersPage() {
                         disabled={updatingId === order.id}
                         triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${badge.bg} ${badge.text}`}
                       />
+                    </div>
+                    <div role="cell" className="px-5 min-w-0">
+                      {paymentEditable ? (
+                        <CustomSelect
+                          id={`order-payment-${order.id}`}
+                          value={order.paymentStatus}
+                          onChange={(value) => handlePaymentChange(order.id, value)}
+                          options={MANUAL_PAYMENT_OPTIONS}
+                          disabled={updatingId === order.id}
+                          triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${pBadge.bg} ${pBadge.text}`}
+                        />
+                      ) : (
+                        <span
+                          className={`inline-flex font-body text-xs px-3 py-1.5 rounded-full ${pBadge.bg} ${pBadge.text}`}
+                        >
+                          {PAYMENT_STATUSES.find((s) => s.value === order.paymentStatus)
+                            ?.label ?? order.paymentStatus}
+                        </span>
+                      )}
+                      <p className="font-body text-[11px] text-charcoal/40 mt-1 truncate">
+                        {methodLabel(order.paymentMethod)}
+                      </p>
                     </div>
                   </motion.div>
                 );
