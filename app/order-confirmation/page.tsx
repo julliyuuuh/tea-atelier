@@ -79,7 +79,6 @@ function OrderConfirmationContent() {
           }
         })
         .catch(() => {
-          // best-effort — leave the order as pending if this fails
         });
     };
 
@@ -109,7 +108,7 @@ function OrderConfirmationContent() {
               attempts++;
               setTimeout(poll, 2000);
             } else {
-              // Polling window ran out — ask PayMongo directly whether it actually failed
+              // Polling window ran out, go ask PayMongo directly whether it actually failed
               checkWithPaymongo();
             }
           }
@@ -216,10 +215,10 @@ function OrderConfirmationContent() {
             <span>Delivery Fee</span>
             <span>₱{order.deliveryFee.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between font-display text-lg text-charcoal border-t border-charcoal/10 pt-3">
-            <span>{isPendingPayment ? "Total Due" : "Total Paid"}</span>
-            <span>₱{order.total.toFixed(2)}</span>
-          </div>
+            <div className="flex justify-between font-display text-lg text-charcoal border-t border-charcoal/10 pt-3">
+              <span>{isPendingPayment || isFailedPayment ? "Total Due" : "Total Paid"}</span>
+              <span>₱{order.total.toFixed(2)}</span>
+            </div>
         </div>
 
         <Link
