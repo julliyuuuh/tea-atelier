@@ -361,7 +361,7 @@ export default function AdminCustomersPage() {
                       {customer.isVerified ? "Verified" : "Unverified"}
                     </span>
                   </div>
-                  <div role="cell" className="px-5 flex items-center justify-end gap-4">
+                  <div role="cell" className="px-5 flex items-center justify-end gap-2">
                     <button
                       onClick={() => openView(customer.id)}
                       className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal hover:bg-sand/30 transition-colors"
