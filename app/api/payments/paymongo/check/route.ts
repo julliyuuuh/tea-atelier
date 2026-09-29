@@ -16,7 +16,6 @@ export async function POST(req: Request) {
   const order = orderRes.rows[0];
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
-  // Already resolved — nothing to check
   if (order.payment_status !== "pending" || !order.paymongo_source_id) {
     return NextResponse.json({ paymentStatus: order.payment_status });
   }
@@ -27,9 +26,7 @@ export async function POST(req: Request) {
     },
   });
   const source = await res.json();
-  const sourceStatus = source.data?.attributes?.status; // pending | chargeable | paid | expired | failed | cancelled
-
-  console.log(`Order ${orderId} source status from PayMongo:`, sourceStatus);
+  const sourceStatus = source.data?.attributes?.status;
 
   if (sourceStatus === "expired" || sourceStatus === "failed" || sourceStatus === "cancelled") {
     await pool.query(
@@ -39,6 +36,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ paymentStatus: "failed" });
   }
 
-  // TEMP DEBUG: expose the raw status so we can see what GrabPay actually reports
-  return NextResponse.json({ paymentStatus: "pending", debugRawStatus: sourceStatus });
+  return NextResponse.json({ paymentStatus: "pending" });
 }
