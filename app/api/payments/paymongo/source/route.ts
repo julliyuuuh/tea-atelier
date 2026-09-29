@@ -4,6 +4,8 @@ export async function POST(req: Request) {
   const { orderId, amount, type } = await req.json();
   // verify JWT, verify order belongs to this user, verify `amount` against total_amount in DB, never trust client amount lol
 
+  const sourceType = type === "grabpay" ? "grab_pay" : type; // gcash needs no mapping
+
   const res = await fetch("https://api.paymongo.com/v1/sources", {
     method: "POST",
     headers: {
@@ -18,7 +20,7 @@ export async function POST(req: Request) {
             success: `${process.env.APP_URL}/order-confirmation?orderId=${orderId}`,
             failed: `${process.env.APP_URL}/checkout?payment=failed&orderId=${orderId}`,
           },
-          type, // "gcash" | "paymaya"
+          type: sourceType, // "gcash" | "grab_pay"
           currency: "PHP",
         },
       },

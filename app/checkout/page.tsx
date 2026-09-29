@@ -235,11 +235,11 @@ export default function CheckoutPage() {
                   <span className="font-body text-sm text-charcoal">GCash</span>
                 </label>
                 <label className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer">
-                  <input type="radio" name="payment" value="paymaya"
-                    checked={paymentMethod === "paymaya"}
-                    onChange={() => setPaymentMethod("paymaya")}
+                  <input type="radio" name="payment" value="grabpay"
+                    checked={paymentMethod === "grabpay"}
+                    onChange={() => setPaymentMethod("grabpay")}
                     className="accent-sage" />
-                  <span className="font-body text-sm text-charcoal">Maya</span>
+                  <span className="font-body text-sm text-charcoal">GrabPay</span>
                 </label>
               </div>
             </div>
