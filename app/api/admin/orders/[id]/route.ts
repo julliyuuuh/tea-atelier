@@ -6,6 +6,96 @@ import { MANUAL_PAYMENT_STATUSES, isCod } from "@/lib/payment-status";
 
 const VALID_STATUSES: string[] = ORDER_STATUSES.map((s) => s.value);
 
+const pick = (obj: Record<string, any> | null, keys: string[]) => {
+  for (const k of keys) {
+    if (obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== "") return obj[k];
+  }
+  return null;
+};
+
+// Delivery details are matched by column name on the orders table so this works
+// before I've seen your exact address columns. Replace with an explicit list later.
+const DELIVERY_KEY = /recipient|phone|address|street|barangay|city|province|region|postal|zip|landmark|note/i;
+const NOT_DELIVERY = /(_id|status|fee|cost|amount|total)$/i;
+
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { error } = await requireAdmin(req);
+  if (error) return error;
+
+  const { id } = await params;
+  if (!/^\d+$/.test(id)) {
+    return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  }
+
+  const orderRes = await pool.query(
+    `SELECT to_jsonb(o) AS o, to_jsonb(u) AS u
+     FROM orders o
+     JOIN users u ON u.user_id = o.user_id
+     WHERE o.order_id = $1`,
+    [id]
+  );
+  if (orderRes.rows.length === 0) {
+    return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  }
+  const o: Record<string, any> = orderRes.rows[0].o;
+  const u: Record<string, any> = orderRes.rows[0].u;
+
+  const itemsRes = await pool.query(
+    `SELECT to_jsonb(oi) AS oi, to_jsonb(p) AS p
+     FROM order_items oi
+     LEFT JOIN products p ON p.product_id = oi.product_id
+     WHERE oi.order_id = $1
+     ORDER BY oi.order_items_id`,
+    [id]
+  );
+
+  const items = itemsRes.rows.map(({ oi, p }) => ({
+    id: oi.order_items_id,
+    name: p?.product_name ?? "Deleted product",
+    image: pick(p, ["image", "image_url", "product_image", "image_path"]),
+    quantity: Number(oi.quantity),
+    price: Number(oi.price),
+  }));
+  const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+  const total = Number(o.total_amount);
+
+  const delivery = Object.entries(o)
+    .filter(([k, v]) => DELIVERY_KEY.test(k) && !NOT_DELIVERY.test(k) && v !== null && v !== "")
+    .map(([k, v]) => ({
+      label: k.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
+      value: String(v),
+    }));
+
+  const customerName =
+    [pick(u, ["first_name"]), pick(u, ["last_name"])].filter(Boolean).join(" ") ||
+    pick(u, ["name", "full_name"]);
+
+  return NextResponse.json({
+    order: {
+      id: o.order_id,
+      status: o.order_status,
+      createdAt: o.created_at,
+      paymentMethod: o.payment_method,
+      paymentStatus: o.payment_status,
+      paymongoSourceId: isCod(o.payment_method) ? null : o.paymongo_source_id ?? null,
+    },
+    customer: {
+      name: customerName,
+      email: u.email,
+      phone: pick(u, ["phone", "phone_number", "contact_number"]),
+      joinedAt: u.date_created ?? null,
+    },
+    delivery,
+    items,
+    subtotal,
+    deliveryFee: Math.max(0, total - subtotal),
+    total,
+  });
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }

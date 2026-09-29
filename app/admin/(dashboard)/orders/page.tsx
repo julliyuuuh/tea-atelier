@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ClipboardList } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { ORDER_STATUSES } from "@/lib/order-status";
+import OrderDetailModal from "@/components/admin/OrderDetailModal";
 import {
   PAYMENT_STATUSES,
   MANUAL_PAYMENT_STATUSES,
@@ -115,7 +116,7 @@ export default function AdminOrdersPage() {
   const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, cancelled: 0 });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
+  const [viewingOrderId, setViewingOrderId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [actionError, setActionError] = useState("");
@@ -449,9 +450,13 @@ export default function AdminOrdersPage() {
                     style={{ gridTemplateColumns: GRID_COLS }}
                   >
                     <div role="cell" className="px-5">
-                      <span className="font-body text-sm text-charcoal">
+                      <button
+                        type="button"
+                        onClick={() => setViewingOrderId(order.id)}
+                        className="font-body text-sm text-charcoal hover:text-sage hover:underline underline-offset-2"
+                      >
                         TA-{order.id}
-                      </span>
+                      </button>
                     </div>
                     <div role="cell" className="px-5 min-w-0">
                       <p className="font-body text-sm text-charcoal truncate">
@@ -557,6 +562,11 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       )}
+      <OrderDetailModal
+        orderId={viewingOrderId}
+        onClose={() => setViewingOrderId(null)}
+        onChanged={() => loadOrders(currentPage)}
+      />
     </div>
   );
 }

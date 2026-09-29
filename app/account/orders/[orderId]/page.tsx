@@ -1,7 +1,5 @@
 "use client";
 
-// Save as: app/account/orders/[orderId]/page.tsx
-
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
