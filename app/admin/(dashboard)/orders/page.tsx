@@ -450,13 +450,7 @@ export default function AdminOrdersPage() {
                     style={{ gridTemplateColumns: GRID_COLS }}
                   >
                     <div role="cell" className="px-5">
-                      <button
-                        type="button"
-                        onClick={() => setViewingOrderId(order.id)}
-                        className="font-body text-sm text-charcoal hover:text-sage hover:underline underline-offset-2"
-                      >
-                        TA-{order.id}
-                      </button>
+                      <span className="font-body text-sm text-charcoal">TA-{order.id}</span>
                     </div>
                     <div role="cell" className="px-5 min-w-0">
                       <p className="font-body text-sm text-charcoal truncate">
