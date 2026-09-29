@@ -26,6 +26,8 @@ type CustomerOrder = {
   createdAt: string;
 };
 
+type OrdersMeta = { page: number; total: number; totalPages: number };
+
 function statusBadge(status: string) {
   switch (status) {
     case "PLACED":
@@ -84,22 +86,25 @@ export default function CustomerDetailPanel({
 }) {
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
-  const [orderPage, setOrderPage] = useState(1);
+  const [ordersMeta, setOrdersMeta] = useState<OrdersMeta>({ page: 1, total: 0, totalPages: 1 });
+  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Loads the customer plus one page of orders. Runs when the modal opens,
+  // when a different customer is chosen, and when the page changes.
   useEffect(() => {
-    if (!open || customerId == null) return;
+    if (!open || customerId == null) {
+      setPage(1); // start from page 1 next time it opens
+      return;
+    }
 
     let cancelled = false;
     setIsLoading(true);
     setErrorMessage("");
-    setCustomer(null);
-    setOrders([]);
-    setOrderPage(1);
 
     const token = localStorage.getItem("token");
-    fetch(`/api/admin/customers/${customerId}`, {
+    fetch(`/api/admin/customers/${customerId}?page=${page}&limit=${ORDERS_PER_PAGE}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (res) => {
@@ -108,6 +113,11 @@ export default function CustomerDetailPanel({
         if (cancelled) return;
         setCustomer(data.customer);
         setOrders(data.orders);
+        setOrdersMeta({
+          page: data.ordersPage,
+          total: data.ordersTotal,
+          totalPages: data.ordersTotalPages,
+        });
       })
       .catch((error) => {
         if (!cancelled) {
@@ -121,7 +131,7 @@ export default function CustomerDetailPanel({
     return () => {
       cancelled = true;
     };
-  }, [open, customerId]);
+  }, [open, customerId, page]);
 
   // Escape to close + lock background scroll while open.
   useEffect(() => {
@@ -138,14 +148,10 @@ export default function CustomerDetailPanel({
     };
   }, [open, onClose]);
 
-  // Newest first, then 5 per page.
-  const sortedOrders = [...orders].sort(
-    (a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || b.id - a.id,
-  );
-  const totalOrderPages = Math.max(1, Math.ceil(sortedOrders.length / ORDERS_PER_PAGE));
-  const pageStart = (orderPage - 1) * ORDERS_PER_PAGE;
-  const visibleOrders = sortedOrders.slice(pageStart, pageStart + ORDERS_PER_PAGE);
+  // Only show a customer's data if it belongs to the one currently selected.
+  const current = customer && customer.id === customerId ? customer : null;
+  const rangeStart = (ordersMeta.page - 1) * ORDERS_PER_PAGE + 1;
+  const rangeEnd = rangeStart + orders.length - 1;
 
   return (
     <AnimatePresence>
@@ -174,27 +180,27 @@ export default function CustomerDetailPanel({
             <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-charcoal/10">
               <div className="min-w-0">
                 <h2 className="font-body text-lg font-medium text-charcoal truncate">
-                  {customer ? customer.name : "Customer Details"}
+                  {current ? current.name : "Customer Details"}
                 </h2>
-                {customer && (
+                {current && (
                   <p className="font-body text-xs text-charcoal/50 mt-0.5 truncate">
-                    {customer.email}
+                    {current.email}
                   </p>
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                {customer && (
+                {current && (
                   <>
                     <span
                       className={`hidden sm:inline-flex font-body text-xs px-3 py-1 rounded-full ${
-                        customer.isVerified
+                        current.isVerified
                           ? "bg-green-100 text-green-700"
                           : "bg-charcoal/10 text-charcoal/50"
                       }`}
                     >
-                      {customer.isVerified ? "Verified" : "Unverified"}
+                      {current.isVerified ? "Verified" : "Unverified"}
                     </span>
-                    {customer.isSuspended && (
+                    {current.isSuspended && (
                       <span className="hidden sm:inline-flex font-body text-xs px-3 py-1 rounded-full bg-red-50 text-red-600">
                         Suspended
                       </span>
@@ -214,54 +220,54 @@ export default function CustomerDetailPanel({
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto px-6 py-5">
-              {isLoading && (
+              {isLoading && !current && (
                 <div className="grid gap-4 md:grid-cols-5">
                   <SkeletonBlock className="h-56 md:col-span-2 rounded-xl" />
                   <SkeletonBlock className="h-56 md:col-span-3 rounded-xl" />
                 </div>
               )}
 
-              {!isLoading && errorMessage && (
-                <p className="font-body text-sm text-red-600">{errorMessage}</p>
+              {errorMessage && (
+                <p className="font-body text-sm text-red-600 mb-4">{errorMessage}</p>
               )}
 
-              {!isLoading && customer && (
+              {current && (
                 <div className="grid gap-4 md:grid-cols-5 items-start">
                   {/* Left: profile */}
                   <div className="md:col-span-2">
                     <Section title="Profile">
                       <div className="flex items-center gap-3 mb-3">
-                        {customer.avatarUrl ? (
+                        {current.avatarUrl ? (
                           <img
-                            src={customer.avatarUrl}
-                            alt={customer.name}
+                            src={current.avatarUrl}
+                            alt={current.name}
                             className="w-14 h-14 rounded-full object-cover shrink-0 bg-sand"
                           />
                         ) : (
                           <div className="w-14 h-14 rounded-full bg-sage/20 text-sage flex items-center justify-center font-body text-lg font-medium shrink-0">
-                            {customer.name.charAt(0).toUpperCase()}
+                            {current.name.charAt(0).toUpperCase()}
                           </div>
                         )}
                         <div className="min-w-0">
                           <p className="font-body text-sm text-charcoal truncate">
-                            {customer.name}
+                            {current.name}
                           </p>
                           <p className="font-body text-xs text-charcoal/50 truncate">
-                            {customer.email}
+                            {current.email}
                           </p>
                         </div>
                       </div>
-                      <Row label="Phone" value={customer.phone} />
-                      <Row label="Joined" value={formatDate(customer.joinedAt, true)} />
-                      <Row label="Email" value={customer.isVerified ? "Verified" : "Unverified"} />
-                      <Row label="Account" value={customer.isSuspended ? "Suspended" : "Active"} />
+                      <Row label="Phone" value={current.phone} />
+                      <Row label="Joined" value={formatDate(current.joinedAt, true)} />
+                      <Row label="Email" value={current.isVerified ? "Verified" : "Unverified"} />
+                      <Row label="Account" value={current.isSuspended ? "Suspended" : "Active"} />
                     </Section>
                   </div>
 
                   {/* Right: order history */}
                   <div className="md:col-span-3">
-                    <Section title={`Order History (${orders.length})`}>
-                      {orders.length === 0 ? (
+                    <Section title={`Order History (${ordersMeta.total})`}>
+                      {ordersMeta.total === 0 ? (
                         <div className="flex flex-col items-center gap-2 text-center py-8 bg-sand/20 rounded-xl">
                           <ShoppingBag className="w-6 h-6 text-charcoal/20" />
                           <span className="font-body text-sm text-charcoal/40">
@@ -270,8 +276,12 @@ export default function CustomerDetailPanel({
                         </div>
                       ) : (
                         <>
-                          <div className="divide-y divide-charcoal/5">
-                            {visibleOrders.map((order) => {
+                          <div
+                            className={`divide-y divide-charcoal/5 transition-opacity ${
+                              isLoading ? "opacity-50" : "opacity-100"
+                            }`}
+                          >
+                            {orders.map((order) => {
                               const badge = statusBadge(order.status);
                               return (
                                 <div
@@ -301,18 +311,16 @@ export default function CustomerDetailPanel({
                             })}
                           </div>
 
-                          {totalOrderPages > 1 && (
+                          {ordersMeta.totalPages > 1 && (
                             <div className="flex items-center justify-between pt-3 mt-1 border-t border-charcoal/10">
                               <span className="font-body text-xs text-charcoal/50">
-                                {pageStart + 1}–
-                                {Math.min(pageStart + ORDERS_PER_PAGE, sortedOrders.length)} of{" "}
-                                {sortedOrders.length}
+                                {rangeStart}–{rangeEnd} of {ordersMeta.total}
                               </span>
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => setOrderPage((p) => Math.max(1, p - 1))}
-                                  disabled={orderPage === 1}
+                                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                  disabled={isLoading || ordersMeta.page === 1}
                                   className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"
                                 >
                                   Back
@@ -320,9 +328,9 @@ export default function CustomerDetailPanel({
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    setOrderPage((p) => Math.min(totalOrderPages, p + 1))
+                                    setPage((p) => Math.min(ordersMeta.totalPages, p + 1))
                                   }
-                                  disabled={orderPage === totalOrderPages}
+                                  disabled={isLoading || ordersMeta.page === ordersMeta.totalPages}
                                   className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"
                                 >
                                   Next

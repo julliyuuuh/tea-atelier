@@ -23,12 +23,29 @@ export async function GET(
     return NextResponse.json({ error: "Customer not found" }, { status: 404 });
   }
 
+  // Orders are paginated: ?page=1&limit=5 (limit capped at 50).
+  const url = new URL(req.url);
+  const requestedPage = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
+  const limit = Math.min(
+    50,
+    Math.max(1, parseInt(url.searchParams.get("limit") || "5", 10) || 5)
+  );
+
+  const countResult = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM orders WHERE user_id = $1`,
+    [customerId]
+  );
+  const ordersTotal = countResult.rows[0].count;
+  const ordersTotalPages = Math.max(1, Math.ceil(ordersTotal / limit));
+  const ordersPage = Math.min(requestedPage, ordersTotalPages);
+
   const ordersResult = await pool.query(
     `SELECT order_id, order_status, total_amount, created_at
      FROM orders
      WHERE user_id = $1
-     ORDER BY created_at DESC`,
-    [customerId]
+     ORDER BY created_at DESC, order_id DESC
+     LIMIT $2 OFFSET $3`,
+    [customerId, limit, (ordersPage - 1) * limit]
   );
 
   return NextResponse.json({
@@ -48,6 +65,9 @@ export async function GET(
       totalAmount: parseFloat(order.total_amount),
       createdAt: order.created_at,
     })),
+    ordersTotal,
+    ordersPage,
+    ordersTotalPages,
   });
 }
 
