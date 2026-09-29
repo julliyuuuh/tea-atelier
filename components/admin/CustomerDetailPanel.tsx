@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, ShoppingBag } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
+import { ORDER_STATUSES } from "@/lib/order-status";
+
+const ORDERS_PER_PAGE = 5;
 
 type CustomerDetail = {
   id: number;
@@ -39,6 +42,9 @@ function statusBadge(status: string) {
       return { bg: "bg-charcoal/10", text: "text-charcoal/60" };
   }
 }
+
+const statusLabel = (status: string) =>
+  ORDER_STATUSES.find((s) => s.value === status)?.label ?? status;
 
 const formatDate = (iso: string, long = false) =>
   new Date(iso).toLocaleDateString("en-PH", {
@@ -78,6 +84,7 @@ export default function CustomerDetailPanel({
 }) {
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
+  const [orderPage, setOrderPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -89,6 +96,7 @@ export default function CustomerDetailPanel({
     setErrorMessage("");
     setCustomer(null);
     setOrders([]);
+    setOrderPage(1);
 
     const token = localStorage.getItem("token");
     fetch(`/api/admin/customers/${customerId}`, {
@@ -129,6 +137,15 @@ export default function CustomerDetailPanel({
       document.body.style.overflow = prevOverflow;
     };
   }, [open, onClose]);
+
+  // Newest first, then 5 per page.
+  const sortedOrders = [...orders].sort(
+    (a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || b.id - a.id,
+  );
+  const totalOrderPages = Math.max(1, Math.ceil(sortedOrders.length / ORDERS_PER_PAGE));
+  const pageStart = (orderPage - 1) * ORDERS_PER_PAGE;
+  const visibleOrders = sortedOrders.slice(pageStart, pageStart + ORDERS_PER_PAGE);
 
   return (
     <AnimatePresence>
@@ -252,36 +269,68 @@ export default function CustomerDetailPanel({
                           </span>
                         </div>
                       ) : (
-                        <div className="divide-y divide-charcoal/5">
-                          {orders.map((order) => {
-                            const badge = statusBadge(order.status);
-                            return (
-                              <div
-                                key={order.id}
-                                className="flex items-center justify-between gap-3 py-2.5"
-                              >
-                                <div>
-                                  <p className="font-body text-sm text-charcoal">
-                                    TA-{order.id}
-                                  </p>
-                                  <p className="font-body text-xs text-charcoal/50">
-                                    {formatDate(order.createdAt)}
-                                  </p>
+                        <>
+                          <div className="divide-y divide-charcoal/5">
+                            {visibleOrders.map((order) => {
+                              const badge = statusBadge(order.status);
+                              return (
+                                <div
+                                  key={order.id}
+                                  className="flex items-center justify-between gap-3 py-2.5"
+                                >
+                                  <div>
+                                    <p className="font-body text-sm text-charcoal">
+                                      TA-{order.id}
+                                    </p>
+                                    <p className="font-body text-xs text-charcoal/50">
+                                      {formatDate(order.createdAt)}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className="font-body text-sm text-charcoal/70 tabular-nums">
+                                      ₱{order.totalAmount.toFixed(2)}
+                                    </span>
+                                    <span
+                                      className={`font-body text-xs px-3 py-1 rounded-full ${badge.bg} ${badge.text}`}
+                                    >
+                                      {statusLabel(order.status)}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  <span className="font-body text-sm text-charcoal/70 tabular-nums">
-                                    ₱{order.totalAmount.toFixed(2)}
-                                  </span>
-                                  <span
-                                    className={`font-body text-xs px-3 py-1 rounded-full ${badge.bg} ${badge.text}`}
-                                  >
-                                    {order.status}
-                                  </span>
-                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {totalOrderPages > 1 && (
+                            <div className="flex items-center justify-between pt-3 mt-1 border-t border-charcoal/10">
+                              <span className="font-body text-xs text-charcoal/50">
+                                {pageStart + 1}–
+                                {Math.min(pageStart + ORDERS_PER_PAGE, sortedOrders.length)} of{" "}
+                                {sortedOrders.length}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setOrderPage((p) => Math.max(1, p - 1))}
+                                  disabled={orderPage === 1}
+                                  className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"
+                                >
+                                  Back
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setOrderPage((p) => Math.min(totalOrderPages, p + 1))
+                                  }
+                                  disabled={orderPage === totalOrderPages}
+                                  className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"
+                                >
+                                  Next
+                                </button>
                               </div>
-                            );
-                          })}
-                        </div>
+                            </div>
+                          )}
+                        </>
                       )}
                     </Section>
                   </div>
