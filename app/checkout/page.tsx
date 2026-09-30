@@ -78,10 +78,8 @@ function CheckoutContent() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          // barangay is folded into street until orders gets its own column
-          street: [address.street.trim(), address.barangay?.name]
-            .filter(Boolean)
-            .join(", "),
+          street: address.street.trim(),
+          barangay: address.barangay?.name,
           city: address.city?.name,
           // NCR cities sit at province level in PSGC, so show "Metro Manila"
           province:

@@ -64,7 +64,7 @@ export async function POST(req: Request) {
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { street, city, province, deliveryFee, paymentMethod, phone, fullName } = await req.json();
+  const { street, city, province, barangay, deliveryFee, paymentMethod, phone, fullName } = await req.json();
 
   if (!street || !city || !province) {
     return NextResponse.json({ error: "All address fields are required." }, { status: 400 });
@@ -117,10 +117,15 @@ export async function POST(req: Request) {
 
     // Save the delivery address
     const addressResult = await client.query(
-      `INSERT INTO user_address (user_id, address_line1, address_line2)
-       VALUES ($1, $2, $3)
-       RETURNING address_id`,
-      [userId, street, `${city}, ${province}`]
+      `INSERT INTO user_address (user_id, address_line1, address_line2, barangay)
+      VALUES ($1, $2, $3, $4)
+      RETURNING address_id`,
+      [
+        userId,
+        street,
+        [barangay, city, province].filter(Boolean).join(", "),
+        barangay || null,
+      ]
     );
     const addressId = addressResult.rows[0].address_id;
 
