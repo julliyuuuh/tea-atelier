@@ -1,6 +1,9 @@
 const BASE = process.env.PSGC_API_BASE ?? "https://classification.psa.gov.ph/psgc";
 const VERSION = process.env.PSGC_VERSION ?? "Q2_2026";
 
+// restrics for luzon only, so basically: "L" Luzon, "V" Visayas, "M" Mindanao.
+const ALLOWED_ISLAND_REGIONS = ["L"];
+
 type Raw = {
   code: string;
   area_name: string;
@@ -9,6 +12,7 @@ type Raw = {
   prv: number;
   mun: number;
   bgy: number;
+  island_region: string;
 };
 
 export type PsgcItem = {
@@ -55,7 +59,7 @@ async function fetchAll(level: string, params: Record<string, string> = {}): Pro
     // only follow "next" if it stays on the PSA host, so the token can't leak elsewhere
     url = json.next && new URL(json.next).origin === origin ? json.next : null;
   }
-  return out;
+  return out.filter((r) => ALLOWED_ISLAND_REGIONS.includes(r.island_region));
 }
 
 // Provinces plus highly urbanized cities (HUCs, which includes the NCR cities).
