@@ -5,6 +5,10 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PhAddressFields, {
+  PhAddress,
+  isAddressComplete,
+} from "@/components/checkout/PhAddressFields";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 
@@ -21,9 +25,12 @@ function CheckoutContent() {
     fullName: "",
     email: "",
     phone: "",
+  });
+  const [address, setAddress] = useState<PhAddress>({
+    province: null,
+    city: null,
+    barangay: null,
     street: "",
-    city: "",
-    province: "",
   });
 
   const paymentFailed = searchParams.get("payment") === "failed";
@@ -55,6 +62,7 @@ function CheckoutContent() {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAddressComplete(address)) return;
     setShowConfirm(true);
   };
 
@@ -70,9 +78,16 @@ function CheckoutContent() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          street: formData.street,
-          city: formData.city,
-          province: formData.province,
+          // barangay is folded into street until orders gets its own column
+          street: [address.street.trim(), address.barangay?.name]
+            .filter(Boolean)
+            .join(", "),
+          city: address.city?.name,
+          // NCR cities sit at province level in PSGC, so show "Metro Manila"
+          province:
+            address.province?.level !== "Prov" && address.province?.reg === 13
+              ? "Metro Manila"
+              : address.province?.name,
           deliveryFee,
           paymentMethod,
           phone: formData.phone,
@@ -201,48 +216,7 @@ function CheckoutContent() {
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Delivery Address
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="md:col-span-2">
-                  <label className="block font-body text-sm text-charcoal/70 mb-2">
-                    Street Address
-                  </label>
-                  <input
-                    type="text"
-                    name="street"
-                    value={formData.street}
-                    onChange={handleChange}
-                    required
-                    placeholder="House/unit number, street name"
-                    className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
-                  />
-                </div>
-                <div>
-                  <label className="block font-body text-sm text-charcoal/70 mb-2">
-                    City/Municipality
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
-                  />
-                </div>
-                <div>
-                  <label className="block font-body text-sm text-charcoal/70 mb-2">
-                    Province
-                  </label>
-                  <input
-                    type="text"
-                    name="province"
-                    value={formData.province}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
-                  />
-                </div>
-              </div>
+              <PhAddressFields onChange={setAddress} />
             </div>
 
             <div className="bg-cream border border-charcoal/10 rounded-2xl p-6 md:p-8">
