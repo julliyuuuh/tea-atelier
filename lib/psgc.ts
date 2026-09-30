@@ -36,7 +36,7 @@ const slim = (r: Raw): PsgcItem => ({
 const byName = (a: PsgcItem, b: PsgcItem) => a.name.localeCompare(b.name, "en");
 
 // Fetches every page of a level. Responses look like
-// { count, next, previous, results: [...] }.
+// { count, next, previous, results: [...] }
 async function fetchAll(level: string, params: Record<string, string> = {}): Promise<Raw[]> {
   const qs = new URLSearchParams({
     token: process.env.PSGC_API_TOKEN!,
