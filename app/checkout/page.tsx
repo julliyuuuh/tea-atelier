@@ -21,6 +21,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [saveAddress, setSaveAddress] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -80,6 +81,7 @@ function CheckoutContent() {
         body: JSON.stringify({
           street: address.street.trim(),
           barangay: address.barangay?.name,
+          saveAddress,
           city: address.city?.name,
           // NCR cities sit at province level in PSGC, so show "Metro Manila"
           province:
@@ -215,6 +217,18 @@ function CheckoutContent() {
                 Delivery Address
               </h2>
               <PhAddressFields onChange={setAddress} />
+
+              <label className="mt-5 flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={saveAddress}
+                  onChange={(e) => setSaveAddress(e.target.checked)}
+                  className="accent-sage"
+                />
+                <span className="font-body text-sm text-charcoal/70">
+                  Save this address to my profile
+                </span>
+              </label>
             </div>
 
             <div className="bg-cream border border-charcoal/10 rounded-2xl p-6 md:p-8">

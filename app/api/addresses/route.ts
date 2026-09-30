@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   const { rows } = await pool.query(
     `SELECT address_id, address_line1, address_line2, address_line3, default_address, default_billing
      FROM user_address
-     WHERE user_id = $1 AND is_deleted = false
+     WHERE user_id = $1 AND is_deleted = false AND is_saved = true
      ORDER BY default_address DESC, address_id ASC`,
     [userId]
   );
