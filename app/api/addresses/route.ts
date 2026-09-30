@@ -41,8 +41,8 @@ export async function POST(req: Request) {
     }
 
     const result = await pool.query(
-      `INSERT INTO user_address (user_id, address_line1, address_line2, address_line3, default_address, default_billing, is_deleted)
-       VALUES ($1, $2, $3, $4, false, false, false)
+      `INSERT INTO user_address (user_id, address_line1, address_line2, address_line3, default_address, default_billing, is_deleted, is_saved)
+       VALUES ($1, $2, $3, $4, false, false, false, true)
        RETURNING address_id, address_line1, address_line2, address_line3, default_address, default_billing`,
       [userId, addressLine1.trim(), addressLine2?.trim() || null, addressLine3?.trim() || null]
     );
