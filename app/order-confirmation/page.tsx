@@ -33,7 +33,7 @@ function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { clearCart } = useCart();
+  const { refreshCart } = useCart();          
   const orderId = searchParams.get("orderId");
 
   const [order, setOrder] = useState<OrderDetails | null>(null);
@@ -100,7 +100,7 @@ function OrderConfirmationContent() {
           // Clear cart once: immediately for COD, or once payment confirms paid for e-wallets
           if (!hasCleared.current && (isCod || data.paymentStatus === "paid")) {
             hasCleared.current = true;
-            clearCart();
+            refreshCart();
           }
 
           if (!isCod && data.paymentStatus === "pending") {
@@ -126,7 +126,7 @@ function OrderConfirmationContent() {
     return () => {
       cancelled = true;
     };
-  }, [user, authLoading, orderId, router, clearCart]);
+  }, [user, authLoading, orderId, router, refreshCart]); 
 
   if (authLoading || loading) {
     return <div className="py-24 text-center">Loading...</div>;

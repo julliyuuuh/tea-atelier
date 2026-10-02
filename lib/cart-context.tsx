@@ -13,6 +13,7 @@ type CartContextType = {
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  refreshCart: () => Promise<void>;
   totalItems: number;
   subtotal: number;
   loading: boolean;
@@ -39,31 +40,38 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearStockError = () => setStockError(null);
   const [lastAdded, setLastAdded] = useState<Product | null>(null);
   const clearLastAdded = () => setLastAdded(null);
-  const clearVersion = useRef(0);
+
+  // Every cart load gets a number. Only the NEWEST load may update the screen,
+  // so a slow, older response can never overwrite a newer one.
+  const loadId = useRef(0);
+
+  const refreshCart = useCallback(async () => {
+    const myId = ++loadId.current;
+    try {
+      const res = await fetch("/api/cart", { headers: authHeaders() });
+      const rows: CartItem[] = res.ok ? await res.json() : [];
+      if (myId === loadId.current) setItems(rows);
+    } catch {
+      // network failure: keep whatever is on screen
+    }
+  }, []);
 
   useEffect(() => {
     if (authLoading) return; // wait for auth to resolve first
 
     if (!user) {
+      loadId.current++; // invalidate any request still in flight
       setItems([]); // logged out (or never logged in), no persisted cart
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    const versionAtStart = clearVersion.current;
-    fetch("/api/cart", { headers: authHeaders() })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((rows: CartItem[]) => {
-        // If the cart was cleared while this request was in flight, the response is stale
-        if (clearVersion.current === versionAtStart) setItems(rows);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [user, authLoading]);
+    refreshCart().finally(() => setLoading(false));
+  }, [user, authLoading, refreshCart]);
 
   const clearCart = useCallback(() => {
-    clearVersion.current++;
+    loadId.current++; // invalidate any request still in flight
     setItems([]);
     fetch("/api/cart", { method: "DELETE", headers: authHeaders() }).catch(() => {});
   }, []);
@@ -182,6 +190,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeFromCart,
         updateQuantity,
         clearCart,
+        refreshCart,
         totalItems,
         subtotal,
         loading,
