@@ -9,6 +9,7 @@ import {
   PAYMENT_STATUSES,
   MANUAL_PAYMENT_STATUSES,
   isCod,
+  isUnpaidOnline,
 } from "@/lib/payment-status";
 import { ErrorBanner, CustomSelect } from "@/components/admin/AdminUI";
 
@@ -72,6 +73,14 @@ function paymentBadge(status: string) {
     case "failed": return { bg: "bg-red-50", text: "text-red-600" };
     default: return { bg: "bg-amber-50", text: "text-amber-700" };
   }
+}
+
+// "processing" is the webhook's short-lived lock while it charges an order,
+// so it reads the same as pending. Online pending reads "Awaiting payment".
+function paymentLabel(status: string, method: string) {
+  if (status === "paid") return "Paid";
+  if (status === "failed") return "Failed";
+  return isCod(method) ? "Pending" : "Awaiting payment";
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -207,6 +216,16 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
     const paymentEditable = isCod(order.paymentMethod) && !cancelled;
     const currentStep = TRACK_STEPS.findIndex((s) => s.value === order.status);
 
+    // Unpaid online orders can only stay at PLACED or be cancelled (the API
+    // enforces this too), so don't offer the forward steps.
+    const unpaidOnline = isUnpaidOnline(order.paymentMethod, order.paymentStatus);
+    const statusOptions = unpaidOnline
+      ? STATUS_OPTIONS.filter(
+          (o) =>
+            o.value === order.status || o.value === "PLACED" || o.value === "CANCELLED",
+        )
+      : STATUS_OPTIONS;
+
     return (
       <>
         <ErrorBanner message={errorMessage} onRetry={() => load()} />
@@ -304,10 +323,16 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
                     id="modal-status"
                     value={order.status}
                     onChange={(value) => patch({ status: value })}
-                    options={STATUS_OPTIONS}
+                    options={statusOptions}
                     disabled={isUpdating}
                     triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${sBadge.bg} ${sBadge.text}`}
                   />
+                  {unpaidOnline && !cancelled && (
+                    <p className="font-body text-xs text-charcoal/50 mt-2">
+                      This order can't move past Order Placed until its payment is
+                      confirmed.
+                    </p>
+                  )}
                 </div>
                 {paymentEditable && (
                   <div>
@@ -350,10 +375,7 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
               />
               <Row
                 label="Status"
-                value={
-                  PAYMENT_STATUSES.find((s) => s.value === order.paymentStatus)?.label ??
-                  order.paymentStatus
-                }
+                value={paymentLabel(order.paymentStatus, order.paymentMethod)}
               />
               {order.paymongoSourceId && (
                 <Row label="PayMongo ref" value={order.paymongoSourceId} />
@@ -415,8 +437,7 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
                     <span
                       className={`hidden sm:inline-flex font-body text-xs px-3 py-1 rounded-full ${pBadgeHeader.bg} ${pBadgeHeader.text}`}
                     >
-                      {PAYMENT_STATUSES.find((s) => s.value === data.order.paymentStatus)?.label ??
-                        data.order.paymentStatus}
+                      {paymentLabel(data.order.paymentStatus, data.order.paymentMethod)}
                     </span>
                   </>
                 )}
