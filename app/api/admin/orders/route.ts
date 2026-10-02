@@ -58,9 +58,15 @@ export async function GET(req: Request) {
     if (!VALID_PAYMENT_STATUSES.includes(paymentStatus)) {
       return NextResponse.json({ error: "Invalid payment status filter." }, { status: 400 });
     }
-    conditions.push(`o.payment_status = $${i}`);
-    values.push(paymentStatus);
-    i++;
+    if (paymentStatus === "pending") {
+      // "processing" is the webhook's short-lived lock while it charges an
+      // order, so it counts as pending for filtering purposes.
+      conditions.push(`o.payment_status IN ('pending', 'processing')`);
+    } else {
+      conditions.push(`o.payment_status = $${i}`);
+      values.push(paymentStatus);
+      i++;
+    }
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -108,7 +114,12 @@ export async function GET(req: Request) {
     `SELECT
        COUNT(*)::int AS total,
        COUNT(*) FILTER (WHERE order_status = 'PLACED')::int AS pending,
-       COUNT(*) FILTER (WHERE order_status = 'CANCELLED')::int AS cancelled
+       COUNT(*) FILTER (WHERE order_status = 'CANCELLED')::int AS cancelled,
+       COUNT(*) FILTER (
+         WHERE COALESCE(LOWER(payment_method), '') NOT IN ('cod', 'cashondelivery')
+           AND payment_status IN ('pending', 'processing')
+           AND order_status <> 'CANCELLED'
+       )::int AS awaiting_payment
      FROM orders`,
   );
   const s = statsResult.rows[0];
@@ -122,6 +133,7 @@ export async function GET(req: Request) {
       total: s.total,
       pending: s.pending,
       cancelled: s.cancelled,
+      awaitingPayment: s.awaiting_payment,
     },
   });
 }

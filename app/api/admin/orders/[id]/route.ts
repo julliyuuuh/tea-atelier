@@ -117,13 +117,28 @@ export async function PATCH(
   }
 
   const current = await pool.query(
-    "SELECT order_status, payment_method FROM orders WHERE order_id = $1",
+    "SELECT order_status, payment_method, payment_status FROM orders WHERE order_id = $1",
     [id]
   );
   if (current.rows.length === 0) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
   const order = current.rows[0];
+
+  // An unpaid online order (pending, processing or failed) can only stay at
+  // PLACED or be cancelled. Otherwise an admin could ship something nobody paid for.
+  if (
+    status !== undefined &&
+    !isCod(order.payment_method) &&
+    order.payment_status !== "paid" &&
+    status !== "PLACED" &&
+    status !== "CANCELLED"
+  ) {
+    return NextResponse.json(
+      { error: "This order hasn't been paid yet, so it can't move forward." },
+      { status: 400 }
+    );
+  }
 
   if (paymentStatus !== undefined) {
     // Online payments (GCash/Maya) are owned by the PayMongo webhook.

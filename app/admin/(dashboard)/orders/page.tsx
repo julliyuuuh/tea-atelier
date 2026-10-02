@@ -10,6 +10,8 @@ import {
   PAYMENT_STATUSES,
   MANUAL_PAYMENT_STATUSES,
   isCod,
+  isUnpaidOnline,
+  isAwaitingOnline,
 } from "@/lib/payment-status";
 import {
   ErrorBanner,
@@ -39,6 +41,7 @@ type Stats = {
   total: number;
   pending: number;
   cancelled: number;
+  awaitingPayment: number;
 };
 
 type SortKey = "id" | "totalAmount" | "createdAt" | "itemCount";
@@ -49,6 +52,18 @@ const STATUS_OPTIONS = [
 ];
 
 const ROW_STATUS_OPTIONS = STATUS_OPTIONS.filter((o) => o.value !== "All");
+
+// Unpaid online orders can only stay at PLACED or be cancelled (the API
+// enforces this too), so don't offer the forward steps in the dropdown.
+function rowStatusOptions(order: Order) {
+  if (!isUnpaidOnline(order.paymentMethod, order.paymentStatus)) {
+    return ROW_STATUS_OPTIONS;
+  }
+  return ROW_STATUS_OPTIONS.filter(
+    (o) =>
+      o.value === order.status || o.value === "PLACED" || o.value === "CANCELLED",
+  );
+}
 
 const PAYMENT_FILTER_OPTIONS = [
   { value: "All", label: "All Payments" },
@@ -113,7 +128,12 @@ function buildQuery(params: Record<string, string | number | boolean | undefined
 export default function AdminOrdersPage() {
   // Current page's rows only. the full order book never lives in the browser.
   const [orders, setOrders] = useState<Order[]>([]);
-  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, cancelled: 0 });
+  const [stats, setStats] = useState<Stats>({
+    total: 0,
+    pending: 0,
+    cancelled: 0,
+    awaitingPayment: 0,
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [viewingOrderId, setViewingOrderId] = useState<number | null>(null);
@@ -195,7 +215,8 @@ export default function AdminOrdersPage() {
         },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (!res.ok) throw new Error("Unable to update order status.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Unable to update order status.");
 
       // A status change can move the row out of the current status filter
       // (e.g. filtering by "Pending" and marking one Shipped), so reload
@@ -203,6 +224,19 @@ export default function AdminOrdersPage() {
       if (filterStatus !== "All" && filterStatus !== newStatus) {
         await loadOrders(currentPage);
       } else {
+        const target = orders.find((o) => o.id === orderId);
+        const wasCancelled = target?.status === "CANCELLED";
+        const nowCancelled = newStatus === "CANCELLED";
+        // Cancelled orders don't count as awaiting payment
+        const awaitingDelta =
+          target && isAwaitingOnline(target.paymentMethod, target.paymentStatus)
+            ? !wasCancelled && nowCancelled
+              ? -1
+              : wasCancelled && !nowCancelled
+                ? 1
+                : 0
+            : 0;
+
         setOrders((prev) =>
           prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
         );
@@ -211,11 +245,10 @@ export default function AdminOrdersPage() {
           pending:
             prev.pending +
             (newStatus === "PLACED" ? 1 : 0) -
-            (orders.find((o) => o.id === orderId)?.status === "PLACED" ? 1 : 0),
+            (target?.status === "PLACED" ? 1 : 0),
           cancelled:
-            prev.cancelled +
-            (newStatus === "CANCELLED" ? 1 : 0) -
-            (orders.find((o) => o.id === orderId)?.status === "CANCELLED" ? 1 : 0),
+            prev.cancelled + (nowCancelled ? 1 : 0) - (wasCancelled ? 1 : 0),
+          awaitingPayment: prev.awaitingPayment + awaitingDelta,
         }));
       }
     } catch (error) {
@@ -308,6 +341,11 @@ export default function AdminOrdersPage() {
         <div className="flex flex-wrap gap-1.5">
           <StatChip label="Total Orders" value={stats.total} />
           <StatChip label="Order Placed" value={stats.pending} tone="warning" />
+          <StatChip
+            label="Awaiting Payment"
+            value={stats.awaitingPayment}
+            tone="warning"
+          />
           <StatChip label="Cancelled" value={stats.cancelled} tone="danger" />
         </div>
       </div>
@@ -437,6 +475,10 @@ export default function AdminOrdersPage() {
                 const pBadge = paymentBadge(order.paymentStatus);
                 const paymentEditable =
                   isCod(order.paymentMethod) && order.status !== "CANCELLED";
+                const unpaidOnline = isUnpaidOnline(
+                  order.paymentMethod,
+                  order.paymentStatus,
+                );
                 return (
                   <motion.div
                     key={order.id}
@@ -451,6 +493,13 @@ export default function AdminOrdersPage() {
                   >
                     <div role="cell" className="px-5">
                       <span className="font-body text-sm text-charcoal">TA-{order.id}</span>
+                      {unpaidOnline && (
+                        <span
+                          className={`mt-1 block w-fit whitespace-nowrap font-body text-[10px] px-2 py-0.5 rounded-full ${pBadge.bg} ${pBadge.text}`}
+                        >
+                          {order.paymentStatus === "failed" ? "Payment failed" : "Unpaid"}
+                        </span>
+                      )}
                     </div>
                     <div role="cell" className="px-5 min-w-0">
                       <p className="font-body text-sm text-charcoal truncate">
@@ -484,7 +533,7 @@ export default function AdminOrdersPage() {
                         id={`order-status-${order.id}`}
                         value={order.status}
                         onChange={(value) => handleStatusChange(order.id, value)}
-                        options={ROW_STATUS_OPTIONS}
+                        options={rowStatusOptions(order)}
                         disabled={updatingId === order.id}
                         triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${badge.bg} ${badge.text}`}
                       />
