@@ -208,11 +208,19 @@ function CheckoutContent() {
         </div>
 
         {paymentCheck === "failed" && (
-          <div className="mb-8 rounded-xl border border-red-300 bg-red-50 px-6 py-4">
+          <div className="mb-8 flex items-start justify-between gap-4 rounded-xl border border-red-300 bg-red-50 px-6 py-4">
             <p className="font-body text-sm text-charcoal/80">
               Your payment didn't go through for order #TA-{shownOrderId}.
               Your cart items are still saved below, feel free to try again.
             </p>
+            <button
+              type="button"
+              onClick={() => setPaymentCheck(null)}
+              aria-label="Dismiss"
+              className="text-charcoal/50 hover:text-charcoal"
+            >
+              ✕
+            </button>
           </div>
         )}
 
