@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Product } from "./products";
 import { useAuth } from "./auth-context";
@@ -39,6 +39,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearStockError = () => setStockError(null);
   const [lastAdded, setLastAdded] = useState<Product | null>(null);
   const clearLastAdded = () => setLastAdded(null);
+  const clearVersion = useRef(0);
 
   useEffect(() => {
     if (authLoading) return; // wait for auth to resolve first
@@ -50,14 +51,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     setLoading(true);
+    const versionAtStart = clearVersion.current;
     fetch("/api/cart", { headers: authHeaders() })
       .then((res) => (res.ok ? res.json() : []))
-      .then((rows: CartItem[]) => setItems(rows))
+      .then((rows: CartItem[]) => {
+        // If the cart was cleared while this request was in flight, the response is stale
+        if (clearVersion.current === versionAtStart) setItems(rows);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user, authLoading]);
 
   const clearCart = useCallback(() => {
+    clearVersion.current++;
     setItems([]);
     fetch("/api/cart", { method: "DELETE", headers: authHeaders() }).catch(() => {});
   }, []);

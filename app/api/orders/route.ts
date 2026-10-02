@@ -6,12 +6,21 @@ import { getUserId } from "@/lib/api-auth";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { getShippingFee } from "@/lib/shipping";
 
+const ALLOWED_PAYMENT_METHODS = ["cod", "gcash", "grabpay"];
+
+// Optional fields may be empty; required fields must be non-empty strings.
+function isValidText(value: unknown, maxLength: number, required = false): boolean {
+  if (value === undefined || value === null || value === "") return !required;
+  return typeof value === "string" && value.length <= maxLength;
+}
+
 export async function GET(req: Request) {
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
-  const page = parseInt(url.searchParams.get("page") || "1", 10);
+  // Guard against ?page=abc, ?page=-3, ?page=0 (would produce an invalid OFFSET)
+  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
   const pageSize = 4;
   const offset = (page - 1) * pageSize;
 
@@ -67,10 +76,37 @@ export async function POST(req: Request) {
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { street, city, province, barangay, deliveryFee, paymentMethod, phone, fullName } = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+
+  // NOTE: deliveryFee is intentionally NOT read from the request body anymore.
+  // Old app versions may still send it; it is simply ignored.
+  const { street, city, province, barangay, paymentMethod, phone, fullName } = body;
 
   if (!street || !city || !province) {
     return NextResponse.json({ error: "All address fields are required." }, { status: 400 });
+  }
+
+  if (
+    !isValidText(street, 200, true) ||
+    !isValidText(city, 100, true) ||
+    !isValidText(province, 100, true) ||
+    !isValidText(barangay, 100) ||
+    !isValidText(phone, 20) ||
+    !isValidText(fullName, 100)
+  ) {
+    return NextResponse.json(
+      { error: "Please check your address and contact details." },
+      { status: 400 }
+    );
+  }
+
+  // Only accept known payment methods
+  const method: string = paymentMethod || "cod";
+  if (!ALLOWED_PAYMENT_METHODS.includes(method)) {
+    return NextResponse.json({ error: "Invalid payment method." }, { status: 400 });
   }
 
   const client = await pool.connect();
@@ -80,6 +116,9 @@ export async function POST(req: Request) {
 
     // Block suspended accounts, even if they still hold a token issued
     // before they were suspended. Also grab the email for the confirmation.
+    // FOR UPDATE locks this user's row until the transaction ends, so two
+    // simultaneous orders from the same user run one after the other
+    // (prevents double orders from a double-click).
     const userResult = await client.query(
       `SELECT email, is_suspended FROM users WHERE user_id = $1 FOR UPDATE`,
       [userId]
@@ -107,7 +146,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
     }
 
-    // Verify stock is still sufficient for every item 
+    // Verify stock is still sufficient for every item
     for (const item of cartResult.rows) {
       if (item.quantity > item.stock_quantity) {
         await client.query("ROLLBACK");
@@ -132,7 +171,8 @@ export async function POST(req: Request) {
     );
     const addressId = addressResult.rows[0].address_id;
 
-    // Calculate totals from real DB prices, not client-supplied ones
+    // Calculate totals from real DB prices and the server-side shipping fee,
+    // never from client-supplied numbers
     const subtotal = cartResult.rows.reduce(
       (sum, item) => sum + parseFloat(item.price) * item.quantity,
       0
@@ -145,13 +185,13 @@ export async function POST(req: Request) {
       `INSERT INTO orders (user_id, address_id, shipping_cost, total_amount, order_status, payment_method, contact_phone, recipient_name)
       VALUES ($1, $2, $3, $4, 'PLACED', $5, $6, $7)
       RETURNING order_id, payment_status`,
-      [userId, addressId, shippingCost, totalAmount, paymentMethod || "cod", phone || null, fullName || null]
+      [userId, addressId, shippingCost, totalAmount, method, phone || null, fullName || null]
     );
     const orderId = orderResult.rows[0].order_id;
     const paymentStatus = orderResult.rows[0].payment_status;
 
     // Create order_items and decrement stock for each cart item
-    const isCod = (paymentMethod || "cod") === "cod";
+    const isCod = method === "cod";
 
     for (const item of cartResult.rows) {
       await client.query(
@@ -161,9 +201,11 @@ export async function POST(req: Request) {
       );
 
       if (isCod) {
+        // Conditional decrement: only succeeds if enough stock remains at this
+        // exact moment, so two buyers can't both take the last item.
         const upd = await client.query(
           `UPDATE products SET stock_quantity = stock_quantity - $1
-          WHERE product_id = $2 AND stock_quantity >= $1`,
+           WHERE product_id = $2 AND stock_quantity >= $1`,
           [item.quantity, item.product_id]
         );
         if (upd.rowCount === 0) {
@@ -213,6 +255,7 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     await client.query("ROLLBACK");
+    console.error("Order placement failed:", error);
     return NextResponse.json({ error: "Unable to place order." }, { status: 500 });
   } finally {
     client.release();
