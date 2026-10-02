@@ -38,6 +38,9 @@ function CheckoutContent() {
   const [paymentCheck, setPaymentCheck] = useState<
     "failed" | "pending" | null
   >(null);
+  // Remembered separately because the URL params are cleared after a
+  // confirmed failure
+  const [shownOrderId, setShownOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -52,6 +55,8 @@ function CheckoutContent() {
   // actually happened before showing the failure banner.
   useEffect(() => {
     if (!paymentFailedFlag || !failedOrderId) return;
+
+    setShownOrderId(failedOrderId);
 
     let cancelled = false;
     let attempts = 0;
@@ -205,7 +210,7 @@ function CheckoutContent() {
         {paymentCheck === "failed" && (
           <div className="mb-8 rounded-xl border border-red-300 bg-red-50 px-6 py-4">
             <p className="font-body text-sm text-charcoal/80">
-              Your payment didn't go through for order #TA-{failedOrderId}.
+              Your payment didn't go through for order #TA-{shownOrderId}.
               Your cart items are still saved below, feel free to try again.
             </p>
           </div>
@@ -214,7 +219,7 @@ function CheckoutContent() {
         {paymentCheck === "pending" && (
           <div className="mb-8 rounded-xl border border-sage/30 bg-sage/10 px-6 py-4">
             <p className="font-body text-sm text-charcoal/80">
-              We're still checking the status of order #TA-{failedOrderId}. If
+              We're still checking the status of order #TA-{shownOrderId}. If
               you cancelled the payment, it will be marked as failed shortly.
             </p>
           </div>
