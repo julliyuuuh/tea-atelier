@@ -49,7 +49,7 @@ function CheckoutContent() {
   }, [user]);
 
   // The URL alone isn't trusted: ask the server (which asks PayMongo) what
-  // actually happened before showing the failure banner.
+  // actually happened before showing the failure banner
   useEffect(() => {
     if (!paymentFailedFlag || !failedOrderId) return;
 
