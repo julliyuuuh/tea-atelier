@@ -33,8 +33,11 @@ function CheckoutContent() {
     street: "",
   });
 
-  const paymentFailed = searchParams.get("payment") === "failed";
+  const paymentFailedFlag = searchParams.get("payment") === "failed";
   const failedOrderId = searchParams.get("orderId");
+  const [paymentCheck, setPaymentCheck] = useState<
+    "failed" | "pending" | null
+  >(null);
 
   useEffect(() => {
     if (user) {
@@ -44,6 +47,53 @@ function CheckoutContent() {
       }));
     }
   }, [user]);
+
+  // The URL alone isn't trusted: ask the server (which asks PayMongo) what
+  // actually happened before showing the failure banner.
+  useEffect(() => {
+    if (!paymentFailedFlag || !failedOrderId) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const token = localStorage.getItem("token");
+
+    const verify = async () => {
+      try {
+        const res = await fetch("/api/payments/paymongo/check", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ orderId: Number(failedOrderId) }),
+        });
+        const result = await res.json();
+        if (cancelled) return;
+
+        if (result.paymentStatus === "paid") {
+          router.replace(`/order-confirmation?orderId=${failedOrderId}`);
+          return;
+        }
+        if (result.paymentStatus === "failed") {
+          setPaymentCheck("failed");
+          return;
+        }
+
+        // still pending/processing: PayMongo may not have updated yet
+        setPaymentCheck("pending");
+        if (attempts++ < 3) timer = setTimeout(verify, 2000);
+      } catch {
+        if (!cancelled) setPaymentCheck("pending");
+      }
+    };
+
+    verify();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [paymentFailedFlag, failedOrderId, router]);
 
   const total = subtotal + DELIVERY_FEE;
   const isCartEmpty = items.length === 0;
@@ -146,12 +196,20 @@ function CheckoutContent() {
           </p>
         </div>
 
-        {paymentFailed && (
+        {paymentCheck === "failed" && (
           <div className="mb-8 rounded-xl border border-red-300 bg-red-50 px-6 py-4">
             <p className="font-body text-sm text-charcoal/80">
-              Your payment didn't go through
-              {failedOrderId ? ` for order #TA-${failedOrderId}` : ""}. Your
-              cart items are still saved below, feel free to try again.
+              Your payment didn't go through for order #TA-{failedOrderId}.
+              Your cart items are still saved below, feel free to try again.
+            </p>
+          </div>
+        )}
+
+        {paymentCheck === "pending" && (
+          <div className="mb-8 rounded-xl border border-sage/30 bg-sage/10 px-6 py-4">
+            <p className="font-body text-sm text-charcoal/80">
+              We're still checking the status of order #TA-{failedOrderId}. If
+              you cancelled the payment, it will be marked as failed shortly.
             </p>
           </div>
         )}
@@ -325,7 +383,7 @@ function CheckoutContent() {
                 </div>
                 <div className="flex justify-between font-body text-sm text-charcoal/70">
                   <span>Delivery Fee</span>
-                     <span>₱{DELIVERY_FEE.toFixed(2)}</span>
+                  <span>₱{DELIVERY_FEE.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-display text-lg text-charcoal pt-3 border-t border-charcoal/10">
                   <span>Total Amount</span>
