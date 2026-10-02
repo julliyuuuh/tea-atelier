@@ -66,7 +66,10 @@ function CheckoutContent() {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ orderId: Number(failedOrderId) }),
+          body: JSON.stringify({
+            orderId: Number(failedOrderId),
+            redirectFailed: true,
+          }),
         });
         const result = await res.json();
         if (cancelled) return;
@@ -77,6 +80,7 @@ function CheckoutContent() {
         }
         if (result.paymentStatus === "failed") {
           setPaymentCheck("failed");
+          router.replace("/checkout", { scroll: false });
           return;
         }
 
