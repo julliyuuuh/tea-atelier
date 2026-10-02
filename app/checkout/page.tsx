@@ -49,7 +49,7 @@ function CheckoutContent() {
   }, [user]);
 
   // The URL alone isn't trusted: ask the server (which asks PayMongo) what
-  // actually happened before showing the failure banner
+  // actually happened before showing the failure banner.
   useEffect(() => {
     if (!paymentFailedFlag || !failedOrderId) return;
 
@@ -80,7 +80,9 @@ function CheckoutContent() {
         }
         if (result.paymentStatus === "failed") {
           setPaymentCheck("failed");
-          router.replace("/checkout", { scroll: false });
+          // Instant, client-only URL cleanup (no server round trip). Next.js
+          // keeps useSearchParams in sync with history.replaceState.
+          window.history.replaceState(null, "", "/checkout");
           return;
         }
 
