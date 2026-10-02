@@ -1,5 +1,3 @@
-// app/api/webhooks/.../route.ts  (replace your existing PayMongo webhook route)
-
 import { verifyPaymongoSignature } from "@/lib/paymongo";
 import { pool } from "@/lib/db";
 import { sendOrderConfirmationEmail } from "@/lib/email";

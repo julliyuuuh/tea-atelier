@@ -22,7 +22,7 @@ type OrderDetails = {
   recipientName: string | null;
   orderStatus: string;
   paymentMethod: string;
-  paymentStatus: "pending" | "paid" | "failed";
+  paymentStatus: "pending" | "processing" | "paid" | "failed";
   subtotal: number;
   deliveryFee: number;
   total: number;
@@ -33,7 +33,7 @@ function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { refreshCart } = useCart();          
+  const { refreshCart } = useCart();
   const orderId = searchParams.get("orderId");
 
   const [order, setOrder] = useState<OrderDetails | null>(null);
@@ -103,7 +103,14 @@ function OrderConfirmationContent() {
             refreshCart();
           }
 
-          if (!isCod && data.paymentStatus === "pending") {
+          // "processing" = webhook has claimed the order and is mid-charge,
+          // so treat it the same as "pending" and keep polling
+          const awaitingPayment =
+            !isCod &&
+            (data.paymentStatus === "pending" ||
+              data.paymentStatus === "processing");
+
+          if (awaitingPayment) {
             if (attempts < maxAttempts) {
               attempts++;
               setTimeout(poll, 2000);
@@ -126,7 +133,7 @@ function OrderConfirmationContent() {
     return () => {
       cancelled = true;
     };
-  }, [user, authLoading, orderId, router, refreshCart]); 
+  }, [user, authLoading, orderId, router, refreshCart]);
 
   if (authLoading || loading) {
     return <div className="py-24 text-center">Loading...</div>;
@@ -149,7 +156,9 @@ function OrderConfirmationContent() {
   }
 
   const isCod = order.paymentMethod === "cod";
-  const isPendingPayment = !isCod && order.paymentStatus === "pending";
+  const isPendingPayment =
+    !isCod &&
+    (order.paymentStatus === "pending" || order.paymentStatus === "processing");
   const isFailedPayment = !isCod && order.paymentStatus === "failed";
 
   return (
@@ -215,10 +224,10 @@ function OrderConfirmationContent() {
             <span>Delivery Fee</span>
             <span>₱{order.deliveryFee.toFixed(2)}</span>
           </div>
-            <div className="flex justify-between font-display text-lg text-charcoal border-t border-charcoal/10 pt-3">
-              <span>{isPendingPayment || isFailedPayment ? "Total Due" : "Total Paid"}</span>
-              <span>₱{order.total.toFixed(2)}</span>
-            </div>
+          <div className="flex justify-between font-display text-lg text-charcoal border-t border-charcoal/10 pt-3">
+            <span>{isPendingPayment || isFailedPayment ? "Total Due" : "Total Paid"}</span>
+            <span>₱{order.total.toFixed(2)}</span>
+          </div>
         </div>
 
         <Link
