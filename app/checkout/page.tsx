@@ -11,8 +11,7 @@ import PhAddressFields, {
 } from "@/components/checkout/PhAddressFields";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
-
-const deliveryFee = 5;
+import { DELIVERY_FEE } from "@/lib/shipping";
 
 function CheckoutContent() {
   const { items, subtotal, clearCart } = useCart();
@@ -46,7 +45,7 @@ function CheckoutContent() {
     }
   }, [user]);
 
-  const total = subtotal + deliveryFee;
+  const total = subtotal + DELIVERY_FEE;
   const isCartEmpty = items.length === 0;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +87,6 @@ function CheckoutContent() {
             address.province?.level !== "Prov" && address.province?.reg === 13
               ? "Metro Manila"
               : address.province?.name,
-          deliveryFee,
           paymentMethod,
           phone: formData.phone,
           fullName: formData.fullName,
@@ -327,7 +325,7 @@ function CheckoutContent() {
                 </div>
                 <div className="flex justify-between font-body text-sm text-charcoal/70">
                   <span>Delivery Fee</span>
-                  <span>₱{deliveryFee.toFixed(2)}</span>
+                     <span>₱{DELIVERY_FEE.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-display text-lg text-charcoal pt-3 border-t border-charcoal/10">
                   <span>Total Amount</span>

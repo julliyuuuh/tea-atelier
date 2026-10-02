@@ -1,7 +1,10 @@
+// app/api/orders/route.ts
+
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getUserId } from "@/lib/api-auth";
 import { sendOrderConfirmationEmail } from "@/lib/email";
+import { getShippingFee } from "@/lib/shipping";
 
 export async function GET(req: Request) {
   const userId = getUserId(req);
@@ -78,7 +81,7 @@ export async function POST(req: Request) {
     // Block suspended accounts, even if they still hold a token issued
     // before they were suspended. Also grab the email for the confirmation.
     const userResult = await client.query(
-      `SELECT email, is_suspended FROM users WHERE user_id = $1`,
+      `SELECT email, is_suspended FROM users WHERE user_id = $1 FOR UPDATE`,
       [userId]
     );
     if (userResult.rows[0]?.is_suspended) {
@@ -134,7 +137,7 @@ export async function POST(req: Request) {
       (sum, item) => sum + parseFloat(item.price) * item.quantity,
       0
     );
-    const shippingCost = parseFloat(deliveryFee) || 0;
+    const shippingCost = getShippingFee();
     const totalAmount = subtotal + shippingCost;
 
     // Create the order
@@ -158,10 +161,18 @@ export async function POST(req: Request) {
       );
 
       if (isCod) {
-        await client.query(
-          `UPDATE products SET stock_quantity = stock_quantity - $1 WHERE product_id = $2`,
+        const upd = await client.query(
+          `UPDATE products SET stock_quantity = stock_quantity - $1
+          WHERE product_id = $2 AND stock_quantity >= $1`,
           [item.quantity, item.product_id]
         );
+        if (upd.rowCount === 0) {
+          await client.query("ROLLBACK");
+          return NextResponse.json(
+            { error: `${item.product_name} just sold out.` },
+            { status: 409 }
+          );
+        }
       }
     }
 
