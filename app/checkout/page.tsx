@@ -12,7 +12,7 @@ import { DELIVERY_FEE } from "@/lib/shipping";
 
 const CHECKOUT_ATTEMPT_STORAGE = "tea-atelier.checkout-attempt.v1";
 const CHECKOUT_ORDER_STORAGE = "tea-atelier.checkout-order.v1";
-type PaymentStatus = "pending" | "processing" | "paid" | "failed";
+type PaymentStatus = "pending" | "processing" | "paid" | "failed" | "cancelled";
 type SummaryItem = { name: string; quantity: number; price: number };
 type SavedOrder = {
   accountEmail: string;
@@ -26,7 +26,7 @@ type SavedOrder = {
 };
 
 function isPaymentStatus(value: unknown): value is PaymentStatus {
-  return typeof value === "string" && ["pending", "processing", "paid", "failed"].includes(value);
+  return typeof value === "string" && ["pending", "processing", "paid", "failed", "cancelled"].includes(value);
 }
 
 function CheckoutContent() {
@@ -165,7 +165,7 @@ function CheckoutContent() {
       if (cancelled) return;
 
       // A paid order no longer owns checkout. Leave the current cart intact.
-      if (status === "paid") {
+      if (status === "paid" || status === "cancelled") {
         try {
           sessionStorage.removeItem(CHECKOUT_ORDER_STORAGE);
           sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
@@ -209,7 +209,7 @@ function CheckoutContent() {
       signal: AbortSignal.timeout(40000),
     });
     const result = await res.json();
-    if (result.paymentStatus === "paid" || result.paymentStatus === "processing") {
+    if (result.paymentStatus === "paid" || result.paymentStatus === "processing" || result.paymentStatus === "cancelled") {
       setPaymentStatus(result.paymentStatus);
       return false;
     }
@@ -299,6 +299,39 @@ function CheckoutContent() {
       if (returnOrderId) window.history.replaceState(window.history.state, "", "/checkout");
     } catch {
       setPaymentError("Unable to leave this checkout. Please check again.");
+    } finally {
+      submittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  };
+  const cancelOrder = async () => {
+    const order = activeOrderRef.current;
+    if (!order || !restored || checking || submittingRef.current) return;
+    if (!window.confirm(`Cancel order #TA-${order.orderId}? Your current cart will be kept. Cancellation requires verification that the payment source is inactive.`)) return;
+    const token = localStorage.getItem("token");
+    if (!user || !token) { router.push("/login"); return; }
+    submittingRef.current = true;
+    setIsSubmitting(true);
+    setPaymentError("");
+    try {
+      const res = await fetch("/api/orders/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orderId: order.orderId }),
+        signal: AbortSignal.timeout(20000),
+      });
+      const result = await res.json();
+      if (!res.ok || result.paymentStatus !== "cancelled") {
+        await checkOrder(order);
+        throw new Error(result.error || "Cancellation could not be confirmed. Please check again.");
+      }
+      setPaymentStatus("cancelled");
+      setShowConfirm(false);
+      // Clear the old attempt so a future new checkout uses a fresh key.
+      try { sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE); }
+      catch { /* The cancelled order remains selected and blocks submission. */ }
+    } catch (error) {
+      setPaymentError(error instanceof Error ? error.message : "Cancellation could not be confirmed. Check its status before trying again.");
     } finally {
       submittingRef.current = false;
       setIsSubmitting(false);
@@ -398,18 +431,37 @@ function CheckoutContent() {
           <div aria-live="polite" className="mb-8 rounded-xl border border-sage/30 bg-sage/10 px-6 py-4 font-body text-sm text-charcoal">
             <p className="font-semibold">Order #TA-{activeOrder.orderId}</p>
             <p className="mt-2">{checking ? "Checking your payment..." :
+              paymentStatus === "cancelled" ? "This order has been cancelled. Your current cart has been kept." :
               paymentStatus === "paid" ? "Payment confirmed. You can view your order." :
               paymentStatus === "processing" ? "Payment is being confirmed. Check its status before taking another action." :
               paymentStatus === "failed" ? "Payment failed or expired. Retry payment for this same order." :
               paymentStatus === "pending" ? "Your order is saved. Continue payment or check its status." :
               "Payment status is unavailable. Check again before resuming."}</p>
             {cartChanged ? (
-              <p className="mt-2">Your cart has changed. The summary below shows your current cart. Choose Start New Checkout to order these items separately, or view the previous order below.</p>
+              <p className="mt-2">Your cart has changed. The summary below shows your current cart. Start New Checkout uses these items; Continue Payment or Retry Payment pays for the saved order. View Order Details shows its original items.</p>
             ) : (
-              <p className="mt-2">Continue this order, or choose Start New Checkout to place a separate order with your current cart.</p>
+              <p className="mt-2">Choose Start New Checkout below to use your current cart. Payment actions apply to this saved order.</p>
             )}
-            <p className="mt-2">Starting a new checkout leaves this order in your Orders list. It does not cancel the previous payment link.</p>
+            {paymentStatus !== "cancelled" && <p className="mt-2">Starting a new checkout leaves this order in your Orders list. It does not cancel the previous payment link.</p>}
             {!activeOrder.paymentMethod && <p className="mt-2">Open your Orders page if the payment method cannot be recovered.</p>}
+          </div>
+        )}
+        {activeOrder && (
+          <div className="-mt-4 mb-8 flex flex-wrap gap-x-6 gap-y-3 font-body text-sm">
+            {(paymentStatus === "pending" || paymentStatus === "failed") && (
+              <button type="button" onClick={() => void cancelOrder()}
+                disabled={!restored || checking || isSubmitting}
+                className="text-red-700 underline underline-offset-4 hover:text-red-900 disabled:cursor-not-allowed disabled:opacity-40">
+                Cancel Order
+              </button>
+            )}
+            {(paymentStatus === "pending" || paymentStatus === "failed" || paymentStatus === "cancelled") && (
+              <button type="button" onClick={() => void startNewCheckout()}
+                disabled={!restored || cartLoading || authLoading || checking || isSubmitting || isCartEmpty}
+                className="text-sage underline underline-offset-4 hover:text-charcoal disabled:cursor-not-allowed disabled:opacity-40">
+                Start New Checkout
+              </button>
+            )}
           </div>
         )}
         {previousOrderId && !activeOrder && (
@@ -598,19 +650,20 @@ function CheckoutContent() {
                 <div className="mt-8 space-y-3">
                   <button
                     type="button"
-                    disabled={!restored || cartLoading || authLoading || isSubmitting || checking || (cartChanged && isCartEmpty)}
+                    disabled={!restored || cartLoading || authLoading || isSubmitting || checking}
                     onClick={() => {
-                      if (cartChanged && (paymentStatus === "pending" || paymentStatus === "failed" || paymentStatus === "paid")) void startNewCheckout();
+                      if (paymentStatus === "cancelled") router.push(`/account/orders/${activeOrder.orderId}`);
                       else if (paymentStatus === "paid") viewOrder();
                       else if (!activeOrder.paymentMethod && paymentStatus !== "processing") window.location.reload();
                       else void handleExistingPayment(
-                        !!activeOrder.paymentMethod && (paymentStatus === "pending" || paymentStatus === "failed")
+                        !cartChanged && !!activeOrder.paymentMethod && (paymentStatus === "pending" || paymentStatus === "failed")
                       );
                     }}
                     className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"
                   >
                     {!restored || cartLoading || authLoading || checking ? "Checking..." : isSubmitting ? "Processing..." :
-                      cartChanged && (paymentStatus === "pending" || paymentStatus === "failed" || paymentStatus === "paid") ? "Start New Checkout" :
+                      paymentStatus === "cancelled" ? "View Order" :
+                      cartChanged && (paymentStatus === "pending" || paymentStatus === "failed") ? "Check Status" :
                       paymentStatus === "paid" ? "View Order" :
                       paymentStatus === "processing" ? "Check Status" :
                       !activeOrder.paymentMethod ? "Reload Order Details" :
@@ -622,13 +675,6 @@ function CheckoutContent() {
                       onClick={() => void handleExistingPayment(false)}
                       className="w-full rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 disabled:opacity-50">
                       Check Status
-                    </button>
-                  )}
-                  {!cartChanged && (paymentStatus === "pending" || paymentStatus === "failed") && (
-                    <button type="button" disabled={!restored || cartLoading || authLoading || checking || isSubmitting || isCartEmpty}
-                      onClick={() => void startNewCheckout()}
-                      className="w-full rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 disabled:opacity-50">
-                      Start New Checkout
                     </button>
                   )}
                   <Link href={`/account/orders/${activeOrder.orderId}`} className="block text-center font-body text-sm text-sage underline">

@@ -110,12 +110,13 @@ export async function POST(req: Request) {
 
       if (
         order.payment_status === "paid" ||
-        order.payment_status === "processing"
+        order.payment_status === "processing" ||
+        order.payment_status === "cancelled"
       ) {
         return finish(
           {
             paymentStatus: order.payment_status,
-            error: "Payment is already paid or being processed.",
+            error: "This order is paid, being processed, or cancelled.",
           },
           409
         );

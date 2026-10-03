@@ -42,7 +42,8 @@ export async function POST(req: Request) {
 
     if (
       order.payment_status === "paid" ||
-      order.payment_status === "processing"
+      order.payment_status === "processing" ||
+      order.payment_status === "cancelled"
     ) {
       return NextResponse.json({
         paymentStatus: order.payment_status,
@@ -102,7 +103,8 @@ export async function POST(req: Request) {
 
     if (
       latest.payment_status === "paid" ||
-      latest.payment_status === "processing"
+      latest.payment_status === "processing" ||
+      latest.payment_status === "cancelled"
     ) {
       return NextResponse.json({
         paymentStatus: latest.payment_status,
@@ -139,14 +141,15 @@ export async function POST(req: Request) {
       // Never report failure if a webhook won the race.
       const current = await readOrder();
 
-      if (
-        current?.payment_status === "paid" ||
-        current?.payment_status === "processing"
-      ) {
-        return NextResponse.json({
-          paymentStatus: current.payment_status,
-        });
-      }
+    if (
+      current?.payment_status === "paid" ||
+      current?.payment_status === "processing" ||
+      current?.payment_status === "cancelled"
+    ) {
+      return NextResponse.json({
+        paymentStatus: current.payment_status,
+      });
+    }
 
       return NextResponse.json(
         { error: "Payment status changed. Please check again." },

@@ -941,7 +941,7 @@ function OrdersTab() {
 
             if (
               !checkRes.ok ||
-              !["pending", "processing", "paid", "failed"].includes(
+              !["pending", "processing", "paid", "failed", "cancelled"].includes(
                 result.paymentStatus
               )
             ) {
@@ -1072,7 +1072,9 @@ function OrdersTab() {
                 </p>
               )}  
             </div>
-            {paymentCheckUnavailable.includes(order.id) ? (
+            {order.paymentStatus === "cancelled" ? (
+              <Badge tone="amber">Cancelled</Badge>
+            ) : paymentCheckUnavailable.includes(order.id) ? (
               <Badge tone="amber">Payment Status Unavailable</Badge>
             ) : order.paymentMethod !== "cod" && order.paymentStatus !== "paid" ? (
               <Badge tone="amber">
