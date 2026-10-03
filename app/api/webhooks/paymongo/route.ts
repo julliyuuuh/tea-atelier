@@ -147,13 +147,16 @@ export async function POST(req: Request) {
               price: parseFloat(row.price),
             }));
           }
-
-          // Remove only the items that were ordered, not anything the customer
-          // added to their cart while they were paying.
+          
+          // Remove only cart entries unchanged since this order was created.
+          // Edited or re-added products belong to the current cart and stay there.
           await client.query(
-            `DELETE FROM cart
-             WHERE user_id = $1
-               AND product_id IN (SELECT product_id FROM order_items WHERE order_id = $2)`,
+            `DELETE FROM cart AS c
+            USING order_items AS oi
+            WHERE c.user_id = $1
+              AND oi.order_id = $2
+              AND c.product_id = oi.product_id
+              AND c.checkout_revision = oi.cart_checkout_revision`,
             [upd.rows[0].user_id, order.order_id]
           );
         }

@@ -156,10 +156,11 @@ export async function POST(req: Request) {
     }
     // Get the user's current cart, with live prices/stock based from products table
     const cartResult = await client.query(
-      `SELECT c.product_id, c.quantity, p.price, p.stock_quantity, p.product_name
-       FROM cart c
-       JOIN products p ON p.product_id = c.product_id
-       WHERE c.user_id = $1`,
+      `SELECT c.product_id, c.quantity, c.checkout_revision,
+              p.price, p.stock_quantity, p.product_name
+      FROM cart c
+      JOIN products p ON p.product_id = c.product_id
+      WHERE c.user_id = $1`,
       [userId]
     );
     if (cartResult.rows.length === 0) {
@@ -235,9 +236,16 @@ export async function POST(req: Request) {
     const isCod = method === "cod";
     for (const item of cartResult.rows) {
       await client.query(
-        `INSERT INTO order_items (order_id, product_id, quantity, price)
-        VALUES ($1, $2, $3, $4)`,
-        [orderId, item.product_id, item.quantity, item.price]
+        `INSERT INTO order_items
+          (order_id, product_id, quantity, price, cart_checkout_revision)
+        VALUES ($1, $2, $3, $4, $5)`,
+        [
+          orderId,
+          item.product_id,
+          item.quantity,
+          item.price,
+          item.checkout_revision,
+        ]
       );
       if (isCod) {
         // Conditional decrement: only succeeds if enough stock remains at this

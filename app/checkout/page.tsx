@@ -22,6 +22,7 @@ type SavedOrder = {
   deliveryFee: number | null;
   total: number | null;
   items: SummaryItem[];
+  cartFingerprint?: string;
 };
 
 function isPaymentStatus(value: unknown): value is PaymentStatus {
@@ -29,8 +30,8 @@ function isPaymentStatus(value: unknown): value is PaymentStatus {
 }
 
 function CheckoutContent() {
-  const { items, subtotal, clearCart } = useCart();
-  const { user } = useAuth();
+  const { items, subtotal, clearCart, loading: cartLoading } = useCart();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnOrderId = searchParams.get("orderId");
@@ -42,6 +43,7 @@ function CheckoutContent() {
   const paymentRedirectedRef = useRef(false);
   const activeOrderRef = useRef<SavedOrder | null>(null);
   const [activeOrder, setActiveOrder] = useState<SavedOrder | null>(null);
+  const [previousOrderId, setPreviousOrderId] = useState<number | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | "unknown">("unknown");
   const [checking, setChecking] = useState(false);
   const [restored, setRestored] = useState(false);
@@ -101,6 +103,7 @@ function CheckoutContent() {
     let cancelled = false;
     const restore = async () => {
       if (!accountEmail) {
+        setPreviousOrderId(null);
         activeOrderRef.current = null;
         setActiveOrder(null);
         setPaymentStatus("unknown");
@@ -251,25 +254,68 @@ function CheckoutContent() {
     }
   };
 
-  const total = activeOrder?.total ?? subtotal + DELIVERY_FEE;
-  const displaySubtotal = activeOrder?.subtotal ?? subtotal;
-  const displayDeliveryFee = activeOrder?.deliveryFee ?? DELIVERY_FEE;
-  const summaryItems = activeOrder ? activeOrder.items : items.map((item) => ({
+  const cartFingerprint = JSON.stringify(items.map((item) => ({
+    productId: String(item.product.id), quantity: item.quantity, price: Number(item.product.price),
+  })).sort((a, b) => a.productId.localeCompare(b.productId)));
+  const currentSummary = items.map((item) => ({
     name: item.product.name, quantity: item.quantity, price: item.product.price,
   }));
+  // Older saved entries have no product-ID fingerprint; compare their
+  // item snapshots until a new order saves the stronger fingerprint.
+  const summaryFingerprint = (rows: SummaryItem[]) => JSON.stringify(rows.map((item) => ({
+    name: item.name, quantity: item.quantity, price: Number(item.price),
+  })).sort((a, b) => a.name.localeCompare(b.name) || a.price - b.price || a.quantity - b.quantity));
+  const cartChanged = !!activeOrder && !cartLoading && !authLoading && (
+    activeOrder.cartFingerprint !== undefined
+      ? activeOrder.cartFingerprint !== cartFingerprint
+      : summaryFingerprint(activeOrder.items) !== summaryFingerprint(currentSummary)
+  );
+  const showSavedOrder = !!activeOrder && !cartChanged;
+  const total = showSavedOrder ? activeOrder.total ?? subtotal + DELIVERY_FEE : subtotal + DELIVERY_FEE;
+  const displaySubtotal = showSavedOrder ? activeOrder.subtotal ?? subtotal : subtotal;
+  const displayDeliveryFee = showSavedOrder ? activeOrder.deliveryFee ?? DELIVERY_FEE : DELIVERY_FEE;
+  const summaryItems = showSavedOrder ? activeOrder.items : currentSummary;
   const isCartEmpty = items.length === 0;
+
+  const startNewCheckout = async () => {
+    const order = activeOrderRef.current;
+    if (!order || !restored || cartLoading || authLoading || checking || submittingRef.current || isCartEmpty) return;
+    submittingRef.current = true;
+    setIsSubmitting(true);
+    try {
+      const status = await checkOrder(order);
+      if (!status || status === "processing") return;
+      // This leaves the old order in Orders; it does not cancel its payment.
+      // Remove both keys so the next Place Order is a separate checkout.
+      sessionStorage.removeItem(CHECKOUT_ORDER_STORAGE);
+      sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
+      setPreviousOrderId(status === "paid" ? null : order.orderId);
+      activeOrderRef.current = null;
+      setActiveOrder(null);
+      setPaymentStatus("unknown");
+      setPaymentMethod("cod");
+      setPaymentError("");
+      setShowConfirm(false);
+      if (returnOrderId) window.history.replaceState(window.history.state, "", "/checkout");
+    } catch {
+      setPaymentError("Unable to leave this checkout. Please check again.");
+    } finally {
+      submittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: name === "phone" ? value.replace(/[^0-9]/g, "").slice(0, 11) : value }));
   };
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!restored || activeOrderRef.current || submittingRef.current || isCartEmpty || !isAddressComplete(address)) return;
+    if (!restored || cartLoading || authLoading || activeOrderRef.current || submittingRef.current || isCartEmpty || !isAddressComplete(address)) return;
     setShowConfirm(true);
   };
 
   const confirmOrder = async () => {
-    if (!restored || activeOrderRef.current || submittingRef.current) return;
+    if (!restored || cartLoading || authLoading || activeOrderRef.current || submittingRef.current) return;
     const token = localStorage.getItem("token");
     if (!user || !token) { router.push("/login"); return; }
     if (isCartEmpty || !isAddressComplete(address)) return;
@@ -312,6 +358,7 @@ function CheckoutContent() {
         accountEmail: user.email, orderId, paymentMethod: paymentMethod === "grabpay" ? "grabpay" : "gcash",
         subtotal: Number(data.subtotal), deliveryFee: Number(data.deliveryFee), total: Number(data.total),
         items: items.map((item) => ({ name: item.product.name, quantity: item.quantity, price: item.product.price })),
+        cartFingerprint,
       };
       // Remember the order BEFORE source creation, including when that fails.
       rememberOrder(order);
@@ -339,7 +386,7 @@ function CheckoutContent() {
             Complete your order
           </h1>
           <p className="font-body text-sm text-charcoal/70 max-w-2xl">
-            {activeOrder ? "Resume payment for your saved order." : "Enter your details and review your tea selection before placing the order."}
+            {activeOrder && !cartChanged ? "Resume payment for your saved order." : "Enter your details and review your tea selection before placing the order."}
           </p>
         </div>
         {paymentError && (
@@ -356,8 +403,19 @@ function CheckoutContent() {
               paymentStatus === "failed" ? "Payment failed or expired. Retry payment for this same order." :
               paymentStatus === "pending" ? "Your order is saved. Continue payment or check its status." :
               "Payment status is unavailable. Check again before resuming."}</p>
-            <p className="mt-2">The delivery details and payment method belong to this saved order.</p>
+            {cartChanged ? (
+              <p className="mt-2">Your cart has changed. The summary below shows your current cart. Choose Start New Checkout to order these items separately, or view the previous order below.</p>
+            ) : (
+              <p className="mt-2">Continue this order, or choose Start New Checkout to place a separate order with your current cart.</p>
+            )}
+            <p className="mt-2">Starting a new checkout leaves this order in your Orders list. It does not cancel the previous payment link.</p>
             {!activeOrder.paymentMethod && <p className="mt-2">Open your Orders page if the payment method cannot be recovered.</p>}
+          </div>
+        )}
+        {previousOrderId && !activeOrder && (
+          <div className="mb-8 rounded-xl border border-sage/30 bg-sage/10 px-6 py-4 font-body text-sm text-charcoal">
+            You are starting a separate order with your current cart. Previous order #TA-{previousOrderId} remains in your Orders list.
+            <Link href={`/account/orders/${previousOrderId}`} className="ml-2 text-sage underline">View previous order</Link>
           </div>
         )}
         <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-10">
@@ -366,7 +424,7 @@ function CheckoutContent() {
             onSubmit={handleFormSubmit}
             className="space-y-8"
           >
-            <fieldset disabled={!!activeOrder || isSubmitting || !restored} className={activeOrder ? "hidden" : "space-y-8 disabled:opacity-70"}>
+            <fieldset disabled={!!activeOrder || isSubmitting || !restored || cartLoading || authLoading} className={activeOrder ? "hidden" : "space-y-8 disabled:opacity-70"}>
             <div className="bg-cream border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Customer Information
@@ -488,7 +546,7 @@ function CheckoutContent() {
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Order Summary
               </h2>
-              {!activeOrder && isCartEmpty ? (
+              {!showSavedOrder && isCartEmpty ? (
                 <div className="text-center py-6">
                   <p className="font-body text-sm text-charcoal/70 mb-6">
                     Your cart is empty. Add a few teas before checking out.
@@ -525,24 +583,25 @@ function CheckoutContent() {
               <div className="mt-6 space-y-3 border-t border-charcoal/10 pt-6">
                 <div className="flex justify-between font-body text-sm text-charcoal/70">
                   <span>Subtotal</span>
-                  <span>{activeOrder && activeOrder.subtotal === null ? "Unavailable" : `₱${displaySubtotal.toFixed(2)}`}</span>
+                  <span>{showSavedOrder && activeOrder.subtotal === null ? "Unavailable" : `₱${displaySubtotal.toFixed(2)}`}</span>
                 </div>
                 <div className="flex justify-between font-body text-sm text-charcoal/70">
                   <span>Delivery Fee</span>
-                  <span>{activeOrder && activeOrder.deliveryFee === null ? "Unavailable" : `₱${displayDeliveryFee.toFixed(2)}`}</span>
+                  <span>{showSavedOrder && activeOrder.deliveryFee === null ? "Unavailable" : `₱${displayDeliveryFee.toFixed(2)}`}</span>
                 </div>
                 <div className="flex justify-between font-display text-lg text-charcoal pt-3 border-t border-charcoal/10">
                   <span>Total Amount</span>
-                  <span>{activeOrder && activeOrder.total === null ? "Unavailable" : `₱${total.toFixed(2)}`}</span>
+                  <span>{showSavedOrder && activeOrder.total === null ? "Unavailable" : `₱${total.toFixed(2)}`}</span>
                 </div>
               </div>
               {activeOrder ? (
                 <div className="mt-8 space-y-3">
                   <button
                     type="button"
-                    disabled={!restored || isSubmitting || checking}
+                    disabled={!restored || cartLoading || authLoading || isSubmitting || checking || (cartChanged && isCartEmpty)}
                     onClick={() => {
-                      if (paymentStatus === "paid") viewOrder();
+                      if (cartChanged && (paymentStatus === "pending" || paymentStatus === "failed" || paymentStatus === "paid")) void startNewCheckout();
+                      else if (paymentStatus === "paid") viewOrder();
                       else if (!activeOrder.paymentMethod && paymentStatus !== "processing") window.location.reload();
                       else void handleExistingPayment(
                         !!activeOrder.paymentMethod && (paymentStatus === "pending" || paymentStatus === "failed")
@@ -550,7 +609,8 @@ function CheckoutContent() {
                     }}
                     className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"
                   >
-                    {!restored || checking ? "Checking..." : isSubmitting ? "Processing..." :
+                    {!restored || cartLoading || authLoading || checking ? "Checking..." : isSubmitting ? "Processing..." :
+                      cartChanged && (paymentStatus === "pending" || paymentStatus === "failed" || paymentStatus === "paid") ? "Start New Checkout" :
                       paymentStatus === "paid" ? "View Order" :
                       paymentStatus === "processing" ? "Check Status" :
                       !activeOrder.paymentMethod ? "Reload Order Details" :
@@ -564,15 +624,22 @@ function CheckoutContent() {
                       Check Status
                     </button>
                   )}
-                  <Link href={`/order-confirmation?orderId=${activeOrder.orderId}`} className="block text-center font-body text-sm text-sage underline">
+                  {!cartChanged && (paymentStatus === "pending" || paymentStatus === "failed") && (
+                    <button type="button" disabled={!restored || cartLoading || authLoading || checking || isSubmitting || isCartEmpty}
+                      onClick={() => void startNewCheckout()}
+                      className="w-full rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 disabled:opacity-50">
+                      Start New Checkout
+                    </button>
+                  )}
+                  <Link href={`/account/orders/${activeOrder.orderId}`} className="block text-center font-body text-sm text-sage underline">
                     View Order Details
                   </Link>
                 </div>
               ) : (
                 <button type="submit" form="checkout-form"
-                  disabled={!restored || isCartEmpty || isSubmitting}
+                  disabled={!restored || cartLoading || authLoading || isCartEmpty || isSubmitting}
                   className="w-full mt-8 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30">
-                  {!restored ? "Checking..." : isSubmitting ? "Processing..." : "Place Order"}
+                  {!restored || cartLoading || authLoading ? "Checking..." : isSubmitting ? "Processing..." : "Place Order"}
                 </button>
               )}
             </div>
