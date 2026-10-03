@@ -38,6 +38,7 @@ function CheckoutContent() {
   const accountEmail = user?.email;
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const paymentRedirectedRef = useRef(false);
@@ -189,6 +190,7 @@ function CheckoutContent() {
       submittingRef.current = false;
       setIsSubmitting(false);
       setShowConfirm(false);
+      setShowCancelConfirm(false);
       void restore();
     };
     void restore();
@@ -307,11 +309,11 @@ function CheckoutContent() {
   const cancelOrder = async () => {
     const order = activeOrderRef.current;
     if (!order || !restored || checking || submittingRef.current) return;
-    if (!window.confirm(`Cancel order #TA-${order.orderId}? Your current cart will be kept. Cancellation requires verification that the payment source is inactive.`)) return;
     const token = localStorage.getItem("token");
     if (!user || !token) { router.push("/login"); return; }
     submittingRef.current = true;
     setIsSubmitting(true);
+    setShowCancelConfirm(false);
     setPaymentError("");
     try {
       const res = await fetch("/api/orders/cancel", {
@@ -449,7 +451,7 @@ function CheckoutContent() {
         {activeOrder && (
           <div className="-mt-4 mb-8 flex flex-wrap gap-x-6 gap-y-3 font-body text-sm">
             {(paymentStatus === "pending" || paymentStatus === "failed") && (
-              <button type="button" onClick={() => void cancelOrder()}
+              <button type="button" onClick={() => setShowCancelConfirm(true)}
                 disabled={!restored || checking || isSubmitting}
                 className="text-red-700 underline underline-offset-4 hover:text-red-900 disabled:cursor-not-allowed disabled:opacity-40">
                 Cancel Order
@@ -711,6 +713,46 @@ function CheckoutContent() {
                 className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? "Processing..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showCancelConfirm && activeOrder && (
+        <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6"
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && !isSubmitting) setShowCancelConfirm(false);
+            if (event.key === "Tab") {
+              const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
+              const first = buttons[0];
+              const last = buttons[buttons.length - 1];
+              if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault(); last?.focus();
+              } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault(); first?.focus();
+              }
+            }
+          }}>
+          <div role="dialog" aria-modal="true" aria-labelledby="cancel-order-title"
+            aria-describedby="cancel-order-description"
+            className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center">
+            <h3 id="cancel-order-title" className="font-display text-2xl text-charcoal mb-4">
+              Cancel this order?
+            </h3>
+            <p id="cancel-order-description" className="font-body text-sm text-charcoal/70 mb-6">
+              We'll check whether order #TA-{activeOrder.orderId} can be cancelled.
+              Your current cart will stay. An active or authorized payment may prevent cancellation.
+            </p>
+            <div className="flex gap-3">
+              <button type="button" autoFocus onClick={() => setShowCancelConfirm(false)}
+                disabled={isSubmitting}
+                className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors disabled:opacity-50">
+                Keep Order
+              </button>
+              <button type="button" onClick={() => void cancelOrder()}
+                disabled={!restored || checking || isSubmitting}
+                className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                Cancel Order
               </button>
             </div>
           </div>

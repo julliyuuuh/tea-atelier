@@ -832,16 +832,13 @@ function ProfileTab() {
 // ================================================================
 // Orders tab
 // ================================================================
-
 import Link from "next/link";
-
 type OrderItem = {
   name: string;
   image: string;
   quantity: number;
   price: number;
 };
-
   type Order = {
     id: number;
     status: string;
@@ -853,7 +850,6 @@ type OrderItem = {
     createdAt: string;
     items: OrderItem[];
   };
-
 function formatPaymentMethod(method: string): string {
   const labels: Record<string, string> = {
     cod: "Cash on Delivery",
@@ -863,6 +859,9 @@ function formatPaymentMethod(method: string): string {
     paypal: "PayPal",
   };
   return labels[method] || method;
+}
+function isCancelledOrder(order: Order) {
+  return order.paymentStatus === "cancelled" || order.status === "CANCELLED";
 }
 
 function OrdersTab() {
@@ -875,53 +874,93 @@ function OrdersTab() {
   const [totalPages, setTotalPages] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
   const [paymentCheckUnavailable, setPaymentCheckUnavailable] = useState<number[]>([]);
+  const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [cancelError, setCancelError] = useState("");
+  const cancelBusyRef = useRef(false);
+  const groups = [
+    { title: "Orders", description: "Paid orders and Cash on Delivery orders.",
+      entries: orders.filter((order) => !isCancelledOrder(order) &&
+        (order.paymentMethod === "cod" || order.paymentStatus === "paid")) },
+    { title: "Unpaid Orders", description: "Starting a separate checkout does not cancel these orders or their payment links.",
+      entries: orders.filter((order) => !isCancelledOrder(order) &&
+        order.paymentMethod !== "cod" && order.paymentStatus !== "paid") },
+    { title: "Cancelled Orders", description: "These orders are kept for your records.",
+      entries: orders.filter(isCancelledOrder) },
+  ].filter((group) => group.entries.length > 0);
+
+  const confirmCancellation = async () => {
+    const order = cancelTarget;
+    if (!order || cancelBusyRef.current) return;
+    const token = localStorage.getItem("token");
+    if (!token) { router.push("/login"); return; }
+    cancelBusyRef.current = true;
+    setCancellingId(order.id);
+    setCancelTarget(null);
+    setCancelError("");
+    try {
+      const res = await fetch("/api/orders/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orderId: order.id }),
+        signal: AbortSignal.timeout(20000),
+      });
+      if (res.status === 401) { logout(); router.push("/login"); return; }
+      const result = await res.json();
+      if (!res.ok || result.paymentStatus !== "cancelled") {
+        throw new Error(result.error || "Cancellation could not be confirmed. Please refresh its status.");
+      }
+      setOrders((current) => current.map((entry) => entry.id === order.id
+        ? { ...entry, paymentStatus: "cancelled", status: "CANCELLED" }
+        : entry));
+      setPaymentCheckUnavailable((current) => current.filter((id) => id !== order.id));
+    } catch (error) {
+      setCancelError(`Order #TA-${order.id}: ${error instanceof Error ? error.message : "Unable to confirm cancellation. Please check again."}`);
+      // A payment or cancellation may have completed despite a lost response.
+      setRefreshKey((value) => value + 1);
+    } finally {
+      cancelBusyRef.current = false;
+      setCancellingId(null);
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
-
     async function loadOrders() {
       const token = localStorage.getItem("token");
       setErrorMessage("");
       setPaymentCheckUnavailable([]);
       setIsLoading(true);
-
       if (!token) {
         setErrorMessage("Please sign in to view your orders.");
         setIsLoading(false);
         return;
       }
-
       try {
         const res = await fetch(`/api/orders?page=${page}`, {
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
           cache: "no-store",
         });
-
         if (cancelled) return;
-
         if (res.status === 401) {
           logout();
           router.push("/login");
           return;
         }
-
         const data = await res.json();
-
         if (!res.ok || !Array.isArray(data.orders)) {
           throw new Error(data.error || "Unable to load orders.");
         }
-
         const loadedOrders: Order[] = data.orders;
         const toCheck = loadedOrders.filter(
           (order) =>
+            !isCancelledOrder(order) &&
             ["gcash", "grabpay"].includes(order.paymentMethod) &&
             ["pending", "processing", "failed"].includes(order.paymentStatus)
         );
-
         let unauthorized = false;
-
         const checks = await Promise.allSettled(
           toCheck.map(async (order) => {
             const checkRes = await fetch("/api/payments/paymongo/check", {
@@ -934,11 +973,8 @@ function OrdersTab() {
               signal: controller.signal,
               cache: "no-store",
             });
-
             if (checkRes.status === 401) unauthorized = true;
-
             const result = await checkRes.json();
-
             if (
               !checkRes.ok ||
               !["pending", "processing", "paid", "failed", "cancelled"].includes(
@@ -947,25 +983,20 @@ function OrdersTab() {
             ) {
               throw new Error("Unable to verify payment.");
             }
-
             return {
               id: order.id,
               paymentStatus: result.paymentStatus as string,
             };
           })
         );
-
         if (cancelled) return;
-
         if (unauthorized) {
           logout();
           router.push("/login");
           return;
         }
-
         const statuses = new Map<number, string>();
         const unavailable: number[] = [];
-
         checks.forEach((check, index) => {
           if (check.status === "fulfilled") {
             statuses.set(check.value.id, check.value.paymentStatus);
@@ -973,14 +1004,12 @@ function OrdersTab() {
             unavailable.push(toCheck[index].id);
           }
         });
-
         setOrders(
           loadedOrders.map((order) => ({
             ...order,
             paymentStatus: statuses.get(order.id) ?? order.paymentStatus,
           }))
         );
-
         setPaymentCheckUnavailable(unavailable);
         setTotalPages(Math.max(1, Number(data.totalPages) || 1));
       } catch (error) {
@@ -993,21 +1022,16 @@ function OrdersTab() {
         if (!cancelled) setIsLoading(false);
       }
     }
-
     void loadOrders();
-
     return () => {
       cancelled = true;
       controller.abort();
     };
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, refreshKey]);
-
   if (isLoading) {
     return <OrderSkeleton />;
   }
-
   if (errorMessage) {
     return (
       <div className="text-center py-16">
@@ -1015,7 +1039,6 @@ function OrdersTab() {
       </div>
     );
   }
-
   if (orders.length === 0) {
     return (
       <div className="text-center py-16">
@@ -1030,25 +1053,31 @@ function OrdersTab() {
       </div>
     );
   }
-
   return (
     <div>
       <div className="flex justify-end mb-4">
         <button
           type="button"
           onClick={() => setRefreshKey((value) => value + 1)}
-          className="rounded-full border border-charcoal/20 px-5 py-2 font-body text-sm text-charcoal hover:bg-sand/40 transition-colors"
+          disabled={cancellingId !== null}
+          className="rounded-full border border-charcoal/20 px-5 py-2 font-body text-sm text-charcoal hover:bg-sand/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Refresh Orders
         </button>
       </div>
+      {cancelError && <p role="alert" className="mb-6 rounded-xl border border-red-300 bg-red-50 p-4 font-body text-sm text-charcoal">{cancelError}</p>}
+      {cancellingId !== null && <p role="status" className="mb-6 font-body text-sm text-charcoal/70">Checking cancellation for order #TA-{cancellingId}...</p>}
+      {groups.map((group) => (
+        <section key={group.title} className="mb-10">
+          <h3 className="font-display text-2xl text-charcoal mb-2">{group.title}</h3>
+          <p className="font-body text-sm text-charcoal/60 mb-5">{group.description}</p>
       <motion.div
         variants={listContainerVariants}
         initial="hidden"
         animate="show"
         className="space-y-6"
       >
-        {orders.map((order) => (
+        {group.entries.map((order) => (
           <motion.div
             key={order.id}
             variants={listItemVariants}
@@ -1072,7 +1101,7 @@ function OrdersTab() {
                 </p>
               )}  
             </div>
-            {order.paymentStatus === "cancelled" ? (
+            {isCancelledOrder(order) ? (
               <Badge tone="amber">Cancelled</Badge>
             ) : paymentCheckUnavailable.includes(order.id) ? (
               <Badge tone="amber">Payment Status Unavailable</Badge>
@@ -1090,7 +1119,6 @@ function OrdersTab() {
               <Badge tone="sage">{getStatusLabel(order.status)}</Badge>
             )}
           </div>
-
             <div className="space-y-3 mb-4">
               {order.items.map((item, i) => (
                 <div key={i} className="flex items-center gap-4">
@@ -1115,30 +1143,38 @@ function OrdersTab() {
                 </div>
               ))}
             </div>
-
             <div className="flex justify-between font-body text-sm text-charcoal/70 pt-4 border-t border-charcoal/10">
               <span>Total ({formatPaymentMethod(order.paymentMethod)})</span>
               <span className="font-display text-base text-charcoal">
                 ₱{order.totalAmount.toFixed(2)}
               </span>
             </div>
-
-            {/* NEW: link to the separate order details page */}
+            {/* Existing order details and verified cancellation actions. */}
             <Link
               href={`/account/orders/${order.id}`}
               className="mt-4 block w-full rounded-lg border border-charcoal/15 py-2.5 text-center font-body text-sm text-charcoal hover:bg-charcoal hover:text-white transition-colors"
             >
               View Order Details
             </Link>
+            {!isCancelledOrder(order) && order.status === "PLACED" &&
+              ["gcash", "grabpay"].includes(order.paymentMethod) &&
+              ["pending", "failed"].includes(order.paymentStatus) && (
+                <button type="button" disabled={cancellingId !== null}
+                  onClick={() => { setCancelError(""); setCancelTarget(order); }}
+                  className="mt-4 block mx-auto font-body text-sm text-red-700 underline underline-offset-4 hover:text-red-900 disabled:opacity-40 disabled:cursor-not-allowed">
+                  Cancel Order
+                </button>
+              )}
           </motion.div>
         ))}
       </motion.div>
-
+        </section>
+      ))}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4 mt-10">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
+            disabled={page === 1 || cancellingId !== null}
             className="font-body text-lg uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
           >
             &lt;
@@ -1148,16 +1184,48 @@ function OrdersTab() {
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
+            disabled={page === totalPages || cancellingId !== null}
             className="font-body text-lg uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
           >
             &gt;
           </button>
         </div>
       )}
+      {cancelTarget && (
+        <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setCancelTarget(null);
+            if (event.key === "Tab") {
+              const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
+              const first = buttons[0]; const last = buttons[buttons.length - 1];
+              if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault(); last?.focus();
+              } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault(); first?.focus();
+              }
+            }
+          }}>
+          <div role="dialog" aria-modal="true" aria-labelledby="account-cancel-title"
+            aria-describedby="account-cancel-description"
+            className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center">
+            <h3 id="account-cancel-title" className="font-display text-2xl text-charcoal mb-4">Cancel this order?</h3>
+            <p id="account-cancel-description" className="font-body text-sm text-charcoal/70 mb-6">
+              We'll check whether order #TA-{cancelTarget.id} can be cancelled.
+              Your current cart will stay. An active or authorized payment may prevent cancellation.
+            </p>
+            <div className="flex gap-3">
+              <button type="button" autoFocus onClick={() => setCancelTarget(null)}
+                className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors">Keep Order</button>
+              <button type="button" onClick={() => void confirmCancellation()} disabled={cancellingId !== null}
+                className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Cancel Order</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 // ================================================================
 // Settings tab
