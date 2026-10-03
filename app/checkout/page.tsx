@@ -157,7 +157,26 @@ function CheckoutContent() {
           }
         } catch { /* Status can still be checked; creation stays blocked. */ }
       }
-      if (!cancelled) { setRestored(true); await checkOrder(saved); }
+      if (cancelled) return;
+      const status = await checkOrder(saved);
+      if (cancelled) return;
+
+      // A paid order no longer owns checkout. Leave the current cart intact.
+      if (status === "paid") {
+        try {
+          sessionStorage.removeItem(CHECKOUT_ORDER_STORAGE);
+          sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
+        } catch { /* Reset this page even if browser storage is unavailable. */ }
+        activeOrderRef.current = null;
+        setActiveOrder(null);
+        setPaymentStatus("unknown");
+        setPaymentMethod("cod");
+        setShowConfirm(false);
+        if (hasUrlOrder) {
+          window.history.replaceState(window.history.state, "", "/checkout");
+        }
+      }
+      setRestored(true);
     };
 
     const handlePageShow = () => {
