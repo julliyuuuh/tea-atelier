@@ -864,9 +864,12 @@ function isCancelledOrder(order: Order) {
   return order.paymentStatus === "cancelled" || order.status === "CANCELLED";
 }
 
+type OrdersCategory = "orders" | "cancelled" | "unpaid";
+
 function OrdersTab() {
   const { logout } = useAuth();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<OrdersCategory>("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -878,20 +881,23 @@ function OrdersTab() {
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [cancelError, setCancelError] = useState("");
   const cancelBusyRef = useRef(false);
+  const paymentBusyRef = useRef(false);
+  const paymentRedirectedRef = useRef(false);
+  const [payingId, setPayingId] = useState<number | null>(null);
   const groups = [
-    { title: "Orders", description: "Paid orders and Cash on Delivery orders.",
+    { key: "orders", title: "Orders", description: "Paid orders and Cash on Delivery orders.",
       entries: orders.filter((order) => !isCancelledOrder(order) &&
         (order.paymentMethod === "cod" || order.paymentStatus === "paid")) },
-    { title: "Unpaid Orders", description: "Starting a separate checkout does not cancel these orders or their payment links.",
+    { key: "unpaid", title: "Unpaid Orders", description: "Starting a separate checkout does not cancel these orders or their payment links.",
       entries: orders.filter((order) => !isCancelledOrder(order) &&
         order.paymentMethod !== "cod" && order.paymentStatus !== "paid") },
-    { title: "Cancelled Orders", description: "These orders are kept for your records.",
+    { key: "cancelled", title: "Cancelled Orders", description: "These orders are kept for your records.",
       entries: orders.filter(isCancelledOrder) },
-  ].filter((group) => group.entries.length > 0);
+  ].filter((group) => group.key === activeTab && group.entries.length > 0);
 
   const confirmCancellation = async () => {
     const order = cancelTarget;
-    if (!order || cancelBusyRef.current) return;
+    if (!order || cancelBusyRef.current || paymentBusyRef.current) return;
     const token = localStorage.getItem("token");
     if (!token) { router.push("/login"); return; }
     cancelBusyRef.current = true;
@@ -914,6 +920,7 @@ function OrdersTab() {
         ? { ...entry, paymentStatus: "cancelled", status: "CANCELLED" }
         : entry));
       setPaymentCheckUnavailable((current) => current.filter((id) => id !== order.id));
+      setRefreshKey((value) => value + 1);
     } catch (error) {
       setCancelError(`Order #TA-${order.id}: ${error instanceof Error ? error.message : "Unable to confirm cancellation. Please check again."}`);
       // A payment or cancellation may have completed despite a lost response.
@@ -923,6 +930,62 @@ function OrdersTab() {
       setCancellingId(null);
     }
   };
+
+  const resumePayment = async (order: Order) => {
+    if (paymentBusyRef.current || cancelBusyRef.current) return;
+    const token = localStorage.getItem("token");
+    if (!token) { router.push("/login"); return; }
+    paymentBusyRef.current = true;
+    setPayingId(order.id);
+    setCancelError("");
+    let navigating = false;
+    try {
+      const post = async (url: string, body: object) => {
+        const res = await fetch(url, {
+          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body), cache: "no-store", signal: AbortSignal.timeout(40000),
+        });
+        if (res.status === 401) { logout(); router.push("/login"); throw new Error("Please sign in again."); }
+        return { res, result: await res.json() };
+      };
+      const checked = await post("/api/payments/paymongo/check", { orderId: order.id });
+      if (!checked.res.ok) throw new Error(checked.result.error || "Unable to verify payment. Please refresh and try again.");
+      const status = checked.result.paymentStatus;
+      if (!["pending", "failed"].includes(status)) {
+        setRefreshKey((value) => value + 1);
+        if (status === "paid") { setActiveTab("orders"); setPage(1); }
+        else if (status === "cancelled") { setActiveTab("cancelled"); setPage(1); }
+        else throw new Error("Payment is being confirmed. Please check its status again shortly.");
+        return;
+      }
+      const created = await post("/api/payments/paymongo/source", { orderId: order.id, type: order.paymentMethod });
+      if (!created.res.ok || typeof created.result.checkoutUrl !== "string" || !created.result.checkoutUrl) {
+        setRefreshKey((value) => value + 1);
+        throw new Error(created.result.error || "Unable to resume payment. Please check again.");
+      }
+      // The source endpoint reuses a pending link or creates a retry for this order.
+      // No new order is created from the Orders tab.
+      paymentRedirectedRef.current = true;
+      navigating = true;
+      window.location.href = created.result.checkoutUrl;
+    } catch (error) {
+      setCancelError(`Order #TA-${order.id}: ${error instanceof Error ? error.message : "Unable to resume payment."}`);
+    } finally {
+      if (!navigating) { paymentBusyRef.current = false; setPayingId(null); }
+    }
+  };
+
+  useEffect(() => {
+    const onPageShow = () => {
+      if (!paymentRedirectedRef.current) return;
+      paymentRedirectedRef.current = false;
+      paymentBusyRef.current = false;
+      setPayingId(null);
+      setRefreshKey((value) => value + 1);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -938,7 +1001,7 @@ function OrdersTab() {
         return;
       }
       try {
-        const res = await fetch(`/api/orders?page=${page}`, {
+        const res = await fetch(`/api/orders?page=${page}&tab=${activeTab}`, {
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
           cache: "no-store",
@@ -1004,14 +1067,20 @@ function OrdersTab() {
             unavailable.push(toCheck[index].id);
           }
         });
-        setOrders(
-          loadedOrders.map((order) => ({
-            ...order,
-            paymentStatus: statuses.get(order.id) ?? order.paymentStatus,
-          }))
-        );
+        const refreshedOrders = loadedOrders.map((order) => ({
+          ...order, paymentStatus: statuses.get(order.id) ?? order.paymentStatus,
+        }));
+        setOrders(refreshedOrders);
+        // Refresh the filtered page if verification moved an order to another tab.
+        if (activeTab === "unpaid" && refreshedOrders.some((order) =>
+            isCancelledOrder(order) || order.paymentStatus === "paid")) {
+          setRefreshKey((value) => value + 1);
+        }
         setPaymentCheckUnavailable(unavailable);
         setTotalPages(Math.max(1, Number(data.totalPages) || 1));
+        if (Number.isSafeInteger(data.currentPage) && data.currentPage >= 1 && data.currentPage !== page) {
+          setPage(data.currentPage);
+        }
       } catch (error) {
         if (!cancelled) {
           setErrorMessage(
@@ -1028,38 +1097,35 @@ function OrdersTab() {
       controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, refreshKey]);
-  if (isLoading) {
-    return <OrderSkeleton />;
-  }
-  if (errorMessage) {
-    return (
-      <div className="text-center py-16">
-        <p className="font-body text-sm text-red-600">{errorMessage}</p>
-      </div>
-    );
-  }
-  if (orders.length === 0) {
-    return (
-      <div className="text-center py-16">
-        <Package
-          size={28}
-          className="mx-auto text-charcoal/20 mb-3"
-          strokeWidth={1.5}
-        />
-        <p className="font-body text-sm text-charcoal/50">
-          You haven't placed any orders yet.
-        </p>
-      </div>
-    );
-  }
+  }, [page, refreshKey, activeTab]);
+  const tabNavigation = (
+    <div role="tablist" aria-label="Order categories" className="flex flex-wrap gap-2 border-b border-charcoal/10 pb-4 mb-6">
+      {([{ key: "orders", label: "Orders" }, { key: "cancelled", label: "Cancelled" }, { key: "unpaid", label: "Unpaid" }] as const).map((tab) => (
+        <button key={tab.key} type="button" role="tab" id={`orders-tab-${tab.key}`}
+          aria-selected={activeTab === tab.key} aria-controls="orders-category-panel"
+          disabled={cancellingId !== null || payingId !== null}
+          onClick={() => { setActiveTab(tab.key); setPage(1); setOrders([]); setIsLoading(true); setCancelError(""); setCancelTarget(null); }}
+          className={`rounded-full px-5 py-2 font-body text-sm transition-colors disabled:opacity-40 ${activeTab === tab.key ? "bg-sage text-cream" : "border border-charcoal/15 text-charcoal hover:bg-sand/40"}`}>
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+  if (isLoading) return <div>{tabNavigation}<OrderSkeleton /></div>;
+  if (errorMessage) return (
+    <div>{tabNavigation}<p role="alert" className="text-center py-12 font-body text-sm text-red-600">{errorMessage}</p>
+      <button type="button" onClick={() => setRefreshKey((value) => value + 1)} className="block mx-auto font-body text-sm text-sage underline">Try Again</button>
+    </div>
+  );
   return (
     <div>
+      {tabNavigation}
+      <div id="orders-category-panel" role="tabpanel" aria-labelledby={`orders-tab-${activeTab}`}>
       <div className="flex justify-end mb-4">
         <button
           type="button"
           onClick={() => setRefreshKey((value) => value + 1)}
-          disabled={cancellingId !== null}
+          disabled={cancellingId !== null || payingId !== null}
           className="rounded-full border border-charcoal/20 px-5 py-2 font-body text-sm text-charcoal hover:bg-sand/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Refresh Orders
@@ -1067,6 +1133,10 @@ function OrdersTab() {
       </div>
       {cancelError && <p role="alert" className="mb-6 rounded-xl border border-red-300 bg-red-50 p-4 font-body text-sm text-charcoal">{cancelError}</p>}
       {cancellingId !== null && <p role="status" className="mb-6 font-body text-sm text-charcoal/70">Checking cancellation for order #TA-{cancellingId}...</p>}
+      {payingId !== null && <p role="status" className="mb-6 font-body text-sm text-charcoal/70">Opening payment for order #TA-{payingId}...</p>}
+      {groups.length === 0 && <p className="text-center py-12 font-body text-sm text-charcoal/60">
+        {activeTab === "orders" ? "No paid or Cash on Delivery orders yet." : activeTab === "cancelled" ? "No cancelled orders." : "No unpaid orders."}
+      </p>}
       {groups.map((group) => (
         <section key={group.title} className="mb-10">
           <h3 className="font-display text-2xl text-charcoal mb-2">{group.title}</h3>
@@ -1156,10 +1226,18 @@ function OrdersTab() {
             >
               View Order Details
             </Link>
+            {!isCancelledOrder(order) && ["gcash", "grabpay"].includes(order.paymentMethod) &&
+              ["pending", "failed"].includes(order.paymentStatus) && (
+                <button type="button" disabled={cancellingId !== null || payingId !== null}
+                  onClick={() => void resumePayment(order)}
+                  className="mt-4 block w-full rounded-full bg-sage py-3 font-body text-sm text-cream hover:bg-charcoal transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                  {payingId === order.id ? "Opening Payment..." : order.paymentStatus === "failed" ? "Retry Payment" : "Continue Payment"}
+                </button>
+              )}
             {!isCancelledOrder(order) && order.status === "PLACED" &&
               ["gcash", "grabpay"].includes(order.paymentMethod) &&
               ["pending", "failed"].includes(order.paymentStatus) && (
-                <button type="button" disabled={cancellingId !== null}
+                <button type="button" disabled={cancellingId !== null || payingId !== null}
                   onClick={() => { setCancelError(""); setCancelTarget(order); }}
                   className="mt-4 block mx-auto font-body text-sm text-red-700 underline underline-offset-4 hover:text-red-900 disabled:opacity-40 disabled:cursor-not-allowed">
                   Cancel Order
@@ -1174,7 +1252,7 @@ function OrdersTab() {
         <div className="flex items-center justify-center gap-4 mt-10">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1 || cancellingId !== null}
+            disabled={page === 1 || cancellingId !== null || payingId !== null}
             className="font-body text-lg uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
           >
             &lt;
@@ -1184,13 +1262,14 @@ function OrdersTab() {
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages || cancellingId !== null}
+            disabled={page === totalPages || cancellingId !== null || payingId !== null}
             className="font-body text-lg uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
           >
             &gt;
           </button>
         </div>
       )}
+      </div>
       {cancelTarget && (
         <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6"
           onKeyDown={(event) => {
@@ -1216,7 +1295,7 @@ function OrdersTab() {
             <div className="flex gap-3">
               <button type="button" autoFocus onClick={() => setCancelTarget(null)}
                 className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors">Keep Order</button>
-              <button type="button" onClick={() => void confirmCancellation()} disabled={cancellingId !== null}
+              <button type="button" onClick={() => void confirmCancellation()} disabled={cancellingId !== null || payingId !== null}
                 className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Cancel Order</button>
             </div>
           </div>
