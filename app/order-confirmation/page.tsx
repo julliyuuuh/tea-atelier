@@ -225,7 +225,7 @@ function OrderConfirmationContent() {
             <span>₱{order.deliveryFee.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-display text-lg text-charcoal border-t border-charcoal/10 pt-3">
-            <span>{isPendingPayment || isFailedPayment ? "Total Due" : "Total Paid"}</span>
+            <span>{order.paymentStatus === "paid" ? "Total Paid" : "Total Due"}</span>
             <span>₱{order.total.toFixed(2)}</span>
           </div>
         </div>

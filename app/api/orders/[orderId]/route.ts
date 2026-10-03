@@ -21,7 +21,7 @@ export async function GET(
 
   const order = orderResult.rows[0];
 
-  // Order doesn't exist, OR exists but belongs to a different user —
+  // Order doesn't exist, OR exists but belongs to a different user
   // same 404 for both so we don't leak which orders exist.
   if (!order || order.user_id !== userId) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });

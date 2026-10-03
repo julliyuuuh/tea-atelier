@@ -1,7 +1,6 @@
 "use client";
-
 import Link from "next/link";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -12,6 +11,7 @@ import PhAddressFields, {
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { DELIVERY_FEE } from "@/lib/shipping";
+const CHECKOUT_ATTEMPT_STORAGE = "tea-atelier.checkout-attempt.v1";
 
 function CheckoutContent() {
   const { items, subtotal, clearCart } = useCart();
@@ -20,6 +20,8 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [saveAddress, setSaveAddress] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -32,7 +34,6 @@ function CheckoutContent() {
     barangay: null,
     street: "",
   });
-
   const paymentFailedFlag = searchParams.get("payment") === "failed";
   const failedOrderId = searchParams.get("orderId");
   const [paymentCheck, setPaymentCheck] = useState<
@@ -41,7 +42,6 @@ function CheckoutContent() {
   // Remembered separately because the URL params are cleared after a
   // confirmed failure
   const [shownOrderId, setShownOrderId] = useState<string | null>(null);
-
   useEffect(() => {
     if (user) {
       setFormData((prev) => ({
@@ -50,19 +50,15 @@ function CheckoutContent() {
       }));
     }
   }, [user]);
-
   // The URL alone isn't trusted: ask the server (which asks PayMongo) what
   // actually happened before showing the failure banner.
   useEffect(() => {
     if (!paymentFailedFlag || !failedOrderId) return;
-
     setShownOrderId(failedOrderId);
-
     let cancelled = false;
     let attempts = 0;
     let timer: ReturnType<typeof setTimeout>;
     const token = localStorage.getItem("token");
-
     const verify = async () => {
       try {
         const res = await fetch("/api/payments/paymongo/check", {
@@ -76,21 +72,21 @@ function CheckoutContent() {
             redirectFailed: true,
           }),
         });
+        if (!res.ok) throw new Error("Unable to check payment status");
         const result = await res.json();
         if (cancelled) return;
-
         if (result.paymentStatus === "paid") {
           router.replace(`/order-confirmation?orderId=${failedOrderId}`);
           return;
         }
         if (result.paymentStatus === "failed") {
+          sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
           setPaymentCheck("failed");
           // Instant, client-only URL cleanup (no server round trip). Next.js
           // keeps useSearchParams in sync with history.replaceState.
           window.history.replaceState(null, "", "/checkout");
           return;
         }
-
         // still pending/processing: PayMongo may not have updated yet
         setPaymentCheck("pending");
         if (attempts++ < 3) timer = setTimeout(verify, 2000);
@@ -98,71 +94,101 @@ function CheckoutContent() {
         if (!cancelled) setPaymentCheck("pending");
       }
     };
-
     verify();
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
   }, [paymentFailedFlag, failedOrderId, router]);
-
   const total = subtotal + DELIVERY_FEE;
   const isCartEmpty = items.length === 0;
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
     if (name === "phone") {
       const digitsOnly = value.replace(/[^0-9]/g, "").slice(0, 11);
       setFormData((prev) => ({ ...prev, phone: digitsOnly }));
       return;
     }
-
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAddressComplete(address)) return;
+    if (submittingRef.current || isCartEmpty || !isAddressComplete(address)) return;
     setShowConfirm(true);
   };
-
   const confirmOrder = async () => {
-    setShowConfirm(false);
+    if (submittingRef.current) return;
     const token = localStorage.getItem("token");
-
+    if (!user || !token) {
+      router.push("/login");
+      return;
+    }
+    if (isCartEmpty || !isAddressComplete(address)) return;
+    submittingRef.current = true;
+    setIsSubmitting(true);
+    setShowConfirm(false);
+    let navigating = false;
     try {
+      const orderPayload = {
+        street: address.street.trim(),
+        barangay: address.barangay?.name,
+        saveAddress,
+        city: address.city?.name,
+        province:
+          address.province?.level !== "Prov" && address.province?.reg === 13
+            ? "Metro Manila"
+            : address.province?.name,
+        paymentMethod,
+        phone: formData.phone,
+        fullName: formData.fullName,
+      };
+      // Reloads and uncertain request failures reuse this tab's request key.
+      // A changed cart/address/payment method represents a new checkout intent.
+      const fingerprint = JSON.stringify({
+        accountEmail: user.email,
+        orderPayload,
+        items: items.map((item) => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          price: item.product.price,
+        })).sort((a, b) => String(a.productId).localeCompare(String(b.productId))),
+      });
+      let previousAttempt: { key?: string; fingerprint?: string } | null = null;
+      try {
+        previousAttempt = JSON.parse(sessionStorage.getItem(CHECKOUT_ATTEMPT_STORAGE) || "null");
+      } catch {
+        // An unreadable stored entry is replaced below.
+      }
+      const requestKey = previousAttempt?.fingerprint === fingerprint &&
+        typeof previousAttempt.key === "string"
+        ? previousAttempt.key
+        : crypto.randomUUID();
+      sessionStorage.setItem(CHECKOUT_ATTEMPT_STORAGE, JSON.stringify({ key: requestKey, fingerprint }));
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Idempotency-Key": requestKey,
         },
-        body: JSON.stringify({
-          street: address.street.trim(),
-          barangay: address.barangay?.name,
-          saveAddress,
-          city: address.city?.name,
-          // NCR cities sit at province level in PSGC, so show "Metro Manila"
-          province:
-            address.province?.level !== "Prov" && address.province?.reg === 13
-              ? "Metro Manila"
-              : address.province?.name,
-          paymentMethod,
-          phone: formData.phone,
-          fullName: formData.fullName,
-        }),
+        body: JSON.stringify(orderPayload),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         alert(data.error || "Unable to place order.");
         return;
       }
-
+      if (paymentMethod !== "cod" &&
+          (data.paymentStatus === "paid" || data.paymentStatus === "processing")) {
+        sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
+        navigating = true;
+        router.push(`/order-confirmation?orderId=${data.orderId}`);
+        return;
+      }
       if (paymentMethod === "cod") {
         clearCart();
+        sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
+        navigating = true;
         router.push(`/order-confirmation?orderId=${data.orderId}`);
       } else {
         const src = await fetch("/api/payments/paymongo/source", {
@@ -173,7 +199,6 @@ function CheckoutContent() {
           },
           body: JSON.stringify({
             orderId: data.orderId,
-            amount: data.total,
             type: paymentMethod,
           }),
         });
@@ -182,17 +207,26 @@ function CheckoutContent() {
           alert(srcData.error || "Payment initiation failed.");
           return;
         }
+        if (typeof srcData.checkoutUrl !== "string" || !srcData.checkoutUrl) {
+          throw new Error("Missing payment checkout URL");
+        }
+        // A later checkout after the provider redirect starts a fresh attempt.
+        sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
         window.location.href = srcData.checkoutUrl;
+        navigating = true;
       }
     } catch {
       alert("Something went wrong. Please try again.");
+    } finally {
+      if (!navigating) {
+        submittingRef.current = false;
+        setIsSubmitting(false);
+      }
     }
   };
-
   return (
     <main className="min-h-screen bg-cream">
       <Navbar />
-
       <section className="max-w-6xl mx-auto px-6 md:px-8 py-16">
         <div className="mb-10">
           <p className="font-body text-xs uppercase tracking-[0.25em] text-sage mb-3">
@@ -206,7 +240,6 @@ function CheckoutContent() {
             order.
           </p>
         </div>
-
         {paymentCheck === "failed" && (
           <div className="mb-8 flex items-start justify-between gap-4 rounded-xl border border-red-300 bg-red-50 px-6 py-4">
             <p className="font-body text-sm text-charcoal/80">
@@ -223,16 +256,14 @@ function CheckoutContent() {
             </button>
           </div>
         )}
-
         {paymentCheck === "pending" && (
           <div className="mb-8 rounded-xl border border-sage/30 bg-sage/10 px-6 py-4">
             <p className="font-body text-sm text-charcoal/80">
-              We're still checking the status of order #TA-{shownOrderId}. If
-              you cancelled the payment, it will be marked as failed shortly.
+              We're waiting for payment confirmation for order #TA-{shownOrderId}.
+              You can refresh your Orders page to check its latest payment status.
             </p>
           </div>
         )}
-
         <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-10">
           <form
             id="checkout-form"
@@ -265,10 +296,14 @@ function CheckoutContent() {
                     type="email"
                     name="email"
                     value={formData.email}
-                    onChange={handleChange}
+                    readOnly
+                    aria-describedby="checkout-email-note"
                     required
-                    className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
+                    className="w-full rounded-xl border border-charcoal/20 bg-sand/30 px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
                   />
+                  <p id="checkout-email-note" className="mt-2 font-body text-xs text-charcoal/60">
+                    Your confirmation will be sent to your account email.
+                  </p>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block font-body text-sm text-charcoal/70 mb-2">
@@ -286,13 +321,11 @@ function CheckoutContent() {
                 </div>
               </div>
             </div>
-
             <div className="bg-cream border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Delivery Address
               </h2>
               <PhAddressFields onChange={setAddress} />
-
               <label className="mt-5 flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -305,7 +338,6 @@ function CheckoutContent() {
                 </span>
               </label>
             </div>
-
             <div className="bg-cream border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Payment Method
@@ -353,13 +385,11 @@ function CheckoutContent() {
               </div>
             </div>
           </form>
-
           <aside className="space-y-8">
             <div className="bg-sand/40 border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Order Summary
               </h2>
-
               {isCartEmpty ? (
                 <div className="text-center py-6">
                   <p className="font-body text-sm text-charcoal/70 mb-6">
@@ -394,7 +424,6 @@ function CheckoutContent() {
                   ))}
                 </div>
               )}
-
               <div className="mt-6 space-y-3 border-t border-charcoal/10 pt-6">
                 <div className="flex justify-between font-body text-sm text-charcoal/70">
                   <span>Subtotal</span>
@@ -409,20 +438,18 @@ function CheckoutContent() {
                   <span>₱{total.toFixed(2)}</span>
                 </div>
               </div>
-
               <button
                 type="submit"
                 form="checkout-form"
-                disabled={isCartEmpty}
+                disabled={isCartEmpty || isSubmitting}
                 className="w-full mt-8 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"
               >
-                Place Order
+                {isSubmitting ? "Processing..." : "Place Order"}
               </button>
             </div>
           </aside>
         </div>
       </section>
-
       {showConfirm && (
         <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6">
           <div className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center">
@@ -438,20 +465,19 @@ function CheckoutContent() {
               </button>
               <button
                 onClick={confirmOrder}
-                className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors"
+                disabled={isSubmitting}
+                className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Confirm
+                {isSubmitting ? "Processing..." : "Confirm"}
               </button>
             </div>
           </div>
         </div>
       )}
-
       <Footer />
     </main>
   );
 }
-
 export default function CheckoutPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-cream" />}>
