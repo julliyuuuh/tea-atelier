@@ -873,24 +873,33 @@ function OrdersTab() {
   const [errorMessage, setErrorMessage] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [paymentCheckUnavailable, setPaymentCheckUnavailable] = useState<number[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
+    let cancelled = false;
 
     async function loadOrders() {
       const token = localStorage.getItem("token");
+      setErrorMessage("");
+      setPaymentCheckUnavailable([]);
+      setIsLoading(true);
+
       if (!token) {
         setErrorMessage("Please sign in to view your orders.");
         setIsLoading(false);
         return;
       }
 
-      setIsLoading(true);
       try {
         const res = await fetch(`/api/orders?page=${page}`, {
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
+          cache: "no-store",
         });
+
+        if (cancelled) return;
 
         if (res.status === 401) {
           logout();
@@ -898,34 +907,102 @@ function OrdersTab() {
           return;
         }
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to load orders.");
-      setOrders(data.orders);
-      setTotalPages(data.totalPages);
+        const data = await res.json();
 
-      // Ask PayMongo about any orders stuck on pending payment
-      data.orders
-        .filter((o: Order) => o.paymentMethod !== "cod" && o.paymentStatus === "pending")
-        .forEach((o: Order) => {
-          fetch("/api/payments/paymongo/check", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ orderId: o.id }),
-          }).catch(() => {});
+        if (!res.ok || !Array.isArray(data.orders)) {
+          throw new Error(data.error || "Unable to load orders.");
+        }
+
+        const loadedOrders: Order[] = data.orders;
+        const toCheck = loadedOrders.filter(
+          (order) =>
+            ["gcash", "grabpay"].includes(order.paymentMethod) &&
+            ["pending", "processing", "failed"].includes(order.paymentStatus)
+        );
+
+        let unauthorized = false;
+
+        const checks = await Promise.allSettled(
+          toCheck.map(async (order) => {
+            const checkRes = await fetch("/api/payments/paymongo/check", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ orderId: order.id }),
+              signal: controller.signal,
+              cache: "no-store",
+            });
+
+            if (checkRes.status === 401) unauthorized = true;
+
+            const result = await checkRes.json();
+
+            if (
+              !checkRes.ok ||
+              !["pending", "processing", "paid", "failed"].includes(
+                result.paymentStatus
+              )
+            ) {
+              throw new Error("Unable to verify payment.");
+            }
+
+            return {
+              id: order.id,
+              paymentStatus: result.paymentStatus as string,
+            };
+          })
+        );
+
+        if (cancelled) return;
+
+        if (unauthorized) {
+          logout();
+          router.push("/login");
+          return;
+        }
+
+        const statuses = new Map<number, string>();
+        const unavailable: number[] = [];
+
+        checks.forEach((check, index) => {
+          if (check.status === "fulfilled") {
+            statuses.set(check.value.id, check.value.paymentStatus);
+          } else {
+            unavailable.push(toCheck[index].id);
+          }
         });
+
+        setOrders(
+          loadedOrders.map((order) => ({
+            ...order,
+            paymentStatus: statuses.get(order.id) ?? order.paymentStatus,
+          }))
+        );
+
+        setPaymentCheckUnavailable(unavailable);
+        setTotalPages(Math.max(1, Number(data.totalPages) || 1));
       } catch (error) {
-        if (error instanceof Error && error.name !== "AbortError") {
-          setErrorMessage(error.message);
+        if (!cancelled) {
+          setErrorMessage(
+            error instanceof Error ? error.message : "Unable to load orders."
+          );
         }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
 
-    loadOrders();
-    return () => controller.abort();
+    void loadOrders();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, refreshKey]);
 
   if (isLoading) {
     return <OrderSkeleton />;
@@ -956,6 +1033,15 @@ function OrdersTab() {
 
   return (
     <div>
+      <div className="flex justify-end mb-4">
+        <button
+          type="button"
+          onClick={() => setRefreshKey((value) => value + 1)}
+          className="rounded-full border border-charcoal/20 px-5 py-2 font-body text-sm text-charcoal hover:bg-sand/40 transition-colors"
+        >
+          Refresh Orders
+        </button>
+      </div>
       <motion.div
         variants={listContainerVariants}
         initial="hidden"
@@ -986,9 +1072,17 @@ function OrdersTab() {
                 </p>
               )}  
             </div>
-            {order.paymentMethod !== "cod" && order.paymentStatus !== "paid" ? (
+            {paymentCheckUnavailable.includes(order.id) ? (
+              <Badge tone="amber">Payment Status Unavailable</Badge>
+            ) : order.paymentMethod !== "cod" && order.paymentStatus !== "paid" ? (
               <Badge tone="amber">
-                {order.paymentStatus === "failed" ? "Payment Failed" : "Awaiting Payment"}
+                {order.paymentStatus === "failed"
+                  ? "Payment Failed"
+                  : order.paymentStatus === "processing"
+                  ? "Confirming Payment"
+                  : order.paymentStatus === "pending"
+                  ? "Awaiting Payment"
+                  : "Check Payment Status"}
               </Badge>
             ) : (
               <Badge tone="sage">{getStatusLabel(order.status)}</Badge>
