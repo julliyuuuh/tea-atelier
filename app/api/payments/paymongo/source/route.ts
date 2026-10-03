@@ -1,101 +1,255 @@
-// app/api/payments/paymongo/source/route.ts
-
 import { pool } from "@/lib/db";
 import { getUserId } from "@/lib/api-auth";
 
 const ALLOWED_TYPES = ["gcash", "grabpay"];
+const TERMINAL_SOURCE_STATUSES = ["expired", "failed", "cancelled"];
+
+type PaymongoSource = {
+  id: string;
+  attributes: {
+    status: string;
+    amount: number;
+    currency: string;
+    type: string;
+    redirect?: { checkout_url?: string };
+  };
+};
 
 export async function POST(req: Request) {
-  // 1. Must be logged in
   const userId = getUserId(req);
-  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  // 2. Validate input. NOTE: the client's `amount` is deliberately ignored.
   const body = await req.json().catch(() => null);
   const orderId = Number(body?.orderId);
   const type = body?.type;
 
-  if (!Number.isInteger(orderId) || orderId <= 0 || !ALLOWED_TYPES.includes(type)) {
+  if (
+    !Number.isSafeInteger(orderId) ||
+    orderId <= 0 ||
+    typeof type !== "string" ||
+    !ALLOWED_TYPES.includes(type)
+  ) {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  // 3. The order must exist AND belong to this user. Returning 404 (not 403)
-  //    avoids revealing whether someone else's order ID exists.
-  const orderRes = await pool.query(
-    `SELECT order_id, total_amount, payment_status, payment_method
-     FROM orders
-     WHERE order_id = $1 AND user_id = $2`,
-    [orderId, userId]
-  );
-  const order = orderRes.rows[0];
-  if (!order) {
-    return Response.json({ error: "Order not found." }, { status: 404 });
-  }
+  const secretKey = process.env.PAYMONGO_SECRET_KEY;
+  const appUrl = process.env.APP_URL?.replace(/\/+$/, "");
 
-  // 4. Payment method must match what the order was placed with
-  if (order.payment_method !== type) {
+  if (!secretKey || !appUrl) {
+    console.error("PayMongo configuration is missing");
     return Response.json(
-      { error: "Payment method doesn't match this order." },
-      { status: 400 }
+      { error: "Payment initiation is unavailable." },
+      { status: 503 }
     );
   }
 
-  // 5. Don't start a new payment for an order that is paid or mid-payment
-  if (order.payment_status === "paid" || order.payment_status === "processing") {
-    return Response.json(
-      { error: "This order has already been paid or is being processed." },
-      { status: 409 }
-    );
-  }
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization:
+      "Basic " + Buffer.from(secretKey + ":").toString("base64"),
+  };
 
-  if (!process.env.APP_URL) {
-    console.error("APP_URL is not set");
-    return Response.json({ error: "Payment initiation failed." }, { status: 500 });
-  }
-
-  // 6. The amount comes from the database, never from the browser
-  const amountCentavos = Math.round(parseFloat(order.total_amount) * 100);
-  const sourceType = type === "grabpay" ? "grab_pay" : "gcash";
-
-  let res: Response;
-  let source: any;
-  try {
-    res = await fetch("https://api.paymongo.com/v1/sources", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Basic " + Buffer.from(process.env.PAYMONGO_SECRET_KEY + ":").toString("base64"),
-      },
-      body: JSON.stringify({
-        data: {
-          attributes: {
-            amount: amountCentavos,
-            redirect: {
-              success: `${process.env.APP_URL}/order-confirmation?orderId=${order.order_id}`,
-              failed: `${process.env.APP_URL}/checkout?payment=failed&orderId=${order.order_id}`,
-            },
-            type: sourceType,
-            currency: "PHP",
-          },
-        },
-      }),
+  const requestSource = async (
+    url: string,
+    options: RequestInit = {}
+  ): Promise<PaymongoSource> => {
+    const res = await fetch(url, {
+      ...options,
+      headers,
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
     });
-    source = await res.json();
+    const result = await res.json().catch(() => null);
+
+    if (
+      !res.ok ||
+      typeof result?.data?.id !== "string" ||
+      !result.data.attributes
+    ) {
+      throw new Error("Unable to obtain a valid PayMongo source");
+    }
+
+    return result.data;
+  };
+
+  try {
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN");
+      await client.query("SET LOCAL lock_timeout = '5s'");
+
+      // Serialize source creation for this order across requests.
+      const orderRes = await client.query(
+        `SELECT order_id, total_amount, payment_status,
+                payment_method, paymongo_source_id
+         FROM orders
+         WHERE order_id = $1 AND user_id = $2
+         FOR UPDATE`,
+        [orderId, userId]
+      );
+      const order = orderRes.rows[0];
+
+      const finish = async (payload: object, status = 200) => {
+        await client.query("COMMIT");
+        return Response.json(payload, { status });
+      };
+
+      if (!order) {
+        return finish({ error: "Order not found." }, 404);
+      }
+
+      if (order.payment_method !== type) {
+        return finish(
+          { error: "Payment method doesn't match this order." },
+          400
+        );
+      }
+
+      if (
+        order.payment_status === "paid" ||
+        order.payment_status === "processing"
+      ) {
+        return finish(
+          {
+            paymentStatus: order.payment_status,
+            error: "Payment is already paid or being processed.",
+          },
+          409
+        );
+      }
+
+      if (!["pending", "failed"].includes(order.payment_status)) {
+        return finish(
+          { error: "This order is not available for payment." },
+          409
+        );
+      }
+
+      const amount = Math.round(Number(order.total_amount) * 100);
+      const sourceType = type === "grabpay" ? "grab_pay" : "gcash";
+
+      if (!Number.isSafeInteger(amount) || amount <= 0) {
+        throw new Error("Invalid order amount");
+      }
+
+      const matchesOrder = (source: PaymongoSource) =>
+        source.attributes.amount === amount &&
+        source.attributes.currency === "PHP" &&
+        source.attributes.type === sourceType;
+
+      if (order.paymongo_source_id) {
+        const existing = await requestSource(
+          `https://api.paymongo.com/v1/sources/${encodeURIComponent(
+            order.paymongo_source_id
+          )}`
+        );
+
+        if (
+          existing.id !== order.paymongo_source_id ||
+          !matchesOrder(existing)
+        ) {
+          throw new Error("Saved payment source does not match the order");
+        }
+
+        const status = existing.attributes.status;
+
+        if (status === "pending") {
+          const checkoutUrl = existing.attributes.redirect?.checkout_url;
+          if (!checkoutUrl) {
+            throw new Error("Existing payment link is unavailable");
+          }
+
+          // Repair a previous locally marked failure when PayMongo
+          // confirms this same source is still pending.
+          await client.query(
+            `UPDATE orders SET payment_status = 'pending'
+             WHERE order_id = $1 AND user_id = $2`,
+            [orderId, userId]
+          );
+
+          return finish({
+            checkoutUrl,
+            paymentStatus: "pending",
+            reused: true,
+          });
+        }
+
+        if (status === "chargeable" || status === "paid") {
+          // Do not claim database processing here: the webhook owns
+          // that claim and finalizes the payment.
+          return finish(
+            {
+              paymentStatus: "processing",
+              error: "Payment confirmation is in progress. Check status.",
+            },
+            409
+          );
+        }
+
+        if (!TERMINAL_SOURCE_STATUSES.includes(status)) {
+          throw new Error("Existing payment outcome is unresolved");
+        }
+      }
+
+      // Create only when there is no source, or the previous source
+      // has a confirmed terminal failure/expiry.
+      const source = await requestSource(
+        "https://api.paymongo.com/v1/sources",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            data: {
+              attributes: {
+                amount,
+                currency: "PHP",
+                type: sourceType,
+                redirect: {
+                  success: `${appUrl}/order-confirmation?orderId=${orderId}`,
+                  failed: `${appUrl}/checkout?payment=failed&orderId=${orderId}`,
+                },
+              },
+            },
+          }),
+        }
+      );
+
+      const checkoutUrl = source.attributes.redirect?.checkout_url;
+
+      if (
+        !matchesOrder(source) ||
+        source.attributes.status !== "pending" ||
+        !checkoutUrl
+      ) {
+        throw new Error("New payment source is not usable");
+      }
+
+      await client.query(
+        `UPDATE orders
+         SET paymongo_source_id = $1, payment_status = 'pending'
+         WHERE order_id = $2 AND user_id = $3`,
+        [source.id, orderId, userId]
+      );
+
+      // Save before exposing the payment link to the customer.
+      return finish({
+        checkoutUrl,
+        paymentStatus: "pending",
+        reused: false,
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error("PayMongo source request failed:", error);
-    return Response.json({ error: "Payment initiation failed." }, { status: 502 });
+    return Response.json(
+      { error: "Unable to start or resume payment. Please check again." },
+      { status: 502 }
+    );
   }
-
-  if (!res.ok) {
-    console.error("PayMongo rejected source creation:", source?.errors);
-    return Response.json({ error: "Payment initiation failed." }, { status: 400 });
-  }
-
-  // 7. Save the source ID on this user's order only
-  await pool.query(
-    `UPDATE orders SET paymongo_source_id = $1 WHERE order_id = $2 AND user_id = $3`,
-    [source.data.id, order.order_id, userId]
-  );
-
-  return Response.json({ checkoutUrl: source.data.attributes.redirect.checkout_url });
 }

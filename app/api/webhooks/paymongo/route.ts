@@ -1,3 +1,5 @@
+// app/api/webhooks/paymongo/route.ts
+
 import { verifyPaymongoSignature } from "@/lib/paymongo";
 import { pool } from "@/lib/db";
 import { sendOrderConfirmationEmail } from "@/lib/email";
@@ -36,13 +38,15 @@ export async function POST(req: Request) {
     // CLAIM the order before charging. This single UPDATE is atomic, so if two
     // webhook deliveries arrive at the same moment, only one of them gets
     // rowCount = 1 and is allowed to call PayMongo.
-    const previousStatus = order.payment_status;
     const claim = await pool.query(
       `UPDATE orders SET payment_status = 'processing'
-       WHERE order_id = $1 AND payment_status NOT IN ('paid', 'processing')
-       RETURNING order_id`,
-      [order.order_id]
+      WHERE order_id = $1
+        AND paymongo_source_id = $2
+        AND payment_status IN ('pending', 'failed')
+      RETURNING order_id`,
+      [order.order_id, sourceId]
     );
+
     if (claim.rowCount === 0) {
       return new Response("ok", { status: 200 });
     }
@@ -65,18 +69,24 @@ export async function POST(req: Request) {
         }),
       });
       payment = await payRes.json();
-    } catch (e) {
-      // Couldn't reach PayMongo: release the claim so a retry can try again,
-      // then return an error so PayMongo redelivers the webhook.
-      await pool.query(
-        `UPDATE orders SET payment_status = $2
-         WHERE order_id = $1 AND payment_status = 'processing'`,
-        [order.order_id, previousStatus]
+    } catch (error) {
+      console.error(
+        `Order ${order.order_id}, source ${sourceId}: payment outcome unknown`,
+        error
       );
-      throw e;
-    }
 
-    if (payRes.ok && payment.data.attributes.status === "paid") {
+      return new Response("Payment outcome requires verification", {
+        status: 500,
+      });
+    }
+    const paymentAttributes = payment?.data?.attributes;
+    const verifiedPayment =
+      payRes.ok &&
+      typeof payment?.data?.id === "string" &&
+      paymentAttributes?.amount === paidCentavos &&
+      paymentAttributes?.currency === "PHP";
+
+    if (verifiedPayment && paymentAttributes.status === "paid") {
       const client = await pool.connect();
       let itemsForEmail: { name: string; quantity: number; price: number }[] = [];
       let userEmail: string | undefined;
@@ -84,12 +94,14 @@ export async function POST(req: Request) {
       try {
         await client.query("BEGIN");
 
-        const upd = await client.query(
-          `UPDATE orders SET payment_status = 'paid'
-          WHERE order_id = $1 AND payment_status != 'paid'
-          RETURNING user_id`,
-          [order.order_id]
-        );
+      const upd = await client.query(
+        `UPDATE orders SET payment_status = 'paid'
+        WHERE order_id = $1
+          AND paymongo_source_id = $2
+          AND payment_status = 'processing'
+        RETURNING user_id`,
+        [order.order_id, sourceId]
+      );
 
         // Only runs the first time (guards against duplicate webhook deliveries)
         if (upd.rows.length > 0) {
@@ -174,11 +186,23 @@ export async function POST(req: Request) {
           console.error(`Order ${order.order_id} paid, but confirmation email failed:`, emailError);
         }
       }
-    } else {
+    } else if (verifiedPayment && paymentAttributes.status === "failed") {
       await pool.query(
-        `UPDATE orders SET payment_status = 'failed' WHERE order_id = $1`,
-        [order.order_id]
+        `UPDATE orders SET payment_status = 'failed'
+        WHERE order_id = $1
+          AND paymongo_source_id = $2
+          AND payment_status = 'processing'`,
+        [order.order_id, sourceId]
       );
+    } else {
+      console.error(
+        `Order ${order.order_id}, source ${sourceId}: unresolved payment response`,
+        { httpStatus: payRes.status, paymentId: payment?.data?.id }
+      );
+
+      return new Response("Payment outcome requires verification", {
+        status: 500,
+      });
     }
   }
 

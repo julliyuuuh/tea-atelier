@@ -2,59 +2,179 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getUserId } from "@/lib/api-auth";
 
-// A pending order older than this is treated as abandoned
-const ABANDONED_AFTER_MS = 60 * 60 * 1000; // 1 hour
-
 export async function POST(req: Request) {
   const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { orderId, redirectFailed } = await req.json();
-
-  const orderRes = await pool.query(
-    `SELECT order_id, payment_status, paymongo_source_id, created_at
-     FROM orders WHERE order_id = $1 AND user_id = $2`,
-    [orderId, userId]
-  );
-  const order = orderRes.rows[0];
-  if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
-
-  if (order.payment_status !== "pending" || !order.paymongo_source_id) {
-    return NextResponse.json({ paymentStatus: order.payment_status });
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const res = await fetch(`https://api.paymongo.com/v1/sources/${order.paymongo_source_id}`, {
-    headers: {
-      Authorization: "Basic " + Buffer.from(process.env.PAYMONGO_SECRET_KEY + ":").toString("base64"),
-    },
-  });
-  const source = await res.json();
-  const sourceStatus = source.data?.attributes?.status;
+  const body = await req.json().catch(() => null);
+  const orderId = Number(body?.orderId);
 
-  const markFailed = async () => {
-    await pool.query(
-      `UPDATE orders SET payment_status = 'failed' WHERE order_id = $1 AND payment_status = 'pending'`,
-      [orderId]
+  if (!Number.isSafeInteger(orderId) || orderId <= 0) {
+    return NextResponse.json(
+      { error: "Invalid order ID." },
+      { status: 400 }
     );
-    return NextResponse.json({ paymentStatus: "failed" });
-  };
-
-  if (sourceStatus === "expired" || sourceStatus === "failed" || sourceStatus === "cancelled") {
-    return markFailed();
   }
 
-  // Customer came back through the failed redirect and the source never became
-  // chargeable: treat as failed. A "chargeable" source is excluded on purpose,
-  // because the webhook is about to charge it.
-  if (redirectFailed === true && sourceStatus === "pending") {
-    return markFailed();
-  }
+  try {
+    const readOrder = async () => {
+      const result = await pool.query(
+        `SELECT order_id, payment_status, paymongo_source_id
+         FROM orders
+         WHERE order_id = $1 AND user_id = $2`,
+        [orderId, userId]
+      );
 
-  // Abandoned: still pending long after it was created
-  const ageMs = Date.now() - new Date(order.created_at).getTime();
-  if (sourceStatus === "pending" && ageMs > ABANDONED_AFTER_MS) {
-    return markFailed();
-  }
+      return result.rows[0];
+    };
 
-  return NextResponse.json({ paymentStatus: "pending" });
+    const order = await readOrder();
+
+    if (!order) {
+      return NextResponse.json(
+        { error: "Order not found." },
+        { status: 404 }
+      );
+    }
+
+    if (
+      order.payment_status === "paid" ||
+      order.payment_status === "processing"
+    ) {
+      return NextResponse.json({
+        paymentStatus: order.payment_status,
+      });
+    }
+
+    // No source has been saved yet. Source creation is handled separately.
+    if (!order.paymongo_source_id) {
+      return NextResponse.json({
+        paymentStatus: order.payment_status,
+      });
+    }
+
+    const secretKey = process.env.PAYMONGO_SECRET_KEY;
+
+    if (!secretKey) {
+      return NextResponse.json(
+        { error: "Unable to verify payment. Please check again." },
+        { status: 503 }
+      );
+    }
+
+    const sourceId = order.paymongo_source_id;
+
+    const res = await fetch(
+      `https://api.paymongo.com/v1/sources/${encodeURIComponent(sourceId)}`,
+      {
+        headers: {
+          Authorization:
+            "Basic " + Buffer.from(secretKey + ":").toString("base64"),
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(15000),
+      }
+    );
+
+    const source = await res.json().catch(() => null);
+
+    if (!res.ok || source?.data?.id !== sourceId) {
+      return NextResponse.json(
+        { error: "Unable to verify payment. Please check again." },
+        { status: 502 }
+      );
+    }
+
+    const sourceStatus = source.data.attributes?.status;
+
+    // A webhook or another request may have changed the order during fetch.
+    const latest = await readOrder();
+
+    if (!latest) {
+      return NextResponse.json(
+        { error: "Order not found." },
+        { status: 404 }
+      );
+    }
+
+    if (
+      latest.payment_status === "paid" ||
+      latest.payment_status === "processing"
+    ) {
+      return NextResponse.json({
+        paymentStatus: latest.payment_status,
+      });
+    }
+
+    if (latest.paymongo_source_id !== sourceId) {
+      return NextResponse.json(
+        { error: "Payment attempt changed. Please check again." },
+        { status: 409 }
+      );
+    }
+
+    if (
+      sourceStatus === "expired" ||
+      sourceStatus === "failed" ||
+      sourceStatus === "cancelled"
+    ) {
+      const updated = await pool.query(
+        `UPDATE orders
+         SET payment_status = 'failed'
+         WHERE order_id = $1
+           AND user_id = $2
+           AND paymongo_source_id = $3
+           AND payment_status IN ('pending', 'failed')
+         RETURNING payment_status`,
+        [orderId, userId, sourceId]
+      );
+
+      if (updated.rows.length > 0) {
+        return NextResponse.json({ paymentStatus: "failed" });
+      }
+
+      // Never report failure if a webhook won the race.
+      const current = await readOrder();
+
+      if (
+        current?.payment_status === "paid" ||
+        current?.payment_status === "processing"
+      ) {
+        return NextResponse.json({
+          paymentStatus: current.payment_status,
+        });
+      }
+
+      return NextResponse.json(
+        { error: "Payment status changed. Please check again." },
+        { status: 409 }
+      );
+    }
+
+    if (sourceStatus === "chargeable") {
+      // This is a UI status only. The webhook must claim the database
+      // processing status itself before creating the payment.
+      return NextResponse.json({ paymentStatus: "processing" });
+    }
+
+    if (sourceStatus === "pending") {
+      return NextResponse.json({ paymentStatus: "pending" });
+    }
+
+    // An unknown provider status must not enable another payment attempt.
+    return NextResponse.json(
+      { error: "Payment outcome is unresolved. Please check again." },
+      { status: 502 }
+    );
+  } catch (error) {
+    console.error("Payment status check failed:", error);
+
+    return NextResponse.json(
+      { error: "Unable to verify payment. Please check again." },
+      { status: 502 }
+    );
+  }
 }

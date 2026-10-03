@@ -1,144 +1,258 @@
 "use client";
+
 import Link from "next/link";
-import { Suspense, useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import PhAddressFields, {
-  PhAddress,
-  isAddressComplete,
-} from "@/components/checkout/PhAddressFields";
+import PhAddressFields, { PhAddress, isAddressComplete } from "@/components/checkout/PhAddressFields";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { DELIVERY_FEE } from "@/lib/shipping";
+
 const CHECKOUT_ATTEMPT_STORAGE = "tea-atelier.checkout-attempt.v1";
+const CHECKOUT_ORDER_STORAGE = "tea-atelier.checkout-order.v1";
+type PaymentStatus = "pending" | "processing" | "paid" | "failed";
+type SummaryItem = { name: string; quantity: number; price: number };
+type SavedOrder = {
+  accountEmail: string;
+  orderId: number;
+  paymentMethod: "gcash" | "grabpay" | null;
+  subtotal: number | null;
+  deliveryFee: number | null;
+  total: number | null;
+  items: SummaryItem[];
+};
+
+function isPaymentStatus(value: unknown): value is PaymentStatus {
+  return typeof value === "string" && ["pending", "processing", "paid", "failed"].includes(value);
+}
 
 function CheckoutContent() {
   const { items, subtotal, clearCart } = useCart();
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const returnOrderId = searchParams.get("orderId");
+  const accountEmail = user?.email;
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const paymentRedirectedRef = useRef(false);
+  const activeOrderRef = useRef<SavedOrder | null>(null);
+  const [activeOrder, setActiveOrder] = useState<SavedOrder | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | "unknown">("unknown");
+  const [checking, setChecking] = useState(false);
+  const [restored, setRestored] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  const statusSequenceRef = useRef(0);
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [formData, setFormData] = useState({ fullName: "", email: "", phone: "" });
+  const [address, setAddress] = useState<PhAddress>({
+    province: null, city: null, barangay: null, street: "",
+  });
+
+  const rememberOrder = useCallback((order: SavedOrder) => {
+    activeOrderRef.current = order;
+    setActiveOrder(order);
+    if (order.paymentMethod) setPaymentMethod(order.paymentMethod);
+    // Keep the in-memory order even if browser storage is unavailable.
+    try { sessionStorage.setItem(CHECKOUT_ORDER_STORAGE, JSON.stringify(order)); }
+    catch { setPaymentError("Keep this page open to resume this order."); }
+  }, []);
+
+  const checkOrder = useCallback(async (order: SavedOrder) => {
+    const sequence = ++statusSequenceRef.current;
+    setChecking(true);
+    setPaymentStatus("unknown");
+    setPaymentError("");
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Sign in to check this order.");
+      const res = await fetch("/api/payments/paymongo/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orderId: order.orderId }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(20000),
+      });
+      const result = await res.json();
+      if (!res.ok || !isPaymentStatus(result.paymentStatus)) {
+        throw new Error(result.error || "Unable to verify payment. Please check again.");
+      }
+      if (sequence === statusSequenceRef.current) setPaymentStatus(result.paymentStatus);
+      return result.paymentStatus as PaymentStatus;
+    } catch (error) {
+      if (sequence === statusSequenceRef.current) {
+        setPaymentError(error instanceof Error ? error.message : "Unable to verify payment.");
+      }
+      return null;
+    } finally {
+      if (sequence === statusSequenceRef.current) setChecking(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const handlePageShow = (event: PageTransitionEvent) => {
-      // Back from the provider can restore this component's locked state.
-      // Reset only a completed redirect, never an active order request.
-      if (!event.persisted || !paymentRedirectedRef.current) return;
+    if (user) setFormData((prev) => ({ ...prev, email: user.email }));
+  }, [user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const restore = async () => {
+      if (!accountEmail) {
+        activeOrderRef.current = null;
+        setActiveOrder(null);
+        setPaymentStatus("unknown");
+        setRestored(true);
+        return;
+      }
+      setRestored(false);
+      let saved: SavedOrder | null = null;
+      try {
+        const candidate = JSON.parse(sessionStorage.getItem(CHECKOUT_ORDER_STORAGE) || "null");
+        if (candidate?.accountEmail === accountEmail && Number.isSafeInteger(candidate.orderId) && candidate.orderId > 0 &&
+            ["gcash", "grabpay", null].includes(candidate.paymentMethod) && Array.isArray(candidate.items)) {
+          saved = candidate;
+        }
+      } catch { /* A return URL can still recover an order. */ }
+
+      const urlId = Number(returnOrderId);
+      const hasUrlOrder = !!returnOrderId && Number.isSafeInteger(urlId) && urlId > 0;
+      if (hasUrlOrder && saved?.orderId !== urlId) {
+        saved = { accountEmail, orderId: urlId, paymentMethod: null,
+          subtotal: null, deliveryFee: null, total: null, items: [] };
+      }
+      if (!saved) {
+        activeOrderRef.current = null;
+        setActiveOrder(null);
+        setPaymentStatus("unknown");
+        setRestored(true);
+        return;
+      }
+      rememberOrder(saved);
+
+      // Recover method and summary from the existing orders API when a
+      // provider return URL is opened without this tab's saved snapshot.
+      if (!saved.paymentMethod || saved.total === null) {
+        try {
+          const token = localStorage.getItem("token");
+          if (!token) throw new Error("Sign in to resume this order.");
+          for (let page = 1; !cancelled; page++) {
+            const res = await fetch(`/api/orders?page=${page}`, {
+              headers: { Authorization: `Bearer ${token}` }, cache: "no-store",
+              signal: AbortSignal.timeout(15000),
+            });
+            const data = await res.json();
+            if (!res.ok || !Array.isArray(data.orders)) throw new Error("Unable to load order details.");
+            const found = data.orders.find((entry: { id: number | string }) => Number(entry.id) === saved!.orderId);
+            if (found) {
+              saved = { ...saved, paymentMethod: ["gcash", "grabpay"].includes(found.paymentMethod) ? found.paymentMethod : null,
+                subtotal: Number(found.totalAmount) - Number(found.shippingCost),
+                deliveryFee: Number(found.shippingCost), total: Number(found.totalAmount), items: found.items };
+              if (!cancelled) rememberOrder(saved);
+              break;
+            }
+            if (page >= Number(data.totalPages)) break;
+          }
+        } catch { /* Status can still be checked; creation stays blocked. */ }
+      }
+      if (!cancelled) { setRestored(true); await checkOrder(saved); }
+    };
+
+    const handlePageShow = () => {
+      // Never unlock an active API request; unlock only a provider redirect.
+      if (submittingRef.current && !paymentRedirectedRef.current) return;
       paymentRedirectedRef.current = false;
       submittingRef.current = false;
       setIsSubmitting(false);
       setShowConfirm(false);
+      void restore();
     };
+    void restore();
     window.addEventListener("pageshow", handlePageShow);
-    return () => window.removeEventListener("pageshow", handlePageShow);
-  }, []);
-
-  const [saveAddress, setSaveAddress] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-  });
-  const [address, setAddress] = useState<PhAddress>({
-    province: null,
-    city: null,
-    barangay: null,
-    street: "",
-  });
-  const paymentFailedFlag = searchParams.get("payment") === "failed";
-  const failedOrderId = searchParams.get("orderId");
-  const [paymentCheck, setPaymentCheck] = useState<
-    "failed" | "pending" | null
-  >(null);
-  // Remembered separately because the URL params are cleared after a
-  // confirmed failure
-  const [shownOrderId, setShownOrderId] = useState<string | null>(null);
-  useEffect(() => {
-    if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        email: user.email,
-      }));
-    }
-  }, [user]);
-  // The URL alone isn't trusted: ask the server (which asks PayMongo) what
-  // actually happened before showing the failure banner.
-  useEffect(() => {
-    if (!paymentFailedFlag || !failedOrderId) return;
-    setShownOrderId(failedOrderId);
-    let cancelled = false;
-    let attempts = 0;
-    let timer: ReturnType<typeof setTimeout>;
-    const token = localStorage.getItem("token");
-    const verify = async () => {
-      try {
-        const res = await fetch("/api/payments/paymongo/check", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({
-            orderId: Number(failedOrderId),
-            redirectFailed: true,
-          }),
-        });
-        if (!res.ok) throw new Error("Unable to check payment status");
-        const result = await res.json();
-        if (cancelled) return;
-        if (result.paymentStatus === "paid") {
-          router.replace(`/order-confirmation?orderId=${failedOrderId}`);
-          return;
-        }
-        if (result.paymentStatus === "failed") {
-          sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
-          setPaymentCheck("failed");
-          // Instant, client-only URL cleanup (no server round trip). Next.js
-          // keeps useSearchParams in sync with history.replaceState.
-          window.history.replaceState(null, "", "/checkout");
-          return;
-        }
-        // still pending/processing: PayMongo may not have updated yet
-        setPaymentCheck("pending");
-        if (attempts++ < 3) timer = setTimeout(verify, 2000);
-      } catch {
-        if (!cancelled) setPaymentCheck("pending");
-      }
-    };
-    verify();
     return () => {
       cancelled = true;
-      clearTimeout(timer);
+      ++statusSequenceRef.current;
+      window.removeEventListener("pageshow", handlePageShow);
     };
-  }, [paymentFailedFlag, failedOrderId, router]);
-  const total = subtotal + DELIVERY_FEE;
+  }, [accountEmail, returnOrderId, rememberOrder, checkOrder]);
+
+  const startPayment = async (order: SavedOrder, token: string) => {
+    if (!order.paymentMethod) throw new Error("Order details are unavailable. Check again or open your Orders page.");
+    const res = await fetch("/api/payments/paymongo/source", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ orderId: order.orderId, type: order.paymentMethod }),
+      signal: AbortSignal.timeout(40000),
+    });
+    const result = await res.json();
+    if (result.paymentStatus === "paid" || result.paymentStatus === "processing") {
+      setPaymentStatus(result.paymentStatus);
+      return false;
+    }
+    if (!res.ok || typeof result.checkoutUrl !== "string" || !result.checkoutUrl) {
+      throw new Error(result.error || "Unable to start or resume payment.");
+    }
+    setPaymentStatus("pending");
+    paymentRedirectedRef.current = true;
+    window.location.href = result.checkoutUrl;
+    return true;
+  };
+
+  const viewOrder = () => {
+    if (!activeOrder) return;
+    if (paymentStatus === "paid") {
+      try {
+        sessionStorage.removeItem(CHECKOUT_ORDER_STORAGE);
+        sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
+      } catch { /* Viewing the order remains available. */ }
+    }
+    router.push(`/order-confirmation?orderId=${activeOrder.orderId}`);
+  };
+
+  const handleExistingPayment = async (resume: boolean) => {
+    const order = activeOrderRef.current;
+    if (!order || submittingRef.current || checking) return;
+    const token = localStorage.getItem("token");
+    if (!user || !token) { router.push("/login"); return; }
+    submittingRef.current = true;
+    setIsSubmitting(true);
+    let navigating = false;
+    try {
+      const status = await checkOrder(order);
+      if (resume && (status === "pending" || status === "failed")) {
+        navigating = await startPayment(order, token);
+      }
+    } catch (error) {
+      setPaymentStatus("unknown");
+      setPaymentError(error instanceof Error ? error.message : "Unable to resume payment.");
+    } finally {
+      if (!navigating) { submittingRef.current = false; setIsSubmitting(false); }
+    }
+  };
+
+  const total = activeOrder?.total ?? subtotal + DELIVERY_FEE;
+  const displaySubtotal = activeOrder?.subtotal ?? subtotal;
+  const displayDeliveryFee = activeOrder?.deliveryFee ?? DELIVERY_FEE;
+  const summaryItems = activeOrder ? activeOrder.items : items.map((item) => ({
+    name: item.product.name, quantity: item.quantity, price: item.product.price,
+  }));
   const isCartEmpty = items.length === 0;
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    if (name === "phone") {
-      const digitsOnly = value.replace(/[^0-9]/g, "").slice(0, 11);
-      setFormData((prev) => ({ ...prev, phone: digitsOnly }));
-      return;
-    }
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: name === "phone" ? value.replace(/[^0-9]/g, "").slice(0, 11) : value }));
   };
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (submittingRef.current || isCartEmpty || !isAddressComplete(address)) return;
+    if (!restored || activeOrderRef.current || submittingRef.current || isCartEmpty || !isAddressComplete(address)) return;
     setShowConfirm(true);
   };
+
   const confirmOrder = async () => {
-    if (submittingRef.current) return;
+    if (!restored || activeOrderRef.current || submittingRef.current) return;
     const token = localStorage.getItem("token");
-    if (!user || !token) {
-      router.push("/login");
-      return;
-    }
+    if (!user || !token) { router.push("/login"); return; }
     if (isCartEmpty || !isAddressComplete(address)) return;
     submittingRef.current = true;
     setIsSubmitting(true);
@@ -146,102 +260,54 @@ function CheckoutContent() {
     let navigating = false;
     try {
       const orderPayload = {
-        street: address.street.trim(),
-        barangay: address.barangay?.name,
-        saveAddress,
+        street: address.street.trim(), barangay: address.barangay?.name, saveAddress,
         city: address.city?.name,
-        province:
-          address.province?.level !== "Prov" && address.province?.reg === 13
-            ? "Metro Manila"
-            : address.province?.name,
-        paymentMethod,
-        phone: formData.phone,
-        fullName: formData.fullName,
+        province: address.province?.level !== "Prov" && address.province?.reg === 13 ? "Metro Manila" : address.province?.name,
+        paymentMethod, phone: formData.phone, fullName: formData.fullName,
       };
-      // Reloads and uncertain request failures reuse this tab's request key.
-      // A changed cart/address/payment method represents a new checkout intent.
-      const fingerprint = JSON.stringify({
-        accountEmail: user.email,
-        orderPayload,
-        items: items.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-          price: item.product.price,
-        })).sort((a, b) => String(a.productId).localeCompare(String(b.productId))),
+      const fingerprint = JSON.stringify({ accountEmail: user.email, orderPayload,
+        items: items.map((item) => ({ productId: item.product.id, quantity: item.quantity, price: item.product.price }))
+          .sort((a, b) => String(a.productId).localeCompare(String(b.productId))),
       });
-      let previousAttempt: { key?: string; fingerprint?: string } | null = null;
-      try {
-        previousAttempt = JSON.parse(sessionStorage.getItem(CHECKOUT_ATTEMPT_STORAGE) || "null");
-      } catch {
-        // An unreadable stored entry is replaced below.
-      }
-      const requestKey = previousAttempt?.fingerprint === fingerprint &&
-        typeof previousAttempt.key === "string"
-        ? previousAttempt.key
-        : crypto.randomUUID();
+      let previous: { key?: string; fingerprint?: string } | null = null;
+      try { previous = JSON.parse(sessionStorage.getItem(CHECKOUT_ATTEMPT_STORAGE) || "null"); } catch { /* Replace malformed entry. */ }
+      const requestKey = previous?.fingerprint === fingerprint && typeof previous.key === "string" ? previous.key : crypto.randomUUID();
+      // Persist before POST, so an uncertain request can use the same key.
       sessionStorage.setItem(CHECKOUT_ATTEMPT_STORAGE, JSON.stringify({ key: requestKey, fingerprint }));
       const res = await fetch("/api/orders", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "Idempotency-Key": requestKey,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "Idempotency-Key": requestKey },
         body: JSON.stringify(orderPayload),
       });
       const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || "Unable to place order.");
-        return;
-      }
-      if (paymentMethod !== "cod" &&
-          (data.paymentStatus === "paid" || data.paymentStatus === "processing")) {
-        sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
-        navigating = true;
-        router.push(`/order-confirmation?orderId=${data.orderId}`);
-        return;
-      }
+      if (!res.ok) throw new Error(data.error || "Unable to place order.");
+      const orderId = Number(data.orderId);
+      if (!Number.isSafeInteger(orderId) || orderId <= 0) throw new Error("Invalid order response.");
       if (paymentMethod === "cod") {
         clearCart();
         sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
-        navigating = true;
-        router.push(`/order-confirmation?orderId=${data.orderId}`);
-      } else {
-        const src = await fetch("/api/payments/paymongo/source", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            orderId: data.orderId,
-            type: paymentMethod,
-          }),
-        });
-        const srcData = await src.json();
-        if (!src.ok) {
-          alert(srcData.error || "Payment initiation failed.");
-          return;
-        }
-        if (typeof srcData.checkoutUrl !== "string" || !srcData.checkoutUrl) {
-          throw new Error("Missing payment checkout URL");
-        }
-        // A later checkout after the provider redirect starts a fresh attempt.
-        sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
-        paymentRedirectedRef.current = true;
-        window.location.href = srcData.checkoutUrl;
-        navigating = true;
+        router.push(`/order-confirmation?orderId=${orderId}`);
+        return;
       }
-    } catch {
-      alert("Something went wrong. Please try again.");
+      const order: SavedOrder = {
+        accountEmail: user.email, orderId, paymentMethod: paymentMethod === "grabpay" ? "grabpay" : "gcash",
+        subtotal: Number(data.subtotal), deliveryFee: Number(data.deliveryFee), total: Number(data.total),
+        items: items.map((item) => ({ name: item.product.name, quantity: item.quantity, price: item.product.price })),
+      };
+      // Remember the order BEFORE source creation, including when that fails.
+      rememberOrder(order);
+      setPaymentStatus(isPaymentStatus(data.paymentStatus) ? data.paymentStatus : "unknown");
+      if (data.paymentStatus !== "paid" && data.paymentStatus !== "processing") {
+        navigating = await startPayment(order, token);
+      }
+    } catch (error) {
+      if (activeOrderRef.current) setPaymentStatus("unknown");
+      setPaymentError(error instanceof Error ? error.message : "Something went wrong. Please try again.");
     } finally {
-      if (!navigating) {
-        paymentRedirectedRef.current = false;
-        submittingRef.current = false;
-        setIsSubmitting(false);
-      }
+      if (!navigating) { submittingRef.current = false; setIsSubmitting(false); }
     }
   };
+
   return (
     <main className="min-h-screen bg-cream">
       <Navbar />
@@ -254,32 +320,25 @@ function CheckoutContent() {
             Complete your order
           </h1>
           <p className="font-body text-sm text-charcoal/70 max-w-2xl">
-            Enter your details and review your tea selection before placing the
-            order.
+            {activeOrder ? "Resume payment for your saved order." : "Enter your details and review your tea selection before placing the order."}
           </p>
         </div>
-        {paymentCheck === "failed" && (
-          <div className="mb-8 flex items-start justify-between gap-4 rounded-xl border border-red-300 bg-red-50 px-6 py-4">
-            <p className="font-body text-sm text-charcoal/80">
-              Your payment didn't go through for order #TA-{shownOrderId}.
-              Your cart items are still saved below, feel free to try again.
-            </p>
-            <button
-              type="button"
-              onClick={() => setPaymentCheck(null)}
-              aria-label="Dismiss"
-              className="text-charcoal/50 hover:text-charcoal"
-            >
-              ✕
-            </button>
+        {paymentError && (
+          <div role="alert" className="mb-8 rounded-xl border border-red-300 bg-red-50 px-6 py-4 font-body text-sm text-charcoal">
+            {paymentError}
           </div>
         )}
-        {paymentCheck === "pending" && (
-          <div className="mb-8 rounded-xl border border-sage/30 bg-sage/10 px-6 py-4">
-            <p className="font-body text-sm text-charcoal/80">
-              We're waiting for payment confirmation for order #TA-{shownOrderId}.
-              You can refresh your Orders page to check its latest payment status.
-            </p>
+        {activeOrder && (
+          <div aria-live="polite" className="mb-8 rounded-xl border border-sage/30 bg-sage/10 px-6 py-4 font-body text-sm text-charcoal">
+            <p className="font-semibold">Order #TA-{activeOrder.orderId}</p>
+            <p className="mt-2">{checking ? "Checking your payment..." :
+              paymentStatus === "paid" ? "Payment confirmed. You can view your order." :
+              paymentStatus === "processing" ? "Payment is being confirmed. Check its status before taking another action." :
+              paymentStatus === "failed" ? "Payment failed or expired. Retry payment for this same order." :
+              paymentStatus === "pending" ? "Your order is saved. Continue payment or check its status." :
+              "Payment status is unavailable. Check again before resuming."}</p>
+            <p className="mt-2">The delivery details and payment method belong to this saved order.</p>
+            {!activeOrder.paymentMethod && <p className="mt-2">Open your Orders page if the payment method cannot be recovered.</p>}
           </div>
         )}
         <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-10">
@@ -288,6 +347,7 @@ function CheckoutContent() {
             onSubmit={handleFormSubmit}
             className="space-y-8"
           >
+            <fieldset disabled={!!activeOrder || isSubmitting || !restored} className={activeOrder ? "hidden" : "space-y-8 disabled:opacity-70"}>
             <div className="bg-cream border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Customer Information
@@ -402,13 +462,14 @@ function CheckoutContent() {
                 </label>
               </div>
             </div>
+            </fieldset>
           </form>
           <aside className="space-y-8">
             <div className="bg-sand/40 border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">
                 Order Summary
               </h2>
-              {isCartEmpty ? (
+              {!activeOrder && isCartEmpty ? (
                 <div className="text-center py-6">
                   <p className="font-body text-sm text-charcoal/70 mb-6">
                     Your cart is empty. Add a few teas before checking out.
@@ -422,21 +483,21 @@ function CheckoutContent() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {items.map((item) => (
+                  {summaryItems.map((item, index) => (
                     <div
-                      key={item.product.id}
+                      key={`${item.name}-${index}`}
                       className="flex items-start justify-between gap-3 border-b border-charcoal/10 pb-4"
                     >
                       <div>
                         <p className="font-body text-sm text-charcoal">
-                          {item.product.name}
+                          {item.name}
                         </p>
                         <p className="font-body text-xs uppercase tracking-wide text-charcoal/60 mt-1">
                           Qty {item.quantity}
                         </p>
                       </div>
                       <p className="font-body text-sm text-charcoal">
-                        ₱{(item.product.price * item.quantity).toFixed(2)}
+                        ₱{(item.price * item.quantity).toFixed(2)}
                       </p>
                     </div>
                   ))}
@@ -445,25 +506,56 @@ function CheckoutContent() {
               <div className="mt-6 space-y-3 border-t border-charcoal/10 pt-6">
                 <div className="flex justify-between font-body text-sm text-charcoal/70">
                   <span>Subtotal</span>
-                  <span>₱{subtotal.toFixed(2)}</span>
+                  <span>{activeOrder && activeOrder.subtotal === null ? "Unavailable" : `₱${displaySubtotal.toFixed(2)}`}</span>
                 </div>
                 <div className="flex justify-between font-body text-sm text-charcoal/70">
                   <span>Delivery Fee</span>
-                  <span>₱{DELIVERY_FEE.toFixed(2)}</span>
+                  <span>{activeOrder && activeOrder.deliveryFee === null ? "Unavailable" : `₱${displayDeliveryFee.toFixed(2)}`}</span>
                 </div>
                 <div className="flex justify-between font-display text-lg text-charcoal pt-3 border-t border-charcoal/10">
                   <span>Total Amount</span>
-                  <span>₱{total.toFixed(2)}</span>
+                  <span>{activeOrder && activeOrder.total === null ? "Unavailable" : `₱${total.toFixed(2)}`}</span>
                 </div>
               </div>
-              <button
-                type="submit"
-                form="checkout-form"
-                disabled={isCartEmpty || isSubmitting}
-                className="w-full mt-8 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"
-              >
-                {isSubmitting ? "Processing..." : "Place Order"}
-              </button>
+              {activeOrder ? (
+                <div className="mt-8 space-y-3">
+                  <button
+                    type="button"
+                    disabled={!restored || isSubmitting || checking}
+                    onClick={() => {
+                      if (paymentStatus === "paid") viewOrder();
+                      else if (!activeOrder.paymentMethod && paymentStatus !== "processing") window.location.reload();
+                      else void handleExistingPayment(
+                        !!activeOrder.paymentMethod && (paymentStatus === "pending" || paymentStatus === "failed")
+                      );
+                    }}
+                    className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"
+                  >
+                    {!restored || checking ? "Checking..." : isSubmitting ? "Processing..." :
+                      paymentStatus === "paid" ? "View Order" :
+                      paymentStatus === "processing" ? "Check Status" :
+                      !activeOrder.paymentMethod ? "Reload Order Details" :
+                      paymentStatus === "unknown" ? "Check Again" :
+                      paymentStatus === "failed" ? "Retry Payment" : "Continue Payment"}
+                  </button>
+                  {(paymentStatus === "pending" || paymentStatus === "failed") && (
+                    <button type="button" disabled={!restored || checking || isSubmitting}
+                      onClick={() => void handleExistingPayment(false)}
+                      className="w-full rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 disabled:opacity-50">
+                      Check Status
+                    </button>
+                  )}
+                  <Link href={`/order-confirmation?orderId=${activeOrder.orderId}`} className="block text-center font-body text-sm text-sage underline">
+                    View Order Details
+                  </Link>
+                </div>
+              ) : (
+                <button type="submit" form="checkout-form"
+                  disabled={!restored || isCartEmpty || isSubmitting}
+                  className="w-full mt-8 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30">
+                  {!restored ? "Checking..." : isSubmitting ? "Processing..." : "Place Order"}
+                </button>
+              )}
             </div>
           </aside>
         </div>
