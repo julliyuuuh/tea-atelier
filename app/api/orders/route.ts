@@ -11,25 +11,39 @@ function isValidText(value: unknown, maxLength: number, required = false): boole
   if (value === undefined || value === null || value === "") return !required;
   return typeof value === "string" && value.length <= maxLength && (!required || value.trim().length > 0);
 }
+
 export async function GET(req: Request) {
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const url = new URL(req.url);
-  // Guard against ?page=abc, ?page=-3, ?page=0 (would produce an invalid OFFSET)
-  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
+  const requestedPage = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
+  const tab = url.searchParams.get("tab") || "all";
+  const isCancelled = "(payment_status = 'cancelled' OR order_status = 'CANCELLED')";
+  const notCancelled = "(payment_status IS DISTINCT FROM 'cancelled' AND order_status IS DISTINCT FROM 'CANCELLED')";
+  const filters: Record<string, string> = {
+    all: "TRUE",
+    orders: `${notCancelled} AND (payment_method = 'cod' OR payment_status = 'paid')`,
+    cancelled: isCancelled,
+    unpaid: `${notCancelled} AND payment_method IS DISTINCT FROM 'cod' AND payment_status IS DISTINCT FROM 'paid'`,
+  };
+  if (!Object.prototype.hasOwnProperty.call(filters, tab)) {
+    return NextResponse.json({ error: "Invalid orders tab." }, { status: 400 });
+  }
+  const filter = filters[tab];
   const pageSize = 4;
-  const offset = (page - 1) * pageSize;
   const countResult = await pool.query(
-    "SELECT COUNT(*) FROM orders WHERE user_id = $1",
+    `SELECT COUNT(*) FROM orders WHERE user_id = $1 AND (${filter})`,
     [userId]
   );
   const totalOrders = parseInt(countResult.rows[0].count, 10);
-  const totalPages = Math.ceil(totalOrders / pageSize);
+  const totalPages = Math.max(1, Math.ceil(totalOrders / pageSize));
+  const page = Math.min(requestedPage, totalPages);
+  const offset = (page - 1) * pageSize;
   const ordersResult = await pool.query(
     `SELECT order_id, shipping_cost, total_amount, order_status, payment_status, payment_method, recipient_name, created_at
     FROM orders
-    WHERE user_id = $1
-    ORDER BY created_at DESC
+    WHERE user_id = $1 AND (${filter})
+    ORDER BY created_at DESC, order_id DESC
     LIMIT $2 OFFSET $3`,
     [userId, pageSize, offset]
   );
@@ -60,8 +74,9 @@ export async function GET(req: Request) {
       };
     })
   );
-  return NextResponse.json({ orders, totalPages, currentPage: page });
+  return NextResponse.json({ orders, totalPages, currentPage: page, tab });
 }
+
 export async function POST(req: Request) {
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
