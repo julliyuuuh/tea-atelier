@@ -1099,16 +1099,52 @@ function OrdersTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, refreshKey, activeTab]);
   const tabNavigation = (
-    <div role="tablist" aria-label="Order categories" className="flex flex-wrap gap-2 border-b border-charcoal/10 pb-4 mb-6">
-      {([{ key: "orders", label: "Orders" }, { key: "cancelled", label: "Cancelled" }, { key: "unpaid", label: "Unpaid" }] as const).map((tab) => (
-        <button key={tab.key} type="button" role="tab" id={`orders-tab-${tab.key}`}
-          aria-selected={activeTab === tab.key} aria-controls="orders-category-panel"
-          disabled={cancellingId !== null || payingId !== null}
-          onClick={() => { setActiveTab(tab.key); setPage(1); setOrders([]); setIsLoading(true); setCancelError(""); setCancelTarget(null); }}
-          className={`rounded-full px-5 py-2 font-body text-sm transition-colors disabled:opacity-40 ${activeTab === tab.key ? "bg-sage text-cream" : "border border-charcoal/15 text-charcoal hover:bg-sand/40"}`}>
-          {tab.label}
-        </button>
-      ))}
+    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-charcoal/10 pb-4 mb-6">
+      <div
+        role="tablist"
+        aria-label="Order categories"
+        className="flex flex-wrap gap-2"
+      >
+        {([
+          { key: "orders", label: "Orders" },
+          { key: "cancelled", label: "Cancelled" },
+          { key: "unpaid", label: "Unpaid" },
+        ] as const).map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            id={`orders-tab-${tab.key}`}
+            aria-selected={activeTab === tab.key}
+            aria-controls="orders-category-panel"
+            disabled={cancellingId !== null || payingId !== null}
+            onClick={() => {
+              setActiveTab(tab.key);
+              setPage(1);
+              setOrders([]);
+              setIsLoading(true);
+              setCancelError("");
+              setCancelTarget(null);
+            }}
+            className={`rounded-full px-5 py-2 font-body text-sm transition-colors disabled:opacity-40 ${
+              activeTab === tab.key
+                ? "bg-sage text-cream"
+                : "border border-charcoal/15 text-charcoal hover:bg-sand/40"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setRefreshKey((value) => value + 1)}
+        disabled={isLoading || cancellingId !== null || payingId !== null}
+        className="ml-auto shrink-0 rounded-full border border-charcoal/20 px-5 py-2 font-body text-sm text-charcoal hover:bg-sand/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Refresh Orders
+      </button>
     </div>
   );
   if (isLoading) return <div>{tabNavigation}<OrderSkeleton /></div>;
@@ -1121,16 +1157,6 @@ function OrdersTab() {
     <div>
       {tabNavigation}
       <div id="orders-category-panel" role="tabpanel" aria-labelledby={`orders-tab-${activeTab}`}>
-      <div className="flex justify-end mb-4">
-        <button
-          type="button"
-          onClick={() => setRefreshKey((value) => value + 1)}
-          disabled={cancellingId !== null || payingId !== null}
-          className="rounded-full border border-charcoal/20 px-5 py-2 font-body text-sm text-charcoal hover:bg-sand/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Refresh Orders
-        </button>
-      </div>
       {cancelError && <p role="alert" className="mb-6 rounded-xl border border-red-300 bg-red-50 p-4 font-body text-sm text-charcoal">{cancelError}</p>}
       {cancellingId !== null && <p role="status" className="mb-6 font-body text-sm text-charcoal/70">Checking cancellation for order #TA-{cancellingId}...</p>}
       {payingId !== null && <p role="status" className="mb-6 font-body text-sm text-charcoal/70">Opening payment for order #TA-{payingId}...</p>}
