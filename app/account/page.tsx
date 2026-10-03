@@ -10,6 +10,12 @@ import ConfirmDialog from "@/components/account/ConfirmDialog";
 import Badge from "@/components/account/Badge";
 import FormField from "@/components/account/FormField";
 import { getStatusLabel } from "@/lib/order-status";
+import PhAddressFields, {
+  PhAddress,
+  EMPTY_PH_ADDRESS,
+  isAddressComplete,
+  toAddressPayload,
+} from "@/components/checkout/PhAddressFields";
 import {
   AddressSkeleton,
   OrderSkeleton,
@@ -296,11 +302,7 @@ function ProfileTab() {
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [addingAddress, setAddingAddress] = useState(false);
   const [savingAddress, setSavingAddress] = useState(false);
-  const [newAddress, setNewAddress] = useState({
-    addressLine1: "",
-    addressLine2: "",
-    addressLine3: "",
-  });
+  const [newAddress, setNewAddress] = useState<PhAddress>(EMPTY_PH_ADDRESS);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
     null,
   );
@@ -361,6 +363,11 @@ function ProfileTab() {
     }
     if (user) loadAddresses();
   }, [user]);
+
+  // clear the new-address form whenever it closes (after saving, cancelling or toggling)
+  useEffect(() => {
+    if (!addingAddress) setNewAddress(EMPTY_PH_ADDRESS);
+  }, [addingAddress]);
 
   const uploadAvatarFile = async (
     file: File,
@@ -471,7 +478,7 @@ function ProfileTab() {
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAddress.addressLine1.trim()) return;
+    if (!isAddressComplete(newAddress)) return;
 
     setSavingAddress(true);
     const token = localStorage.getItem("token");
@@ -483,13 +490,17 @@ function ProfileTab() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(newAddress),
+        body: JSON.stringify(toAddressPayload(newAddress)),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to save address.");
 
-      setAddresses((prev) => [...prev, data.address]);
-      setNewAddress({ addressLine1: "", addressLine2: "", addressLine3: "" });
+      // saving an address that's already in the list shouldn't add a second copy
+      setAddresses((prev) =>
+        prev.some((a) => a.address_id === data.address.address_id)
+          ? prev
+          : [...prev, data.address],
+      );
       setAddingAddress(false);
     } catch (error) {
       console.error(error);
@@ -766,51 +777,14 @@ function ProfileTab() {
             <AnimatePresence>
               {addingAddress && (
                 <motion.form
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2 }}
                   onSubmit={handleAddAddress}
-                  className="space-y-4 border-t border-charcoal/10 pt-6 overflow-hidden"
+                  className="space-y-6 border-t border-charcoal/10 pt-6"
                 >
-                  <div className="grid grid-cols-1 gap-4">
-                    <input
-                      type="text"
-                      placeholder="Address Line 1 (Street, Building, Unit)"
-                      value={newAddress.addressLine1}
-                      onChange={(e) =>
-                        setNewAddress((prev) => ({
-                          ...prev,
-                          addressLine1: e.target.value,
-                        }))
-                      }
-                      required
-                      className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Address Line 2 (Barangay, City)"
-                      value={newAddress.addressLine2}
-                      onChange={(e) =>
-                        setNewAddress((prev) => ({
-                          ...prev,
-                          addressLine2: e.target.value,
-                        }))
-                      }
-                      className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Address Line 3 (Province, Postal Code)"
-                      value={newAddress.addressLine3}
-                      onChange={(e) =>
-                        setNewAddress((prev) => ({
-                          ...prev,
-                          addressLine3: e.target.value,
-                        }))
-                      }
-                      className="rounded-xl border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-                    />
-                  </div>
+                  <PhAddressFields onChange={setNewAddress} />
                   <div className="flex gap-3">
                     <motion.button
                       whileTap={{ scale: 0.98 }}

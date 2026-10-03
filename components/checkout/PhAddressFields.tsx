@@ -20,10 +20,24 @@ export type PhAddress = {
   street: string;
 };
 
-const EMPTY: PhAddress = { province: null, city: null, barangay: null, street: "" };
+export const EMPTY_PH_ADDRESS: PhAddress = { province: null, city: null, barangay: null, street: "" };
 
 export const isAddressComplete = (a: PhAddress) =>
   !!(a.province && a.city && a.barangay && a.street.trim());
+
+// The strings the API stores. NCR cities sit at province level in PSGC, so
+// they're saved with "Metro Manila" as the province.
+export function toAddressPayload(a: PhAddress) {
+  return {
+    street: a.street.trim(),
+    barangay: a.barangay?.name,
+    city: a.city?.name,
+    province:
+      a.province && a.province.level !== "Prov" && a.province.reg === 13
+        ? "Metro Manila"
+        : a.province?.name,
+  };
+}
 
 // "Unit 4, Sampaguita St., Barangay X, City, Province" (HUCs don't repeat the city)
 export function formatAddress(a: PhAddress) {
@@ -310,7 +324,7 @@ export default function PhAddressFields({
 }: {
   onChange: (address: PhAddress) => void;
 }) {
-  const [addr, setAddr] = useState<PhAddress>(EMPTY);
+  const [addr, setAddr] = useState<PhAddress>(EMPTY_PH_ADDRESS);
 
   function update(patch: Partial<PhAddress>) {
     const next = { ...addr, ...patch };
