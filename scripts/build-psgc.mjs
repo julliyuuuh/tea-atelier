@@ -156,6 +156,26 @@ if (provinces.length === 0) {
 }
 console.log(`${provinces.length} provinces / highly urbanized cities\n`);
 
+// Some places (Pateros in NCR, for one) are filed as municipalities, but their
+// prv isn't a province or a HUC, so the two lists above miss them. Sweep the full
+// municipalities list once and add anything that no existing entry covers.
+console.log("Checking for municipalities not covered by any province...");
+const coveredPrv = new Set(provinces.map((p) => `${p.reg}:${p.prv}`));
+const knownCodes = new Set(provinces.map((p) => p.code));
+const extras = new Map();
+for (const r of await fetchAll("municipalities")) {
+  if (!ISLANDS.includes(r.island_region)) continue;
+  if (knownCodes.has(r.code) || coveredPrv.has(`${r.reg}:${r.prv}`)) continue;
+  extras.set(r.code, slim(r));
+}
+if (extras.size > 0) {
+  provinces.push(...extras.values());
+  provinces.sort(byName);
+  console.log(`Added ${extras.size} not covered by a province: ${[...extras.values()].map((e) => e.name).join(", ")}\n`);
+} else {
+  console.log("None found.\n");
+}
+
 const cities = [];
 const barangays = []; // compact tuples: [code, name, reg, prv, mun]
 const noBarangays = [];
@@ -165,7 +185,7 @@ mkdirSync(CACHE_DIR, { recursive: true });
 
 for (const [i, p] of provinces.entries()) {
   const tag = `[${i + 1}/${provinces.length}] ${p.name}`;
-  const cacheFile = `${CACHE_DIR}/${p.reg}-${p.prv}.json`;
+  const cacheFile = `${CACHE_DIR}/${p.reg}-${p.prv}${p.mun ? `-${p.mun}` : ""}.json`;
   let entry = null;
 
   if (existsSync(cacheFile)) {
@@ -194,7 +214,7 @@ for (const [i, p] of provinces.entries()) {
       // Everything filed under this prv. For HUCs like Manila this includes the
       // barangays that sit under its districts.
       const bRows = (await fetchAll("barangays", { prv: String(p.prv) }))
-        .filter((r) => r.reg === p.reg && r.prv === p.prv)
+        .filter((r) => r.reg === p.reg && r.prv === p.prv && (p.mun === 0 || r.mun === p.mun))
         .map((r) => [r.code, r.area_name, r.reg, r.prv, r.mun]);
 
       entry = { cities: cityRows, barangays: bRows };

@@ -5,11 +5,11 @@
   "islandGroups": [
     "L"
   ],
-  "generatedAt": "2026-10-02T07:35:21.468Z",
+  "generatedAt": "2026-10-03T12:31:10.749Z",
   "counts": {
-    "provincesAndHucs": 59,
+    "provincesAndHucs": 60,
     "citiesAndMunicipalities": 749,
-    "barangays": 20489
+    "barangays": 20499
   },
   "note": "Filtered by island group and reduced to code and name fields."
 }

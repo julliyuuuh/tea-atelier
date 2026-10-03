@@ -50,6 +50,7 @@
 {"code":"305400000","name":"Pampanga","level":"Prov","reg":3,"prv":54,"mun":0},
 {"code":"105500000","name":"Pangasinan","level":"Prov","reg":1,"prv":55,"mun":0},
 {"code":"1381100000","name":"Pasay City","level":"City","reg":13,"prv":811,"mun":0},
+{"code":"1381701000","name":"Pateros","level":"Mun","reg":13,"prv":817,"mun":1},
 {"code":"405600000","name":"Quezon","level":"Prov","reg":4,"prv":56,"mun":0},
 {"code":"1381300000","name":"Quezon City","level":"City","reg":13,"prv":813,"mun":0},
 {"code":"205700000","name":"Quirino","level":"Prov","reg":2,"prv":57,"mun":0},
