@@ -100,10 +100,23 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-cream/10 px-8 py-6 text-center">
-        <span className="font-body text-xs text-cream/50">
+      <div className="border-t border-cream/10 px-8 py-6 text-center space-y-2">
+        <p className="font-body text-xs text-cream/50">
           © {new Date().getFullYear()} Tea Atelier. All rights reserved.
-        </span>
+        </p>
+        <p className="font-body text-xs text-cream/50">
+          Address data: Philippine Standard Geographic Code (PSGC), Philippine
+          Statistics Authority,{" "}
+          <a
+            href="https://creativecommons.org/licenses/by/4.0/"
+            target="_blank"
+            rel="noreferrer"
+            className="underline hover:text-sage-light transition-colors"
+          >
+            CC BY 4.0
+          </a>
+          . Filtered to Luzon and reduced to code and name fields.
+        </p>
       </div>
     </footer>
   );

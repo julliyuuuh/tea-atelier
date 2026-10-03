@@ -1,0 +1,15 @@
+{
+  "source": "Philippine Standard Geographic Code (PSGC), Philippine Statistics Authority",
+  "license": "CC BY 4.0",
+  "version": "Q2_2026",
+  "islandGroups": [
+    "L"
+  ],
+  "generatedAt": "2026-10-02T07:35:21.468Z",
+  "counts": {
+    "provincesAndHucs": 59,
+    "citiesAndMunicipalities": 749,
+    "barangays": 20489
+  },
+  "note": "Filtered by island group and reduced to code and name fields."
+}
