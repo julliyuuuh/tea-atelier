@@ -56,7 +56,7 @@ export async function POST(req: Request) {
       }
       barangay = body.barangay ? String(body.barangay).trim() : null;
       line1 = street;
-      line2 = [barangay, city, province].filter(Boolean).join(", ");
+      line2 = [...new Set([barangay, city, province].filter(Boolean))].join(", ");
     } else {
       // Free-text lines, kept for older clients (e.g. the mobile app)
       if (!body.addressLine1?.trim()) {

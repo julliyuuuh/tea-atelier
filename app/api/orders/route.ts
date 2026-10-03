@@ -83,7 +83,7 @@ export async function POST(req: Request) {
 
   // NOTE: deliveryFee is intentionally NOT read from the request body anymore.
   // Old app versions may still send it; it is simply ignored.
-  const { street, city, province, barangay, paymentMethod, phone, fullName } = body;
+  const { street, city, province, barangay, saveAddress, paymentMethod, phone, fullName } = body;
 
   if (!street || !city || !province) {
     return NextResponse.json({ error: "All address fields are required." }, { status: 400 });
@@ -157,19 +157,41 @@ export async function POST(req: Request) {
       }
     }
 
-    // Save the delivery address
-    const addressResult = await client.query(
-      `INSERT INTO user_address (user_id, address_line1, address_line2, barangay)
-      VALUES ($1, $2, $3, $4)
-      RETURNING address_id`,
-      [
-        userId,
-        street,
-        [barangay, city, province].filter(Boolean).join(", "),
-        barangay || null,
-      ]
+    // Save the delivery address. Every order needs an address row, but only
+    // addresses the customer opted to keep (is_saved) show up in their profile.
+    // If this user already has an identical address, reuse it instead of
+    // creating another copy.
+    // Highly urbanized cities like Baguio have no separate province, so drop
+    // repeated values ("City of Baguio, City of Baguio").
+    const addressLine2 = [...new Set([barangay, city, province].filter(Boolean))].join(", ");
+    const existingAddress = await client.query(
+      `SELECT address_id FROM user_address
+       WHERE user_id = $1
+         AND address_line1 = $2
+         AND address_line2 = $3
+         AND is_deleted IS NOT TRUE
+       LIMIT 1`,
+      [userId, street, addressLine2]
     );
-    const addressId = addressResult.rows[0].address_id;
+
+    let addressId: string | number;
+    if (existingAddress.rows.length > 0) {
+      addressId = existingAddress.rows[0].address_id;
+      if (saveAddress === true) {
+        await client.query(
+          `UPDATE user_address SET is_saved = true WHERE address_id = $1`,
+          [addressId]
+        );
+      }
+    } else {
+      const addressResult = await client.query(
+        `INSERT INTO user_address (user_id, address_line1, address_line2, barangay, is_saved)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING address_id`,
+        [userId, street, addressLine2, barangay || null, saveAddress === true]
+      );
+      addressId = addressResult.rows[0].address_id;
+    }
 
     // Calculate totals from real DB prices and the server-side shipping fee,
     // never from client-supplied numbers
