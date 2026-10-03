@@ -22,6 +22,22 @@ function CheckoutContent() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  const paymentRedirectedRef = useRef(false);
+
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      // Back from the provider can restore this component's locked state.
+      // Reset only a completed redirect, never an active order request.
+      if (!event.persisted || !paymentRedirectedRef.current) return;
+      paymentRedirectedRef.current = false;
+      submittingRef.current = false;
+      setIsSubmitting(false);
+      setShowConfirm(false);
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
+
   const [saveAddress, setSaveAddress] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -212,6 +228,7 @@ function CheckoutContent() {
         }
         // A later checkout after the provider redirect starts a fresh attempt.
         sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
+        paymentRedirectedRef.current = true;
         window.location.href = srcData.checkoutUrl;
         navigating = true;
       }
@@ -219,6 +236,7 @@ function CheckoutContent() {
       alert("Something went wrong. Please try again.");
     } finally {
       if (!navigating) {
+        paymentRedirectedRef.current = false;
         submittingRef.current = false;
         setIsSubmitting(false);
       }
