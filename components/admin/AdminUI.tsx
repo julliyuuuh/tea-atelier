@@ -154,6 +154,7 @@ export function CustomSelect({
   options,
   placeholder = "Select...",
   triggerClassName = "",
+  maxMenuHeight = 256,
   invalid = false,
   disabled = false,
 }: {
@@ -163,6 +164,7 @@ export function CustomSelect({
   options: SelectOption[];
   placeholder?: string;
   triggerClassName?: string;
+  maxMenuHeight?: number;
   invalid?: boolean;
   disabled?: boolean;
 }) {
@@ -299,8 +301,12 @@ export function CustomSelect({
                 top: coords.top,
                 left: coords.left,
                 minWidth: coords.width,
+                maxHeight: Math.min(
+                  maxMenuHeight,
+                  Math.max(80, window.innerHeight - coords.top - 12),
+                ),
               }}
-              className="z-[200] w-max max-w-xs max-h-64 overflow-y-auto bg-white border border-charcoal/10 rounded-xl shadow-lg py-1"
+              className="z-[200] w-max max-w-xs overflow-y-auto bg-white border border-charcoal/10 rounded-xl shadow-lg py-1"
             >
               {options.map((opt, index) => {
                 const isSelected = opt.value === value;

@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, RotateCcw, Inbox } from "lucide-react";
+import { RefreshCw, Inbox } from "lucide-react";
 import { CustomSelect } from "@/components/admin/AdminUI";
 import ReturnReviewCard from "@/components/admin/ReturnReviewCard";
 import type { ReturnCase } from "@/lib/returns";
@@ -61,7 +61,6 @@ export default function AdminReturnsPage() {
           Order support
         </p>
         <h1 className="mt-2 flex items-center gap-3 font-display text-3xl sm:text-4xl">
-          <RotateCcw size={28} className="text-sage" aria-hidden="true" />
           Returns & refunds
         </h1>
         <p className="mt-2 font-body text-sm text-charcoal/60">
@@ -84,7 +83,8 @@ export default function AdminReturnsPage() {
               setStatus(value);
               setPage(1);
             }}
-            triggerClassName="min-w-44 rounded-xl border border-charcoal/15 bg-cream px-3.5 py-2.5 font-body text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage/40"
+            maxMenuHeight={360}
+            triggerClassName="min-w-[170px] bg-white border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
             options={[
               { value: "", label: "All requests" },
               ...[
