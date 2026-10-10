@@ -180,24 +180,42 @@ export async function createReturn(
     return request.return_id;
   });
 }
-export async function listAdminReturns(page: number, status: string | null) {
-  const where = "($1::text IS NULL OR r.status=$1)";
+export async function listAdminReturns(
+  page: number,
+  status: string | null,
+  search = "",
+) {
+  const term = search.trim();
+  if (term.length > 100)
+    throw new ReturnError("Search must be 100 characters or fewer.");
+  const pattern = term ? `%${term.replace(/[\\%_]/g, "\\$&")}%` : null;
+  const orderMatch = /^(?:#?TA-)?([1-9]\d*)$/i.exec(term);
+  const orderId =
+    orderMatch && Number(orderMatch[1]) <= 2147483647
+      ? Number(orderMatch[1])
+      : null;
+  const where = `($1::text IS NULL OR r.status=$1)
+    AND ($2::text IS NULL OR u.email ILIKE $2 OR o.recipient_name ILIKE $2
+      OR ($3::integer IS NOT NULL AND o.order_id=$3))`;
+  const joins =
+    "FROM order_returns r JOIN orders o ON o.order_id=r.order_id JOIN users u ON u.user_id=r.user_id";
+  const filters = [status, pattern, orderId];
   const rows = (
     await pool.query<ReturnCase>(
       `SELECT r.*,o.recipient_name,o.total_amount,o.payment_method,o.payment_status,o.order_status,
     o.paymongo_payment_id,u.email AS customer_email,a.state AS refund_state,a.channel AS refund_channel,
     a.is_test AS refund_is_test,COALESCE(a.reference,a.provider_refund_id) AS refund_reference,a.error_message AS refund_error
-    FROM order_returns r JOIN orders o ON o.order_id=r.order_id JOIN users u ON u.user_id=r.user_id
+    ${joins}
     LEFT JOIN LATERAL (SELECT * FROM return_refund_attempts WHERE return_id=r.return_id
       ORDER BY created_at DESC,attempt_id DESC LIMIT 1) a ON TRUE
-    WHERE ${where} ORDER BY r.created_at DESC,r.return_id DESC LIMIT 20 OFFSET $2`,
-      [status, (page - 1) * 20],
+    WHERE ${where} ORDER BY r.created_at DESC,r.return_id DESC LIMIT 20 OFFSET $4`,
+      [...filters, (page - 1) * 20],
     )
   ).rows;
   const count = (
     await pool.query(
-      `SELECT count(*)::integer AS total FROM order_returns r WHERE ${where}`,
-      [status],
+      `SELECT count(*)::integer AS total ${joins} WHERE ${where}`,
+      filters,
     )
   ).rows[0].total;
   return {

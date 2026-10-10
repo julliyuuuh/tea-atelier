@@ -8,6 +8,9 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const page = Number(url.searchParams.get("page") ?? 1);
     const status = url.searchParams.get("status") || null;
+    const search = (url.searchParams.get("search") || "").trim();
+    if (search.length > 100)
+      throw new ReturnError("Search must be 100 characters or fewer.");
     if (
       !Number.isInteger(page) ||
       page < 1 ||
@@ -23,7 +26,7 @@ export async function GET(req: Request) {
         ].includes(status))
     )
       throw new ReturnError("Invalid filter or page.");
-    return returnJson(await listAdminReturns(page, status));
+    return returnJson(await listAdminReturns(page, status, search));
   } catch (error) {
     return returnFailure(error);
   }

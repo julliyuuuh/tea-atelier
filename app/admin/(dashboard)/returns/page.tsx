@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, Inbox } from "lucide-react";
+import { RefreshCw, Inbox, Search, X } from "lucide-react";
 import { CustomSelect } from "@/components/admin/AdminUI";
 import ReturnReviewCard from "@/components/admin/ReturnReviewCard";
 import type { ReturnCase } from "@/lib/returns";
@@ -9,6 +9,16 @@ export default function AdminReturnsPage() {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [status, setStatus] = useState("");
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setQuery(search.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const load = useCallback(
@@ -16,7 +26,7 @@ export default function AdminReturnsPage() {
       setLoading(true);
       try {
         const response = await fetch(
-          `/api/admin/returns?page=${page}&status=${status}`,
+          `/api/admin/returns?page=${page}&status=${status}&search=${encodeURIComponent(query)}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -44,7 +54,7 @@ export default function AdminReturnsPage() {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [page, status],
+    [page, status, query],
   );
   useEffect(() => {
     const controller = new AbortController();
@@ -69,6 +79,32 @@ export default function AdminReturnsPage() {
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-charcoal/10 bg-white p-4">
+        <div className="relative min-w-[200px] flex-1">
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-charcoal/40"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            aria-label="Search return requests"
+            placeholder="Search order #, customer email or name…"
+            value={search}
+            maxLength={100}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-full border border-charcoal/20 bg-white py-2.5 pl-11 pr-10 font-body text-sm text-charcoal outline-none transition focus:border-sage focus:ring-2 focus:ring-sage/20 [&::-webkit-search-cancel-button]:appearance-none"
+          />
+          {search && (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-charcoal/50 hover:bg-sand/40"
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <label
             htmlFor="return-status-filter"
@@ -139,6 +175,12 @@ export default function AdminReturnsPage() {
             key={`${request.return_id}:${request.version}`}
             request={request}
             onChanged={load}
+            expanded={expandedId === request.return_id}
+            onToggle={() =>
+              setExpandedId((current) =>
+                current === request.return_id ? null : request.return_id,
+              )
+            }
           />
         ))
       )}
