@@ -10,14 +10,54 @@ export async function PATCH(req: Request) {
 
     const { firstName, lastName, phoneNumber, avatarUrl } = await req.json();
 
+    const validName = (value: unknown) =>
+      typeof value === "string" &&
+      value.trim().length > 0 &&
+      value.trim().length <= 50;
+    if (
+      (firstName !== undefined && !validName(firstName)) ||
+      (lastName !== undefined && !validName(lastName))
+    ) {
+      return NextResponse.json(
+        { error: "Names must contain 1 to 50 characters." },
+        { status: 400 },
+      );
+    }
+    if (
+      phoneNumber !== undefined &&
+      phoneNumber !== null &&
+      (typeof phoneNumber !== "string" ||
+        (phoneNumber !== "" && !/^09\d{9}$/.test(phoneNumber)))
+    ) {
+      return NextResponse.json(
+        { error: "Enter an 11-digit mobile number starting with 09." },
+        { status: 400 },
+      );
+    }
+    if (
+      avatarUrl !== undefined &&
+      avatarUrl !== null &&
+      typeof avatarUrl !== "string"
+    ) {
+      return NextResponse.json(
+        { error: "Invalid profile photo." },
+        { status: 400 },
+      );
+    }
+
     // An avatar-only request (upload or removal) comes through as just
     // { avatarUrl }, so the name fields are only required when this is
     // a profile-details save.
     const isAvatarOnly =
-      avatarUrl !== undefined && firstName === undefined && lastName === undefined;
+      avatarUrl !== undefined &&
+      firstName === undefined &&
+      lastName === undefined;
 
     if (!isAvatarOnly && (!firstName || !lastName)) {
-      return NextResponse.json({ error: "First and last name are required." }, { status: 400 });
+      return NextResponse.json(
+        { error: "First and last name are required." },
+        { status: 400 },
+      );
     }
 
     const fields: string[] = [];
@@ -26,11 +66,11 @@ export async function PATCH(req: Request) {
 
     if (firstName !== undefined) {
       fields.push(`first_name = $${i++}`);
-      values.push(firstName);
+      values.push(firstName.trim());
     }
     if (lastName !== undefined) {
       fields.push(`last_name = $${i++}`);
-      values.push(lastName);
+      values.push(lastName.trim());
     }
     if (phoneNumber !== undefined) {
       fields.push(`phone_number = $${i++}`);
@@ -42,7 +82,10 @@ export async function PATCH(req: Request) {
     }
 
     if (fields.length === 0) {
-      return NextResponse.json({ error: "No fields to update." }, { status: 400 });
+      return NextResponse.json(
+        { error: "No fields to update." },
+        { status: 400 },
+      );
     }
 
     values.push(userId);
@@ -52,7 +95,7 @@ export async function PATCH(req: Request) {
        SET ${fields.join(", ")}
        WHERE user_id = $${i}
        RETURNING user_id, first_name, last_name, email, phone_number, role, avatar_url`,
-      values
+      values,
     );
 
     if (result.rows.length === 0) {
@@ -72,7 +115,21 @@ export async function PATCH(req: Request) {
       },
     });
   } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
+      return NextResponse.json(
+        { error: "That phone number is already used by another account." },
+        { status: 409 },
+      );
+    }
     console.error("Update user error:", error);
-    return NextResponse.json({ error: "Unable to update profile." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to update profile." },
+      { status: 500 },
+    );
   }
 }

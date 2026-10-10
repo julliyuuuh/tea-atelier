@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   if (error) return error;
 
   const result = await pool.query(
-    "SELECT * FROM homepage_why_choose_us ORDER BY sort_order ASC"
+    "SELECT * FROM homepage_why_choose_us ORDER BY sort_order ASC",
   );
   return NextResponse.json({ reasons: result.rows });
 }
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     `INSERT INTO homepage_why_choose_us (title, copy, sort_order)
      VALUES ($1, $2, COALESCE($3, 0))
      RETURNING *`,
-    [title, copy, sort_order]
+    [title, copy, sort_order],
   );
 
   return NextResponse.json({ reason: result.rows[0] }, { status: 201 });

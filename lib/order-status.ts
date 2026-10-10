@@ -7,5 +7,7 @@ export const ORDER_STATUSES = [
 ] as const;
 
 export function getStatusLabel(value: string): string {
-  return ORDER_STATUSES.find((s) => s.value === value.toUpperCase())?.label ?? value;
+  return (
+    ORDER_STATUSES.find((s) => s.value === value.toUpperCase())?.label ?? value
+  );
 }

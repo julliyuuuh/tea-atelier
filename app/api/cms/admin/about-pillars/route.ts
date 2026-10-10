@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   if (error) return error;
 
   const result = await pool.query(
-    "SELECT * FROM about_pillars ORDER BY sort_order ASC"
+    "SELECT * FROM about_pillars ORDER BY sort_order ASC",
   );
   return NextResponse.json({ pillars: result.rows });
 }
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     `INSERT INTO about_pillars (title, copy, sort_order)
      VALUES ($1, $2, COALESCE($3, 0))
      RETURNING *`,
-    [title, copy, sort_order]
+    [title, copy, sort_order],
   );
 
   return NextResponse.json({ pillar: result.rows[0] }, { status: 201 });

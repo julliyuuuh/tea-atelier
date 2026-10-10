@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;
@@ -18,11 +18,14 @@ export async function PATCH(
      SET name = $1, role = $2, image = $3, sort_order = $4, is_active = $5
      WHERE id = $6
      RETURNING *`,
-    [name, role, image, sort_order, is_active, id]
+    [name, role, image, sort_order, is_active, id],
   );
 
   if (result.rows.length === 0) {
-    return NextResponse.json({ error: "Team member not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Team member not found" },
+      { status: 404 },
+    );
   }
 
   return NextResponse.json({ member: result.rows[0] });
@@ -30,7 +33,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;

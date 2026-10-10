@@ -20,7 +20,12 @@ export type PhAddress = {
   street: string;
 };
 
-export const EMPTY_PH_ADDRESS: PhAddress = { province: null, city: null, barangay: null, street: "" };
+export const EMPTY_PH_ADDRESS: PhAddress = {
+  province: null,
+  city: null,
+  barangay: null,
+  street: "",
+};
 
 export const isAddressComplete = (a: PhAddress) =>
   !!(a.province && a.city && a.barangay && a.street.trim());
@@ -53,7 +58,10 @@ export function formatAddress(a: PhAddress) {
 
 // "pinas" should find "Las Piñas"
 const normalize = (s: string) =>
-  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 
 function useList(url: string | null) {
   const [items, setItems] = useState<PsgcItem[]>([]);
@@ -139,7 +147,12 @@ function SelectField(props: {
   function openMenu() {
     if (isDisabled) return;
     setQuery("");
-    setActive(Math.max(0, items.findIndex((i) => i.code === value)));
+    setActive(
+      Math.max(
+        0,
+        items.findIndex((i) => i.code === value),
+      ),
+    );
     setOpen(true);
   }
 
@@ -167,7 +180,9 @@ function SelectField(props: {
   // keep the highlighted option in view while arrowing through a long list
   useEffect(() => {
     if (open) {
-      document.getElementById(`${uid}-opt-${active}`)?.scrollIntoView({ block: "nearest" });
+      document
+        .getElementById(`${uid}-opt-${active}`)
+        ?.scrollIntoView({ block: "nearest" });
     }
   }, [open, active, uid]);
 
@@ -219,13 +234,15 @@ function SelectField(props: {
           aria-expanded={open}
           aria-controls={`${uid}-list`}
           aria-labelledby={`${uid}-label`}
-          aria-activedescendant={open && filtered[active] ? `${uid}-opt-${active}` : undefined}
+          aria-activedescendant={
+            open && filtered[active] ? `${uid}-opt-${active}` : undefined
+          }
           disabled={isDisabled}
           onClick={() => (open ? setOpen(false) : openMenu())}
           className={`${fieldClass} flex items-center justify-between gap-3 text-left`}
         >
           <span className={`truncate ${selected ? "" : "text-charcoal/40"}`}>
-            {loading ? "Loading…" : selected?.name ?? placeholder}
+            {loading ? "Loading…" : (selected?.name ?? placeholder)}
           </span>
           <ChevronDown
             aria-hidden
@@ -338,12 +355,12 @@ export default function PhAddressFields({
   const cities = useList(
     addr.province && !isHuc
       ? `/api/psgc/cities?reg=${addr.province.reg}&prv=${addr.province.prv}`
-      : null
+      : null,
   );
   const barangays = useList(
     addr.city
       ? `/api/psgc/barangays?reg=${addr.city.reg}&prv=${addr.city.prv}&mun=${addr.city.mun}`
-      : null
+      : null,
   );
 
   return (

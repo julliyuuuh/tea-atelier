@@ -13,7 +13,13 @@ import {
 } from "@/lib/payment-status";
 import { ErrorBanner, CustomSelect } from "@/components/admin/AdminUI";
 
-type Item = { id: number; name: string; image: string | null; quantity: number; price: number };
+type Item = {
+  id: number;
+  name: string;
+  image: string | null;
+  quantity: number;
+  price: number;
+};
 
 type OrderDetail = {
   order: {
@@ -24,7 +30,12 @@ type OrderDetail = {
     paymentStatus: string;
     paymongoSourceId: string | null;
   };
-  customer: { name: string | null; email: string; phone: string | null; joinedAt: string | null };
+  customer: {
+    name: string | null;
+    email: string;
+    phone: string | null;
+    joinedAt: string | null;
+  };
   delivery: { label: string; value: string }[];
   items: Item[];
   subtotal: number;
@@ -32,7 +43,10 @@ type OrderDetail = {
   total: number;
 };
 
-const STATUS_OPTIONS = ORDER_STATUSES.map((s) => ({ value: s.value, label: s.label }));
+const STATUS_OPTIONS = ORDER_STATUSES.map((s) => ({
+  value: s.value,
+  label: s.label,
+}));
 const TRACK_STEPS = ORDER_STATUSES.filter((s) => s.value !== "CANCELLED");
 const MANUAL_PAYMENT_OPTIONS = PAYMENT_STATUSES.filter((s) =>
   MANUAL_PAYMENT_STATUSES.includes(s.value),
@@ -58,20 +72,29 @@ const formatDate = (iso: string, withTime = false) =>
 
 function statusBadge(status: string) {
   switch (status) {
-    case "PLACED": return { bg: "bg-amber-50", text: "text-amber-700" };
-    case "PROCESSING": return { bg: "bg-purple-50", text: "text-purple-700" };
-    case "SHIPPED": return { bg: "bg-blue-50", text: "text-blue-700" };
-    case "DELIVERED": return { bg: "bg-green-100", text: "text-green-700" };
-    case "CANCELLED": return { bg: "bg-red-50", text: "text-red-600" };
-    default: return { bg: "bg-charcoal/10", text: "text-charcoal/60" };
+    case "PLACED":
+      return { bg: "bg-amber-50", text: "text-amber-700" };
+    case "PROCESSING":
+      return { bg: "bg-purple-50", text: "text-purple-700" };
+    case "SHIPPED":
+      return { bg: "bg-blue-50", text: "text-blue-700" };
+    case "DELIVERED":
+      return { bg: "bg-green-100", text: "text-green-700" };
+    case "CANCELLED":
+      return { bg: "bg-red-50", text: "text-red-600" };
+    default:
+      return { bg: "bg-charcoal/10", text: "text-charcoal/60" };
   }
 }
 
 function paymentBadge(status: string) {
   switch (status) {
-    case "paid": return { bg: "bg-green-100", text: "text-green-700" };
-    case "failed": return { bg: "bg-red-50", text: "text-red-600" };
-    default: return { bg: "bg-amber-50", text: "text-amber-700" };
+    case "paid":
+      return { bg: "bg-green-100", text: "text-green-700" };
+    case "failed":
+      return { bg: "bg-red-50", text: "text-red-600" };
+    default:
+      return { bg: "bg-amber-50", text: "text-amber-700" };
   }
 }
 
@@ -83,10 +106,18 @@ function paymentLabel(status: string, method: string) {
   return isCod(method) ? "Pending" : "Awaiting payment";
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="border border-charcoal/10 rounded-xl p-4">
-      <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/50 mb-2">{title}</h3>
+      <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/50 mb-2">
+        {title}
+      </h3>
       {children}
     </div>
   );
@@ -95,7 +126,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 py-1">
-      <span className="font-body text-xs text-charcoal/50 shrink-0">{label}</span>
+      <span className="font-body text-xs text-charcoal/50 shrink-0">
+        {label}
+      </span>
       <span className="font-body text-sm text-charcoal text-right break-words min-w-0">
         {value || "—"}
       </span>
@@ -109,7 +142,11 @@ type Props = {
   onChanged: () => void;
 };
 
-export default function OrderDetailModal({ orderId, onClose, onChanged }: Props) {
+export default function OrderDetailModal({
+  orderId,
+  onClose,
+  onChanged,
+}: Props) {
   const [data, setData] = useState<OrderDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -133,7 +170,9 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
         if (!res.ok) throw new Error(json.error || "Unable to load order.");
         setData(json);
       } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+        setErrorMessage(
+          error instanceof Error ? error.message : "Something went wrong.",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -178,7 +217,10 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(body),
       });
       const json = await res.json().catch(() => ({}));
@@ -186,7 +228,9 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
       changedRef.current = true;
       await load(true);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Something went wrong.");
+      setActionError(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     } finally {
       setIsUpdating(false);
     }
@@ -209,7 +253,8 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
       return <ErrorBanner message={errorMessage} onRetry={() => load()} />;
     }
 
-    const { order, customer, delivery, items, subtotal, deliveryFee, total } = data;
+    const { order, customer, delivery, items, subtotal, deliveryFee, total } =
+      data;
     const sBadge = statusBadge(order.status);
     const pBadge = paymentBadge(order.paymentStatus);
     const cancelled = order.status === "CANCELLED";
@@ -218,11 +263,16 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
 
     // Unpaid online orders can only stay at PLACED or be cancelled (the API
     // enforces this too), so don't offer the forward steps.
-    const unpaidOnline = isUnpaidOnline(order.paymentMethod, order.paymentStatus);
+    const unpaidOnline = isUnpaidOnline(
+      order.paymentMethod,
+      order.paymentStatus,
+    );
     const statusOptions = unpaidOnline
       ? STATUS_OPTIONS.filter(
           (o) =>
-            o.value === order.status || o.value === "PLACED" || o.value === "CANCELLED",
+            o.value === order.status ||
+            o.value === "PLACED" ||
+            o.value === "CANCELLED",
         )
       : STATUS_OPTIONS;
 
@@ -234,14 +284,19 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
         {/* Progress */}
         <div className="border border-charcoal/10 rounded-xl p-4 mb-4 overflow-x-auto">
           {cancelled ? (
-            <p className="font-body text-sm text-red-600">This order was cancelled.</p>
+            <p className="font-body text-sm text-red-600">
+              This order was cancelled.
+            </p>
           ) : (
             <ol className="flex items-center min-w-[420px]">
               {TRACK_STEPS.map((step, idx) => {
                 const done = idx <= currentStep;
                 const last = idx === TRACK_STEPS.length - 1;
                 return (
-                  <li key={step.value} className={`flex items-center gap-2 ${last ? "" : "flex-1"}`}>
+                  <li
+                    key={step.value}
+                    className={`flex items-center gap-2 ${last ? "" : "flex-1"}`}
+                  >
                     <span
                       className={`w-3 h-3 rounded-full shrink-0 ${done ? "bg-sage" : "bg-charcoal/15"}`}
                     />
@@ -284,7 +339,9 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-body text-sm text-charcoal truncate">{item.name}</p>
+                      <p className="font-body text-sm text-charcoal truncate">
+                        {item.name}
+                      </p>
                       <p className="font-body text-xs text-charcoal/50">
                         {peso(item.price)} × {item.quantity}
                       </p>
@@ -318,7 +375,9 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
             <Section title="Manage order">
               <div className="space-y-3">
                 <div>
-                  <p className="font-body text-xs text-charcoal/50 mb-1.5">Order status</p>
+                  <p className="font-body text-xs text-charcoal/50 mb-1.5">
+                    Order status
+                  </p>
                   <CustomSelect
                     id="modal-status"
                     value={order.status}
@@ -329,14 +388,16 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
                   />
                   {unpaidOnline && !cancelled && (
                     <p className="font-body text-xs text-charcoal/50 mt-2">
-                      This order can't move past Order Placed until its payment is
-                      confirmed.
+                      This order can't move past Order Placed until its payment
+                      is confirmed.
                     </p>
                   )}
                 </div>
                 {paymentEditable && (
                   <div>
-                    <p className="font-body text-xs text-charcoal/50 mb-1.5">Payment status</p>
+                    <p className="font-body text-xs text-charcoal/50 mb-1.5">
+                      Payment status
+                    </p>
                     <CustomSelect
                       id="modal-payment"
                       value={order.paymentStatus}
@@ -362,16 +423,23 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
 
             <Section title="Delivery">
               {delivery.length === 0 ? (
-                <p className="font-body text-sm text-charcoal/40">No delivery details on file.</p>
+                <p className="font-body text-sm text-charcoal/40">
+                  No delivery details on file.
+                </p>
               ) : (
-                delivery.map((d) => <Row key={d.label} label={d.label} value={d.value} />)
+                delivery.map((d) => (
+                  <Row key={d.label} label={d.label} value={d.value} />
+                ))
               )}
             </Section>
 
             <Section title="Payment">
               <Row
                 label="Method"
-                value={METHOD_LABELS[order.paymentMethod?.toLowerCase()] ?? order.paymentMethod}
+                value={
+                  METHOD_LABELS[order.paymentMethod?.toLowerCase()] ??
+                  order.paymentMethod
+                }
               />
               <Row
                 label="Status"
@@ -431,13 +499,16 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
                     <span
                       className={`hidden sm:inline-flex font-body text-xs px-3 py-1 rounded-full ${sBadgeHeader.bg} ${sBadgeHeader.text}`}
                     >
-                      {ORDER_STATUSES.find((s) => s.value === data.order.status)?.label ??
-                        data.order.status}
+                      {ORDER_STATUSES.find((s) => s.value === data.order.status)
+                        ?.label ?? data.order.status}
                     </span>
                     <span
                       className={`hidden sm:inline-flex font-body text-xs px-3 py-1 rounded-full ${pBadgeHeader.bg} ${pBadgeHeader.text}`}
                     >
-                      {paymentLabel(data.order.paymentStatus, data.order.paymentMethod)}
+                      {paymentLabel(
+                        data.order.paymentStatus,
+                        data.order.paymentMethod,
+                      )}
                     </span>
                   </>
                 )}
@@ -453,7 +524,9 @@ export default function OrderDetailModal({ orderId, onClose, onChanged }: Props)
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-6 py-5">{renderBody()}</div>
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              {renderBody()}
+            </div>
           </motion.div>
         </motion.div>
       )}

@@ -46,11 +46,16 @@ export default function ConfirmDialog({
             onClick={(e) => e.stopPropagation()}
             className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center shadow-xl shadow-charcoal/10"
           >
-            <p id="confirm-dialog-title" className="font-body text-sm text-charcoal mb-1.5">
+            <p
+              id="confirm-dialog-title"
+              className="font-body text-sm text-charcoal mb-1.5"
+            >
               {title}
             </p>
             {description && (
-              <p className="font-body text-xs text-charcoal/50 mb-6">{description}</p>
+              <p className="font-body text-xs text-charcoal/50 mb-6">
+                {description}
+              </p>
             )}
             <div className={`flex gap-3 ${description ? "" : "mt-6"}`}>
               <motion.button

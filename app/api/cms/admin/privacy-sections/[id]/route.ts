@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;
@@ -18,7 +18,7 @@ export async function PATCH(
      SET heading = $1, body = $2, sort_order = $3, is_active = $4
      WHERE id = $5
      RETURNING *`,
-    [heading, body, sort_order, is_active, id]
+    [heading, body, sort_order, is_active, id],
   );
 
   if (result.rows.length === 0) {
@@ -30,7 +30,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;

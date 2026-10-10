@@ -2,9 +2,7 @@
   "source": "Philippine Standard Geographic Code (PSGC), Philippine Statistics Authority",
   "license": "CC BY 4.0",
   "version": "Q2_2026",
-  "islandGroups": [
-    "L"
-  ],
+  "islandGroups": ["L"],
   "generatedAt": "2026-10-03T12:31:10.749Z",
   "counts": {
     "provincesAndHucs": 60,

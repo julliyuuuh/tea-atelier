@@ -19,7 +19,9 @@ export default function PromoBanner() {
 
     async function loadPromo() {
       try {
-        const res = await fetch("/api/cms/promo", { signal: controller.signal });
+        const res = await fetch("/api/cms/promo", {
+          signal: controller.signal,
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to load promo.");
         setPromo(data.promo);

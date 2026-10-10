@@ -20,10 +20,17 @@ const labelClass = "block text-xs font-medium text-charcoal/60 mb-1";
 
 function authHeaders() {
   const token = localStorage.getItem("token");
-  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
 }
 
-export default function ReviewsTab({ onError }: { onError: (msg: string) => void }) {
+export default function ReviewsTab({
+  onError,
+}: {
+  onError: (msg: string) => void;
+}) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | "new" | null>(null);
@@ -31,7 +38,9 @@ export default function ReviewsTab({ onError }: { onError: (msg: string) => void
   async function load() {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/cms/admin/reviews", { headers: authHeaders() });
+      const res = await fetch("/api/cms/admin/reviews", {
+        headers: authHeaders(),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to load.");
       setReviews(data.reviews);
@@ -47,8 +56,14 @@ export default function ReviewsTab({ onError }: { onError: (msg: string) => void
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function updateLocal<K extends keyof Review>(id: number, field: K, value: Review[K]) {
-    setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+  function updateLocal<K extends keyof Review>(
+    id: number,
+    field: K,
+    value: Review[K],
+  ) {
+    setReviews((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+    );
   }
 
   async function handleSave(review: Review) {
@@ -116,7 +131,10 @@ export default function ReviewsTab({ onError }: { onError: (msg: string) => void
     if (target < 0 || target >= reviews.length) return;
 
     const reordered = [...reviews];
-    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    [reordered[index], reordered[target]] = [
+      reordered[target],
+      reordered[index],
+    ];
     const withOrders = reordered.map((r, i) => ({ ...r, sort_order: i }));
     setReviews(withOrders);
 
@@ -132,8 +150,8 @@ export default function ReviewsTab({ onError }: { onError: (msg: string) => void
             sort_order: r.sort_order,
             is_active: r.is_active,
           }),
-        })
-      )
+        }),
+      ),
     );
   }
 
@@ -142,7 +160,10 @@ export default function ReviewsTab({ onError }: { onError: (msg: string) => void
   return (
     <div className="space-y-4">
       {reviews.map((review, i) => (
-        <div key={review.id} className="border border-charcoal/10 rounded-xl p-4 flex gap-4">
+        <div
+          key={review.id}
+          className="border border-charcoal/10 rounded-xl p-4 flex gap-4"
+        >
           <div className="flex flex-col gap-1 pt-1">
             <button
               onClick={() => handleMove(i, -1)}
@@ -167,7 +188,9 @@ export default function ReviewsTab({ onError }: { onError: (msg: string) => void
               <label className={labelClass}>Quote</label>
               <textarea
                 value={review.quote}
-                onChange={(e) => updateLocal(review.id, "quote", e.target.value)}
+                onChange={(e) =>
+                  updateLocal(review.id, "quote", e.target.value)
+                }
                 rows={2}
                 className={inputClass}
               />
@@ -178,7 +201,9 @@ export default function ReviewsTab({ onError }: { onError: (msg: string) => void
                 <input
                   type="text"
                   value={review.name}
-                  onChange={(e) => updateLocal(review.id, "name", e.target.value)}
+                  onChange={(e) =>
+                    updateLocal(review.id, "name", e.target.value)
+                  }
                   className={inputClass}
                 />
               </div>
@@ -186,7 +211,9 @@ export default function ReviewsTab({ onError }: { onError: (msg: string) => void
                 <label className={labelClass}>Rating</label>
                 <select
                   value={review.rating}
-                  onChange={(e) => updateLocal(review.id, "rating", Number(e.target.value))}
+                  onChange={(e) =>
+                    updateLocal(review.id, "rating", Number(e.target.value))
+                  }
                   className={inputClass}
                 >
                   {[1, 2, 3, 4, 5].map((n) => (
@@ -201,7 +228,9 @@ export default function ReviewsTab({ onError }: { onError: (msg: string) => void
               <input
                 type="checkbox"
                 checked={review.is_active}
-                onChange={(e) => updateLocal(review.id, "is_active", e.target.checked)}
+                onChange={(e) =>
+                  updateLocal(review.id, "is_active", e.target.checked)
+                }
               />
               Active (visible on storefront)
             </label>

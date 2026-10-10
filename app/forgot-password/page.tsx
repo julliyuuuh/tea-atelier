@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
       setSubmitted(true);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Something went wrong."
+        error instanceof Error ? error.message : "Something went wrong.",
       );
     } finally {
       setIsLoading(false);
@@ -92,7 +92,8 @@ export default function ForgotPasswordPage() {
           {submitted ? (
             <div className="text-center">
               <p className="font-body text-sm text-charcoal/70 mb-6">
-                If an account exists for that email, we've sent a link to reset your password. Check your inbox.
+                If an account exists for that email, we've sent a link to reset
+                your password. Check your inbox.
               </p>
               <Link
                 href="/login"

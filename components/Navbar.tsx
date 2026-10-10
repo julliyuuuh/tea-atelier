@@ -4,7 +4,15 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, ShoppingBag, Settings, LogOut, Heart, HelpCircle, LogIn } from "lucide-react";
+import {
+  User,
+  ShoppingBag,
+  Settings,
+  LogOut,
+  Heart,
+  HelpCircle,
+  LogIn,
+} from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import ConfirmDialog from "@/components/account/ConfirmDialog";
@@ -62,8 +70,9 @@ export default function Navbar() {
   return (
     <div className="sticky top-4 z-50 px-4">
       <header
-        className={`max-w-6xl mx-auto bg-cream/95 backdrop-blur border border-charcoal/10 transition-all duration-300 ${menuOpen ? "rounded-3xl" : "rounded-full"
-          } ${scrolled ? "shadow-lg shadow-charcoal/10" : "shadow-sm"}`}
+        className={`max-w-6xl mx-auto bg-cream/95 backdrop-blur border border-charcoal/10 transition-all duration-300 ${
+          menuOpen ? "rounded-3xl" : "rounded-full"
+        } ${scrolled ? "shadow-lg shadow-charcoal/10" : "shadow-sm"}`}
       >
         <nav className="flex items-center justify-between px-6 py-3">
           {/* Logo */}
@@ -289,8 +298,8 @@ export default function Navbar() {
                                     }}
                                     className="flex items-center gap-2 font-body text-sm text-charcoal/70"
                                   >
-                                    <Heart size={16} strokeWidth={1.5} /> Wishlist (
-                                    {wishlistItems.length})
+                                    <Heart size={16} strokeWidth={1.5} />{" "}
+                                    Wishlist ({wishlistItems.length})
                                   </Link>
                                 )}
                                 <Link
@@ -311,7 +320,8 @@ export default function Navbar() {
                                   }}
                                   className="flex items-center gap-2 font-body text-sm text-charcoal/70"
                                 >
-                                  <Settings size={16} strokeWidth={1.5} /> Account
+                                  <Settings size={16} strokeWidth={1.5} />{" "}
+                                  Account
                                 </Link>
                                 <button
                                   onClick={() => {

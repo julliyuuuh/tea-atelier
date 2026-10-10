@@ -7,7 +7,9 @@ export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req);
   if (error) return error;
 
-  const result = await pool.query("SELECT * FROM about_team ORDER BY sort_order ASC");
+  const result = await pool.query(
+    "SELECT * FROM about_team ORDER BY sort_order ASC",
+  );
   return NextResponse.json({ team: result.rows });
 }
 
@@ -21,7 +23,7 @@ export async function POST(req: NextRequest) {
     `INSERT INTO about_team (name, role, image, sort_order)
      VALUES ($1, $2, $3, COALESCE($4, 0))
      RETURNING *`,
-    [name, role, image, sort_order]
+    [name, role, image, sort_order],
   );
 
   return NextResponse.json({ member: result.rows[0] }, { status: 201 });

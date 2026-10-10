@@ -19,10 +19,17 @@ const labelClass = "block text-xs font-medium text-charcoal/60 mb-1";
 
 function authHeaders() {
   const token = localStorage.getItem("token");
-  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
 }
 
-export default function FaqItemsTab({ onError }: { onError: (msg: string) => void }) {
+export default function FaqItemsTab({
+  onError,
+}: {
+  onError: (msg: string) => void;
+}) {
   const [items, setItems] = useState<FaqItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | "new" | null>(null);
@@ -46,8 +53,14 @@ export default function FaqItemsTab({ onError }: { onError: (msg: string) => voi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function updateLocal<K extends keyof FaqItem>(id: number, field: K, value: FaqItem[K]) {
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)));
+  function updateLocal<K extends keyof FaqItem>(
+    id: number,
+    field: K,
+    value: FaqItem[K],
+  ) {
+    setItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)),
+    );
   }
 
   async function handleSave(item: FaqItem) {
@@ -112,7 +125,10 @@ export default function FaqItemsTab({ onError }: { onError: (msg: string) => voi
     const target = index + direction;
     if (target < 0 || target >= items.length) return;
     const reordered = [...items];
-    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    [reordered[index], reordered[target]] = [
+      reordered[target],
+      reordered[index],
+    ];
     const withOrders = reordered.map((it, i) => ({ ...it, sort_order: i }));
     setItems(withOrders);
     await Promise.all(
@@ -126,8 +142,8 @@ export default function FaqItemsTab({ onError }: { onError: (msg: string) => voi
             sort_order: it.sort_order,
             is_active: it.is_active,
           }),
-        })
-      )
+        }),
+      ),
     );
   }
 
@@ -136,40 +152,80 @@ export default function FaqItemsTab({ onError }: { onError: (msg: string) => voi
   return (
     <div className="space-y-4">
       {items.map((item, i) => (
-        <div key={item.id} className="border border-charcoal/10 rounded-xl p-4 flex gap-4">
+        <div
+          key={item.id}
+          className="border border-charcoal/10 rounded-xl p-4 flex gap-4"
+        >
           <div className="flex flex-col gap-1 pt-1">
-            <button onClick={() => handleMove(i, -1)} disabled={i === 0} className="text-charcoal/40 hover:text-sage disabled:opacity-20">
+            <button
+              onClick={() => handleMove(i, -1)}
+              disabled={i === 0}
+              className="text-charcoal/40 hover:text-sage disabled:opacity-20"
+            >
               <ChevronUp size={16} />
             </button>
-            <button onClick={() => handleMove(i, 1)} disabled={i === items.length - 1} className="text-charcoal/40 hover:text-sage disabled:opacity-20">
+            <button
+              onClick={() => handleMove(i, 1)}
+              disabled={i === items.length - 1}
+              className="text-charcoal/40 hover:text-sage disabled:opacity-20"
+            >
               <ChevronDown size={16} />
             </button>
           </div>
           <div className="flex-1 space-y-3">
             <div>
               <label className={labelClass}>Question</label>
-              <input type="text" value={item.question} onChange={(e) => updateLocal(item.id, "question", e.target.value)} className={inputClass} />
+              <input
+                type="text"
+                value={item.question}
+                onChange={(e) =>
+                  updateLocal(item.id, "question", e.target.value)
+                }
+                className={inputClass}
+              />
             </div>
             <div>
               <label className={labelClass}>Answer</label>
-              <textarea value={item.answer} onChange={(e) => updateLocal(item.id, "answer", e.target.value)} rows={3} className={inputClass} />
+              <textarea
+                value={item.answer}
+                onChange={(e) => updateLocal(item.id, "answer", e.target.value)}
+                rows={3}
+                className={inputClass}
+              />
             </div>
             <label className="flex items-center gap-2 text-xs text-charcoal/60">
-              <input type="checkbox" checked={item.is_active} onChange={(e) => updateLocal(item.id, "is_active", e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={item.is_active}
+                onChange={(e) =>
+                  updateLocal(item.id, "is_active", e.target.checked)
+                }
+              />
               Active (visible on storefront)
             </label>
           </div>
           <div className="flex flex-col gap-2 pt-1">
-            <button onClick={() => handleSave(item)} disabled={savingId === item.id} className="text-xs bg-sage text-cream px-3 py-1.5 rounded hover:bg-charcoal transition-colors disabled:opacity-50">
+            <button
+              onClick={() => handleSave(item)}
+              disabled={savingId === item.id}
+              className="text-xs bg-sage text-cream px-3 py-1.5 rounded hover:bg-charcoal transition-colors disabled:opacity-50"
+            >
               {savingId === item.id ? "..." : "Save"}
             </button>
-            <button onClick={() => handleDelete(item.id)} className="text-charcoal/40 hover:text-red-500 self-center">
+            <button
+              onClick={() => handleDelete(item.id)}
+              className="text-charcoal/40 hover:text-red-500 self-center"
+            >
               <Trash2 size={15} />
             </button>
           </div>
         </div>
       ))}
-      <button onClick={handleAdd} disabled={savingId === "new"} className="flex items-center gap-1.5 text-sm text-sage hover:text-charcoal transition-colors">
+      <button
+        onClick={handleAdd}
+        disabled={savingId === "new"}
+        className="flex items-center gap-1.5 text-sm text-sage hover:text-charcoal transition-colors"
+      >
         <Plus size={16} /> Add FAQ Item
       </button>
     </div>

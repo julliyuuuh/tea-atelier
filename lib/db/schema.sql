@@ -27,6 +27,9 @@ CREATE TABLE user_address (
   address_line3 VARCHAR(255),
   default_address BOOLEAN DEFAULT FALSE,
   default_billing BOOLEAN DEFAULT FALSE,
+  business_name VARCHAR(200),
+  billing_contact VARCHAR(100),
+  tax_id VARCHAR(32),
   is_deleted BOOLEAN DEFAULT FALSE
 );
 

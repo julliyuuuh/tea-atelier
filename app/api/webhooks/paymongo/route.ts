@@ -7,7 +7,13 @@ import { sendOrderConfirmationEmail } from "@/lib/email";
 export async function POST(req: Request) {
   const rawBody = await req.text();
   const signature = req.headers.get("paymongo-signature");
-  if (!verifyPaymongoSignature(rawBody, signature, process.env.PAYMONGO_WEBHOOK_SECRET!)) {
+  if (
+    !verifyPaymongoSignature(
+      rawBody,
+      signature,
+      process.env.PAYMONGO_WEBHOOK_SECRET!,
+    )
+  ) {
     return new Response("Invalid signature", { status: 400 });
   }
 
@@ -18,7 +24,7 @@ export async function POST(req: Request) {
     const orderRes = await pool.query(
       `SELECT order_id, user_id, payment_status, total_amount, recipient_name
        FROM orders WHERE paymongo_source_id = $1`,
-      [sourceId]
+      [sourceId],
     );
     const order = orderRes.rows[0];
     if (!order) return new Response("ok", { status: 200 });
@@ -44,7 +50,7 @@ export async function POST(req: Request) {
         AND paymongo_source_id = $2
         AND payment_status IN ('pending', 'failed')
       RETURNING order_id`,
-      [order.order_id, sourceId]
+      [order.order_id, sourceId],
     );
 
     if (claim.rowCount === 0) {
@@ -58,21 +64,27 @@ export async function POST(req: Request) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Basic " + Buffer.from(process.env.PAYMONGO_SECRET_KEY + ":").toString("base64"),
+          Authorization:
+            "Basic " +
+            Buffer.from(process.env.PAYMONGO_SECRET_KEY + ":").toString(
+              "base64",
+            ),
         },
         body: JSON.stringify({
-          data: { attributes: {
-            amount: paidCentavos,
-            source: { id: sourceId, type: "source" },
-            currency: "PHP",
-          }},
+          data: {
+            attributes: {
+              amount: paidCentavos,
+              source: { id: sourceId, type: "source" },
+              currency: "PHP",
+            },
+          },
         }),
       });
       payment = await payRes.json();
     } catch (error) {
       console.error(
         `Order ${order.order_id}, source ${sourceId}: payment outcome unknown`,
-        error
+        error,
       );
 
       return new Response("Payment outcome requires verification", {
@@ -88,20 +100,21 @@ export async function POST(req: Request) {
 
     if (verifiedPayment && paymentAttributes.status === "paid") {
       const client = await pool.connect();
-      let itemsForEmail: { name: string; quantity: number; price: number }[] = [];
+      let itemsForEmail: { name: string; quantity: number; price: number }[] =
+        [];
       let userEmail: string | undefined;
 
       try {
         await client.query("BEGIN");
 
-      const upd = await client.query(
-        `UPDATE orders SET payment_status = 'paid'
+        const upd = await client.query(
+          `UPDATE orders SET payment_status = 'paid'
         WHERE order_id = $1
           AND paymongo_source_id = $2
           AND payment_status = 'processing'
         RETURNING user_id`,
-        [order.order_id, sourceId]
-      );
+          [order.order_id, sourceId],
+        );
 
         // Only runs the first time (guards against duplicate webhook deliveries)
         if (upd.rows.length > 0) {
@@ -113,13 +126,13 @@ export async function POST(req: Request) {
              FROM order_items oi
              JOIN products p ON p.product_id = oi.product_id
              WHERE oi.order_id = $1 AND p.stock_quantity < oi.quantity`,
-            [order.order_id]
+            [order.order_id],
           );
           if (short.rows.length > 0) {
             console.error(
               `Order ${order.order_id} PAID but short on stock for: ${short.rows
                 .map((r) => r.product_name)
-                .join(", ")}`
+                .join(", ")}`,
             );
           }
 
@@ -128,7 +141,7 @@ export async function POST(req: Request) {
             SET stock_quantity = GREATEST(p.stock_quantity - oi.quantity, 0)
             FROM order_items oi
             WHERE oi.order_id = $1 AND oi.product_id = p.product_id`,
-            [order.order_id]
+            [order.order_id],
           );
 
           const emailRes = await client.query(
@@ -137,7 +150,7 @@ export async function POST(req: Request) {
              JOIN products p ON p.product_id = oi.product_id
              JOIN users u ON u.user_id = $2
              WHERE oi.order_id = $1`,
-            [order.order_id, upd.rows[0].user_id]
+            [order.order_id, upd.rows[0].user_id],
           );
           if (emailRes.rows.length > 0) {
             userEmail = emailRes.rows[0].email;
@@ -147,7 +160,7 @@ export async function POST(req: Request) {
               price: parseFloat(row.price),
             }));
           }
-          
+
           // Remove only cart entries unchanged since this order was created.
           // Edited or re-added products belong to the current cart and stay there.
           await client.query(
@@ -157,7 +170,7 @@ export async function POST(req: Request) {
               AND oi.order_id = $2
               AND c.product_id = oi.product_id
               AND c.checkout_revision = oi.cart_checkout_revision`,
-            [upd.rows[0].user_id, order.order_id]
+            [upd.rows[0].user_id, order.order_id],
           );
         }
 
@@ -183,10 +196,13 @@ export async function POST(req: Request) {
             order.recipient_name || "there",
             order.order_id,
             itemsForEmail,
-            parseFloat(order.total_amount)
+            parseFloat(order.total_amount),
           );
         } catch (emailError) {
-          console.error(`Order ${order.order_id} paid, but confirmation email failed:`, emailError);
+          console.error(
+            `Order ${order.order_id} paid, but confirmation email failed:`,
+            emailError,
+          );
         }
       }
     } else if (verifiedPayment && paymentAttributes.status === "failed") {
@@ -195,12 +211,12 @@ export async function POST(req: Request) {
         WHERE order_id = $1
           AND paymongo_source_id = $2
           AND payment_status = 'processing'`,
-        [order.order_id, sourceId]
+        [order.order_id, sourceId],
       );
     } else {
       console.error(
         `Order ${order.order_id}, source ${sourceId}: unresolved payment response`,
-        { httpStatus: payRes.status, paymentId: payment?.data?.id }
+        { httpStatus: payRes.status, paymentId: payment?.data?.id },
       );
 
       return new Response("Payment outcome requires verification", {

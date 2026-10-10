@@ -82,7 +82,10 @@ export function StatChip({
 }
 
 export type SortDirection = "asc" | "desc";
-export type SortConfig<K extends string> = { key: K; direction: SortDirection } | null;
+export type SortConfig<K extends string> = {
+  key: K;
+  direction: SortDirection;
+} | null;
 
 /** Clickable column header with an active-sort chevron indicator. */
 export function SortHeader<K extends string>({
@@ -165,9 +168,11 @@ export function CustomSelect({
 }) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(
-    null,
-  );
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
@@ -218,7 +223,12 @@ export function CustomSelect({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return;
     if (!open) {
-      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
+      if (
+        e.key === "ArrowDown" ||
+        e.key === "ArrowUp" ||
+        e.key === "Enter" ||
+        e.key === " "
+      ) {
         e.preventDefault();
         openList();
       }
@@ -258,7 +268,9 @@ export function CustomSelect({
         }
         className={`flex items-center justify-between gap-2 text-left disabled:opacity-50 disabled:cursor-not-allowed ${triggerClassName}`}
       >
-        <span className={`truncate ${!selectedOption ? "text-charcoal/40" : ""}`}>
+        <span
+          className={`truncate ${!selectedOption ? "text-charcoal/40" : ""}`}
+        >
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <motion.span

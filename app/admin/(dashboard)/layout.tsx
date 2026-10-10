@@ -16,7 +16,7 @@ import {
   ArrowUpRight,
   Moon,
   Sun,
-  ShieldCheck
+  ShieldCheck,
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
@@ -36,7 +36,12 @@ const navItems: NavItem[] = [
   { label: "Customers", href: "/admin/customers", icon: Users },
   { label: "Contact Messages", href: "/admin/contact", icon: Mail },
   { label: "Content Management", href: "/admin/cms", icon: FileText },
-  { label: "Admin Accounts", href: "/admin/accounts", icon: ShieldCheck, superAdminOnly: true },
+  {
+    label: "Admin Accounts",
+    href: "/admin/accounts",
+    icon: ShieldCheck,
+    superAdminOnly: true,
+  },
 ];
 
 export default function AdminLayout({
@@ -69,7 +74,11 @@ export default function AdminLayout({
     setMobileNavOpen(false);
   }, [pathname]);
 
-  if (isLoading || !user || (user.role !== "admin" && user.role !== "super_admin")) {
+  if (
+    isLoading ||
+    !user ||
+    (user.role !== "admin" && user.role !== "super_admin")
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F4F4F2]">
         <p className="font-body text-sm text-charcoal/60">Loading...</p>
@@ -86,7 +95,9 @@ export default function AdminLayout({
     <div className="h-screen flex bg-[#F4F4F2] dark:bg-[#202721] overflow-hidden">
       {/* Mobile top bar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-[#2b342e] border-b border-charcoal/10 flex items-center justify-between px-4 py-3">
-        <span className="font-display text-lg text-charcoal dark:text-[#dfe7dd]">Tea Atelier</span>
+        <span className="font-display text-lg text-charcoal dark:text-[#dfe7dd]">
+          Tea Atelier
+        </span>
         <button
           onClick={() => setMobileNavOpen(true)}
           aria-label="Open menu"
@@ -134,25 +145,27 @@ export default function AdminLayout({
 
         <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
           {navItems
-            .filter((item) => !item.superAdminOnly || user.role === "super_admin")
+            .filter(
+              (item) => !item.superAdminOnly || user.role === "super_admin",
+            )
             .map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-2.5 font-body text-sm rounded-xl transition-colors ${
-                  isActive
-                    ? "bg-sage text-cream dark:bg-[#71866e] dark:text-[#f0f4ed] font-medium shadow-sm"
-                    : "text-charcoal/60 dark:text-[#b9c5b7] hover:text-charcoal dark:hover:text-[#f0f4ed] hover:bg-sand/40 dark:hover:bg-[#354038]"
-                }`}
-              >
-                <Icon size={17} strokeWidth={1.75} />
-                {item.label}
-              </Link>
-            );
-          })}
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-4 py-2.5 font-body text-sm rounded-xl transition-colors ${
+                    isActive
+                      ? "bg-sage text-cream dark:bg-[#71866e] dark:text-[#f0f4ed] font-medium shadow-sm"
+                      : "text-charcoal/60 dark:text-[#b9c5b7] hover:text-charcoal dark:hover:text-[#f0f4ed] hover:bg-sand/40 dark:hover:bg-[#354038]"
+                  }`}
+                >
+                  <Icon size={17} strokeWidth={1.75} />
+                  {item.label}
+                </Link>
+              );
+            })}
         </nav>
 
         <div className="px-6 py-5 border-t border-charcoal/10 shrink-0">

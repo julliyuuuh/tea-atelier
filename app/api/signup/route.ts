@@ -6,28 +6,44 @@ import crypto from "crypto";
 
 export async function POST(req: Request) {
   try {
-    const { firstName, lastName, email, phoneNumber, password } = await req.json();
+    const { firstName, lastName, email, phoneNumber, password } =
+      await req.json();
 
     if (!firstName || !lastName || !email || !password) {
-      return NextResponse.json({ error: "All fields are required." }, { status: 400 });
+      return NextResponse.json(
+        { error: "All fields are required." },
+        { status: 400 },
+      );
     }
 
     if (password.length < 8) {
-      return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters." },
+        { status: 400 },
+      );
     }
 
-    const existing = await pool.query("SELECT user_id FROM users WHERE email = $1", [email]);
+    const existing = await pool.query(
+      "SELECT user_id FROM users WHERE email = $1",
+      [email],
+    );
     if (existing.rows.length > 0) {
-      return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+      return NextResponse.json(
+        { error: "An account with this email already exists." },
+        { status: 409 },
+      );
     }
 
     if (phoneNumber) {
       const existingPhone = await pool.query(
         "SELECT user_id FROM users WHERE phone_number = $1",
-        [phoneNumber]
+        [phoneNumber],
       );
       if (existingPhone.rows.length > 0) {
-        return NextResponse.json({ error: "An account with this phone number already exists." }, { status: 409 });
+        return NextResponse.json(
+          { error: "An account with this phone number already exists." },
+          { status: 409 },
+        );
       }
     }
 
@@ -39,11 +55,23 @@ export async function POST(req: Request) {
       `INSERT INTO users (first_name, last_name, email, phone_number, password_hash, role, verification_token, verification_token_expires)
       VALUES ($1, $2, $3, $4, $5, 'customer', $6, $7)
       RETURNING user_id, first_name, last_name, email, phone_number, role`,
-      [firstName, lastName, email, phoneNumber || null, passwordHash, verificationToken, tokenExpires]
+      [
+        firstName,
+        lastName,
+        email,
+        phoneNumber || null,
+        passwordHash,
+        verificationToken,
+        tokenExpires,
+      ],
     );
 
     const user = result.rows[0];
-    const token = signToken({ userId: user.user_id, email: user.email, role: user.role });
+    const token = signToken({
+      userId: user.user_id,
+      email: user.email,
+      role: user.role,
+    });
 
     try {
       await sendVerificationEmail(user.email, verificationToken);
@@ -65,6 +93,9 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Signup error:", error);
-    return NextResponse.json({ error: "Unable to create account." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to create account." },
+      { status: 500 },
+    );
   }
 }

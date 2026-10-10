@@ -44,7 +44,7 @@ function ResetPasswordForm() {
       setTimeout(() => router.push("/login"), 2500);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Something went wrong."
+        error instanceof Error ? error.message : "Something went wrong.",
       );
     } finally {
       setIsLoading(false);
@@ -104,7 +104,8 @@ function ResetPasswordForm() {
 
           {!token ? (
             <p className="font-body text-sm text-charcoal/70 text-center">
-              This reset link is missing a token. Please use the link from your email.
+              This reset link is missing a token. Please use the link from your
+              email.
             </p>
           ) : success ? (
             <p className="font-body text-sm text-sage text-center">

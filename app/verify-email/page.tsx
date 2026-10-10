@@ -7,7 +7,9 @@ import Link from "next/link";
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "success" | "error">(
+    "loading",
+  );
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
@@ -41,12 +43,16 @@ function VerifyEmailContent() {
         </a>
 
         {status === "loading" && (
-          <p className="font-body text-sm text-charcoal/60">Verifying your email...</p>
+          <p className="font-body text-sm text-charcoal/60">
+            Verifying your email...
+          </p>
         )}
 
         {status === "success" && (
           <>
-            <h1 className="font-display text-2xl text-charcoal mb-4">Email verified!</h1>
+            <h1 className="font-display text-2xl text-charcoal mb-4">
+              Email verified!
+            </h1>
             <p className="font-body text-sm text-charcoal/60 mb-8">
               Your account is now fully active.
             </p>
@@ -61,8 +67,12 @@ function VerifyEmailContent() {
 
         {status === "error" && (
           <>
-            <h1 className="font-display text-2xl text-charcoal mb-4">Verification failed</h1>
-            <p className="font-body text-sm text-red-600 mb-8">{errorMessage}</p>
+            <h1 className="font-display text-2xl text-charcoal mb-4">
+              Verification failed
+            </h1>
+            <p className="font-body text-sm text-red-600 mb-8">
+              {errorMessage}
+            </p>
             <Link
               href="/"
               className="inline-block bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"

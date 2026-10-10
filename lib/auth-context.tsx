@@ -10,7 +10,7 @@ type User = {
   role: "admin" | "customer" | "super_admin";
   phone: string | null;
   isVerified: boolean;
-  avatarUrl: string | null;  
+  avatarUrl: string | null;
 } | null;
 
 type AuthContextType = {
@@ -88,7 +88,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, logout, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

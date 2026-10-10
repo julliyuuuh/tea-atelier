@@ -7,7 +7,9 @@ export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req);
   if (error) return error;
 
-  const result = await pool.query("SELECT * FROM privacy_sections ORDER BY sort_order ASC");
+  const result = await pool.query(
+    "SELECT * FROM privacy_sections ORDER BY sort_order ASC",
+  );
   return NextResponse.json({ sections: result.rows });
 }
 
@@ -21,7 +23,7 @@ export async function POST(req: NextRequest) {
     `INSERT INTO privacy_sections (heading, body, sort_order)
      VALUES ($1, $2, COALESCE($3, 0))
      RETURNING *`,
-    [heading, body, sort_order]
+    [heading, body, sort_order],
   );
 
   return NextResponse.json({ section: result.rows[0] }, { status: 201 });

@@ -55,10 +55,18 @@ const formatDate = (iso: string, long = false) =>
     year: "numeric",
   });
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="border border-charcoal/10 rounded-xl p-4">
-      <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/50 mb-2">{title}</h3>
+      <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/50 mb-2">
+        {title}
+      </h3>
       {children}
     </div>
   );
@@ -67,7 +75,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 py-1">
-      <span className="font-body text-xs text-charcoal/50 shrink-0">{label}</span>
+      <span className="font-body text-xs text-charcoal/50 shrink-0">
+        {label}
+      </span>
       <span className="font-body text-sm text-charcoal text-right break-words min-w-0">
         {value || "—"}
       </span>
@@ -86,7 +96,11 @@ export default function CustomerDetailPanel({
 }) {
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
-  const [ordersMeta, setOrdersMeta] = useState<OrdersMeta>({ page: 1, total: 0, totalPages: 1 });
+  const [ordersMeta, setOrdersMeta] = useState<OrdersMeta>({
+    page: 1,
+    total: 0,
+    totalPages: 1,
+  });
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -104,9 +118,12 @@ export default function CustomerDetailPanel({
     setErrorMessage("");
 
     const token = localStorage.getItem("token");
-    fetch(`/api/admin/customers/${customerId}?page=${page}&limit=${ORDERS_PER_PAGE}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch(
+      `/api/admin/customers/${customerId}?page=${page}&limit=${ORDERS_PER_PAGE}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    )
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to load customer.");
@@ -121,7 +138,9 @@ export default function CustomerDetailPanel({
       })
       .catch((error) => {
         if (!cancelled) {
-          setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+          setErrorMessage(
+            error instanceof Error ? error.message : "Something went wrong.",
+          );
         }
       })
       .finally(() => {
@@ -228,7 +247,9 @@ export default function CustomerDetailPanel({
               )}
 
               {errorMessage && (
-                <p className="font-body text-sm text-red-600 mb-4">{errorMessage}</p>
+                <p className="font-body text-sm text-red-600 mb-4">
+                  {errorMessage}
+                </p>
               )}
 
               {current && (
@@ -258,9 +279,18 @@ export default function CustomerDetailPanel({
                         </div>
                       </div>
                       <Row label="Phone" value={current.phone} />
-                      <Row label="Joined" value={formatDate(current.joinedAt, true)} />
-                      <Row label="Email" value={current.isVerified ? "Verified" : "Unverified"} />
-                      <Row label="Account" value={current.isSuspended ? "Suspended" : "Active"} />
+                      <Row
+                        label="Joined"
+                        value={formatDate(current.joinedAt, true)}
+                      />
+                      <Row
+                        label="Email"
+                        value={current.isVerified ? "Verified" : "Unverified"}
+                      />
+                      <Row
+                        label="Account"
+                        value={current.isSuspended ? "Suspended" : "Active"}
+                      />
                     </Section>
                   </div>
 
@@ -319,7 +349,9 @@ export default function CustomerDetailPanel({
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                  onClick={() =>
+                                    setPage((p) => Math.max(1, p - 1))
+                                  }
                                   disabled={isLoading || ordersMeta.page === 1}
                                   className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"
                                 >
@@ -328,9 +360,14 @@ export default function CustomerDetailPanel({
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    setPage((p) => Math.min(ordersMeta.totalPages, p + 1))
+                                    setPage((p) =>
+                                      Math.min(ordersMeta.totalPages, p + 1),
+                                    )
                                   }
-                                  disabled={isLoading || ordersMeta.page === ordersMeta.totalPages}
+                                  disabled={
+                                    isLoading ||
+                                    ordersMeta.page === ordersMeta.totalPages
+                                  }
                                   className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"
                                 >
                                   Next

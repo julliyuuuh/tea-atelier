@@ -3,7 +3,7 @@ import { pool } from "@/lib/db";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -11,12 +11,15 @@ export async function GET(
     const result = await pool.query(
       `SELECT product_id, product_name, product_desc, product_image, category, price, status, stock_quantity
        FROM products WHERE product_id = $1 AND is_archived = false`,
-      [id]
+      [id],
     );
 
     const row = result.rows[0];
     if (!row) {
-      return NextResponse.json({ error: "Product not found." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Product not found." },
+        { status: 404 },
+      );
     }
 
     const product = {
@@ -32,6 +35,9 @@ export async function GET(
 
     return NextResponse.json({ product });
   } catch (error) {
-    return NextResponse.json({ error: "Unable to load product." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to load product." },
+      { status: 500 },
+    );
   }
 }

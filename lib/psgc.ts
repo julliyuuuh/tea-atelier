@@ -37,11 +37,18 @@ function push(map: Map<string, PsgcItem[]>, key: string, item: PsgcItem) {
 const provinces = [...(provincesJson as PsgcItem[])].sort(byName);
 
 const citiesByProv = new Map<string, PsgcItem[]>();
-for (const c of citiesJson as PsgcItem[]) push(citiesByProv, `${c.reg}:${c.prv}`, c);
+for (const c of citiesJson as PsgcItem[])
+  push(citiesByProv, `${c.reg}:${c.prv}`, c);
 
 const barangaysByProv = new Map<string, PsgcItem[]>(); // everything under a prv
 const barangaysByMun = new Map<string, PsgcItem[]>(); // under one city/municipality
-for (const [code, name, reg, prv, mun] of barangaysJson as unknown as BarangayRow[]) {
+for (const [
+  code,
+  name,
+  reg,
+  prv,
+  mun,
+] of barangaysJson as unknown as BarangayRow[]) {
   const item: PsgcItem = { code, name, level: "Bgy", reg, prv, mun };
   push(barangaysByProv, `${reg}:${prv}`, item);
   push(barangaysByMun, `${reg}:${prv}:${mun}`, item);
@@ -67,8 +74,14 @@ export async function getCities(reg: number, prv: number): Promise<PsgcItem[]> {
 // Barangays of one city/municipality. For a HUC, pass mun = 0: a HUC owns its
 // whole prv, so take every barangay in it. That also covers Manila, whose
 // barangays sit under its districts (mun 1-16) instead of directly under the city.
-export async function getBarangays(reg: number, prv: number, mun: number): Promise<PsgcItem[]> {
+export async function getBarangays(
+  reg: number,
+  prv: number,
+  mun: number,
+): Promise<PsgcItem[]> {
   const list =
-    mun === 0 ? barangaysByProv.get(`${reg}:${prv}`) : barangaysByMun.get(`${reg}:${prv}:${mun}`);
+    mun === 0
+      ? barangaysByProv.get(`${reg}:${prv}`)
+      : barangaysByMun.get(`${reg}:${prv}:${mun}`);
   return list ?? [];
 }

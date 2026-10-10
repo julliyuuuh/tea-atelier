@@ -15,7 +15,6 @@ type FormFieldProps = {
   maxLength?: number;
 };
 
-
 export default function FormField({
   label,
   value,
@@ -54,14 +53,18 @@ export default function FormField({
         onBlur={() => setFocused(false)}
         animate={{
           borderColor: focused ? "rgba(138,154,126,0.9)" : "rgba(41,37,36,0.2)",
-          boxShadow: focused ? "0 0 0 3px rgba(138,154,126,0.15)" : "0 0 0 0px rgba(138,154,126,0)",
+          boxShadow: focused
+            ? "0 0 0 3px rgba(138,154,126,0.15)"
+            : "0 0 0 0px rgba(138,154,126,0)",
         }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         className={`w-full rounded-xl border px-4 py-3 font-body text-sm text-charcoal outline-none ${
           disabled ? "text-charcoal/50 bg-sand/20 cursor-not-allowed" : ""
         }`}
       />
-      {hint && <p className="font-body text-xs text-charcoal/40 mt-1.5">{hint}</p>}
+      {hint && (
+        <p className="font-body text-xs text-charcoal/40 mt-1.5">{hint}</p>
+      )}
     </div>
   );
 }

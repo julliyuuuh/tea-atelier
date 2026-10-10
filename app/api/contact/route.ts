@@ -7,7 +7,8 @@ const MESSAGE_MAX_LENGTH = 5000;
 
 export async function GET(req: Request) {
   const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
   const page = parseInt(url.searchParams.get("page") || "1", 10);
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
 
   const countResult = await pool.query(
     "SELECT COUNT(*) FROM contact_messages WHERE user_id = $1",
-    [userId]
+    [userId],
   );
   const totalMessages = parseInt(countResult.rows[0].count, 10);
   const totalPages = Math.ceil(totalMessages / pageSize);
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
     WHERE user_id = $1
     ORDER BY created_at DESC
     LIMIT $2 OFFSET $3`,
-    [userId, pageSize, offset]
+    [userId, pageSize, offset],
   );
 
   const messages = messagesResult.rows.map((m) => ({
@@ -40,44 +41,60 @@ export async function GET(req: Request) {
     repliedAt: m.replied_at,
     customerViewedAt: m.customer_viewed_at,
   }));
-  
+
   return NextResponse.json({ messages, totalPages, currentPage: page });
 }
 
 export async function POST(req: Request) {
   const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const { subject, message } = await req.json();
 
     if (!subject || typeof subject !== "string" || !subject.trim()) {
-      return NextResponse.json({ error: "Subject is required." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Subject is required." },
+        { status: 400 },
+      );
     }
     if (!message || typeof message !== "string" || !message.trim()) {
-      return NextResponse.json({ error: "Message is required." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Message is required." },
+        { status: 400 },
+      );
     }
 
     const trimmedSubject = subject.trim();
     const trimmedMessage = message.trim();
 
     if (trimmedSubject.length > 255) {
-      return NextResponse.json({ error: "Subject must be under 255 characters." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Subject must be under 255 characters." },
+        { status: 400 },
+      );
     }
     if (trimmedMessage.length > 5000) {
-      return NextResponse.json({ error: "Message must be under 5000 characters." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Message must be under 5000 characters." },
+        { status: 400 },
+      );
     }
 
     const result = await pool.query(
       `INSERT INTO contact_messages (user_id, subject, message)
        VALUES ($1, $2, $3)
        RETURNING message_id, subject, message, status, created_at`,
-      [userId, trimmedSubject, trimmedMessage]
+      [userId, trimmedSubject, trimmedMessage],
     );
 
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (err) {
     console.error("POST /api/contact failed:", err);
-    return NextResponse.json({ error: "Unable to send message." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to send message." },
+      { status: 500 },
+    );
   }
 }

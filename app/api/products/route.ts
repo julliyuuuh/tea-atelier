@@ -7,7 +7,7 @@ export async function GET() {
       `SELECT product_id, product_name, product_desc, product_image, category, price, status, stock_quantity
       FROM products
       WHERE is_archived = false
-      ORDER BY product_id DESC`
+      ORDER BY product_id DESC`,
     );
 
     const products = result.rows.map((row) => ({
@@ -23,6 +23,9 @@ export async function GET() {
 
     return NextResponse.json({ products });
   } catch (error) {
-    return NextResponse.json({ error: "Unable to load products." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to load products." },
+      { status: 500 },
+    );
   }
 }

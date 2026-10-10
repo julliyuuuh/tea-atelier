@@ -36,16 +36,19 @@ const STATUS_OPTIONS = [
   { value: "replied", label: "Replied" },
 ];
 
-const statusTone: Record<AdminMessage["status"], "sage" | "amber" | "neutral"> = {
-  new: "amber",
-  read: "neutral",
-  replied: "sage",
-};
+const statusTone: Record<AdminMessage["status"], "sage" | "amber" | "neutral"> =
+  {
+    new: "amber",
+    read: "neutral",
+    replied: "sage",
+  };
 
 const GRID_COLS =
   "minmax(200px,2.2fr) minmax(220px,2.6fr) minmax(110px,0.9fr) minmax(120px,1fr)";
 
-function buildQuery(params: Record<string, string | number | boolean | undefined>) {
+function buildQuery(
+  params: Record<string, string | number | boolean | undefined>,
+) {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === "" || value === "All") return;
@@ -105,7 +108,9 @@ export default function AdminContactPage() {
           setCurrentPage(page - 1);
         }
       } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+        setErrorMessage(
+          error instanceof Error ? error.message : "Something went wrong.",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -141,7 +146,9 @@ export default function AdminContactPage() {
         });
         if (res.ok) {
           setMessages((prev) =>
-            prev.map((msg) => (msg.id === m.id ? { ...msg, status: "read" } : msg))
+            prev.map((msg) =>
+              msg.id === m.id ? { ...msg, status: "read" } : msg,
+            ),
           );
           setStats((prev) => ({ ...prev, new: Math.max(0, prev.new - 1) }));
         }
@@ -174,14 +181,21 @@ export default function AdminContactPage() {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === id
-            ? { ...msg, status: "replied", adminReply: data.adminReply, repliedAt: data.repliedAt }
-            : msg
-        )
+            ? {
+                ...msg,
+                status: "replied",
+                adminReply: data.adminReply,
+                repliedAt: data.repliedAt,
+              }
+            : msg,
+        ),
       );
       setStats((prev) => ({ ...prev, replied: prev.replied + 1 }));
       setReplyDrafts((prev) => ({ ...prev, [id]: "" }));
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     } finally {
       setSubmittingId(null);
     }
@@ -222,7 +236,10 @@ export default function AdminContactPage() {
         </div>
       </div>
 
-      <ErrorBanner message={errorMessage} onRetry={() => loadMessages(currentPage)} />
+      <ErrorBanner
+        message={errorMessage}
+        onRetry={() => loadMessages(currentPage)}
+      />
 
       <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-charcoal/10 rounded-xl px-4 py-3">
         <input
@@ -295,15 +312,26 @@ export default function AdminContactPage() {
         {!isLoading && (
           <AnimatePresence initial={false}>
             {messages.map((m, index) => (
-              <motion.div key={m.id} custom={index} variants={rowVariants} initial="initial" animate="animate" exit="exit">
+              <motion.div
+                key={m.id}
+                custom={index}
+                variants={rowVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
                 <div
                   onClick={() => handleExpand(m)}
                   className="grid items-center py-3 border-b border-charcoal/5 cursor-pointer hover:bg-sand/20 hover:shadow-sm transition-colors overflow-hidden"
                   style={{ gridTemplateColumns: GRID_COLS }}
                 >
                   <div className="px-5 min-w-0">
-                    <p className="font-body text-sm text-charcoal truncate">{m.customerName}</p>
-                    <p className="font-body text-xs text-charcoal/50 truncate">{m.customerEmail}</p>
+                    <p className="font-body text-sm text-charcoal truncate">
+                      {m.customerName}
+                    </p>
+                    <p className="font-body text-xs text-charcoal/50 truncate">
+                      {m.customerEmail}
+                    </p>
                   </div>
                   <div className="px-5 min-w-0">
                     <span className="font-body text-sm text-charcoal/70 truncate block">
@@ -326,29 +354,40 @@ export default function AdminContactPage() {
 
                 {expandedId === m.id && (
                   <div className="px-5 py-5 bg-sand/10 border-b border-charcoal/5">
-                    <p className="font-body text-sm text-charcoal/80 mb-4">{m.message}</p>
+                    <p className="font-body text-sm text-charcoal/80 mb-4">
+                      {m.message}
+                    </p>
 
                     {m.adminReply && (
                       <div className="bg-sage/10 rounded-lg p-4 mb-4">
                         <p className="font-body text-xs uppercase tracking-wide text-sage mb-1">
                           Your reply
                         </p>
-                        <p className="font-body text-sm text-charcoal/80">{m.adminReply}</p>
+                        <p className="font-body text-sm text-charcoal/80">
+                          {m.adminReply}
+                        </p>
                         {m.repliedAt && (
                           <p className="font-body text-xs text-charcoal/40 mt-2">
-                            Sent {new Date(m.repliedAt).toLocaleDateString("en-PH")}
+                            Sent{" "}
+                            {new Date(m.repliedAt).toLocaleDateString("en-PH")}
                           </p>
                         )}
                       </div>
                     )}
 
                     {m.status !== "replied" && (
-                      <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="space-y-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <textarea
                           rows={4}
                           value={replyDrafts[m.id] || ""}
                           onChange={(e) =>
-                            setReplyDrafts((prev) => ({ ...prev, [m.id]: e.target.value }))
+                            setReplyDrafts((prev) => ({
+                              ...prev,
+                              [m.id]: e.target.value,
+                            }))
                           }
                           placeholder="Write your reply..."
                           className="w-full rounded-xl border border-charcoal/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
@@ -356,7 +395,9 @@ export default function AdminContactPage() {
                         <button
                           type="button"
                           onClick={() => handleReply(m.id)}
-                          disabled={submittingId === m.id || !replyDrafts[m.id]?.trim()}
+                          disabled={
+                            submittingId === m.id || !replyDrafts[m.id]?.trim()
+                          }
                           className="rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase px-6 py-2.5 hover:bg-charcoal transition-colors disabled:opacity-50"
                         >
                           {submittingId === m.id ? "Sending..." : "Send Reply"}

@@ -42,6 +42,9 @@ export async function GET() {
     return NextResponse.json({ products });
   } catch (error) {
     console.error("Best sellers fetch error:", error);
-    return NextResponse.json({ error: "Unable to load best sellers." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to load best sellers." },
+      { status: 500 },
+    );
   }
 }

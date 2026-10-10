@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ShieldCheck, Plus, X } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
-import { ErrorBanner, PlainHeader, rowVariants } from "@/components/admin/AdminUI";
+import {
+  ErrorBanner,
+  PlainHeader,
+  rowVariants,
+} from "@/components/admin/AdminUI";
 import ConfirmDialog from "@/components/account/ConfirmDialog";
 import { useAuth } from "@/lib/auth-context";
 
@@ -73,7 +77,9 @@ function AccountModal({
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
-        editing ? `/api/admin/accounts/${editing.user_id}` : "/api/admin/accounts",
+        editing
+          ? `/api/admin/accounts/${editing.user_id}`
+          : "/api/admin/accounts",
         {
           method: editing ? "PATCH" : "POST",
           headers: {
@@ -152,13 +158,19 @@ function AccountModal({
                 type="password"
                 autoComplete="new-password"
                 className={inputClass}
-                placeholder={editing ? "New password (leave blank to keep)" : "Password (min 8 characters)"}
+                placeholder={
+                  editing
+                    ? "New password (leave blank to keep)"
+                    : "Password (min 8 characters)"
+                }
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
-            {error && <p className="font-body text-sm text-red-600 mt-3">{error}</p>}
+            {error && (
+              <p className="font-body text-sm text-red-600 mt-3">{error}</p>
+            )}
 
             <div className="flex justify-end gap-2 mt-6">
               <button
@@ -214,7 +226,9 @@ export default function AdminAccountsPage() {
       if (!res.ok) throw new Error(data.error || "Unable to load accounts.");
       setAccounts(data.accounts);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -240,7 +254,9 @@ export default function AdminAccountsPage() {
       if (!res.ok) throw new Error(data.error || "Unable to delete account.");
       setAccounts((prev) => prev.filter((a) => a.user_id !== user_id));
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Something went wrong.");
+      setActionError(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -252,9 +268,13 @@ export default function AdminAccountsPage() {
     <div className="p-4 sm:p-6 lg:p-10">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="font-body text-2xl font-medium text-charcoal mb-1">Admin Accounts</h1>
+          <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
+            Admin Accounts
+          </h1>
           <p className="font-body text-sm text-charcoal/60">
-            {isLoading ? "Loading..." : `${accounts.length} account${accounts.length === 1 ? "" : "s"}`}
+            {isLoading
+              ? "Loading..."
+              : `${accounts.length} account${accounts.length === 1 ? "" : "s"}`}
           </p>
         </div>
         <button
@@ -268,9 +288,17 @@ export default function AdminAccountsPage() {
       <ErrorBanner message={errorMessage} onRetry={loadAccounts} />
       <ErrorBanner message={actionError} />
 
-      <div className="bg-white border border-charcoal/10 rounded-xl overflow-hidden" role="table" aria-label="Admin accounts">
+      <div
+        className="bg-white border border-charcoal/10 rounded-xl overflow-hidden"
+        role="table"
+        aria-label="Admin accounts"
+      >
         <div role="rowgroup">
-          <div role="row" className="grid items-center border-b border-charcoal/10" style={{ gridTemplateColumns: GRID_COLS }}>
+          <div
+            role="row"
+            className="grid items-center border-b border-charcoal/10"
+            style={{ gridTemplateColumns: GRID_COLS }}
+          >
             <PlainHeader label="Admin" />
             <PlainHeader label="Role" />
             <PlainHeader label="Created" />
@@ -281,13 +309,22 @@ export default function AdminAccountsPage() {
         <div role="rowgroup">
           {isLoading &&
             Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} role="row" className="grid items-center py-3 border-b border-charcoal/5 last:border-0" style={{ gridTemplateColumns: GRID_COLS }}>
+              <div
+                key={i}
+                role="row"
+                className="grid items-center py-3 border-b border-charcoal/5 last:border-0"
+                style={{ gridTemplateColumns: GRID_COLS }}
+              >
                 <div className="px-5 space-y-1.5">
                   <SkeletonBlock className="h-4 w-32" />
                   <SkeletonBlock className="h-3 w-40" />
                 </div>
-                <div className="px-5"><SkeletonBlock className="h-6 w-24 rounded-full" /></div>
-                <div className="px-5"><SkeletonBlock className="h-4 w-20" /></div>
+                <div className="px-5">
+                  <SkeletonBlock className="h-6 w-24 rounded-full" />
+                </div>
+                <div className="px-5">
+                  <SkeletonBlock className="h-4 w-20" />
+                </div>
                 <div className="px-5 flex justify-end gap-3">
                   <SkeletonBlock className="h-4 w-8" />
                   <SkeletonBlock className="h-4 w-12" />
@@ -315,12 +352,16 @@ export default function AdminAccountsPage() {
                       <p className="font-body text-sm text-charcoal truncate">
                         {account.first_name} {account.last_name}
                       </p>
-                      <p className="font-body text-xs text-charcoal/50 truncate">{account.email}</p>
+                      <p className="font-body text-xs text-charcoal/50 truncate">
+                        {account.email}
+                      </p>
                     </div>
                     <div role="cell" className="px-5">
                       <span
                         className={`inline-flex items-center gap-1.5 font-body text-xs px-3 py-1 rounded-full ${
-                          isSuper ? "bg-sage/15 text-sage" : "bg-charcoal/10 text-charcoal/60"
+                          isSuper
+                            ? "bg-sage/15 text-sage"
+                            : "bg-charcoal/10 text-charcoal/60"
                         }`}
                       >
                         {isSuper && <ShieldCheck size={12} />}
@@ -329,16 +370,24 @@ export default function AdminAccountsPage() {
                     </div>
                     <div role="cell" className="px-5">
                       <span className="font-body text-xs text-charcoal/50">
-                        {new Date(account.created_at).toLocaleDateString("en-PH", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        {new Date(account.created_at).toLocaleDateString(
+                          "en-PH",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
+                        )}
                       </span>
                     </div>
-                    <div role="cell" className="px-5 flex items-center justify-end gap-4">
+                    <div
+                      role="cell"
+                      className="px-5 flex items-center justify-end gap-4"
+                    >
                       {isSuper ? (
-                        <span className="font-body text-xs text-charcoal/30">Protected</span>
+                        <span className="font-body text-xs text-charcoal/30">
+                          Protected
+                        </span>
                       ) : (
                         <>
                           <button
@@ -365,9 +414,14 @@ export default function AdminAccountsPage() {
 
           {!isLoading && accounts.length === 0 && !errorMessage && (
             <div role="row" className="px-5 py-10">
-              <div role="cell" className="flex flex-col items-center gap-2 text-center">
+              <div
+                role="cell"
+                className="flex flex-col items-center gap-2 text-center"
+              >
                 <ShieldCheck className="w-8 h-8 text-charcoal/20" />
-                <span className="font-body text-sm text-charcoal/40">No admin accounts yet.</span>
+                <span className="font-body text-sm text-charcoal/40">
+                  No admin accounts yet.
+                </span>
               </div>
             </div>
           )}

@@ -61,7 +61,9 @@ function rowStatusOptions(order: Order) {
   }
   return ROW_STATUS_OPTIONS.filter(
     (o) =>
-      o.value === order.status || o.value === "PLACED" || o.value === "CANCELLED",
+      o.value === order.status ||
+      o.value === "PLACED" ||
+      o.value === "CANCELLED",
   );
 }
 
@@ -93,15 +95,27 @@ function statusBadge(status: string) {
     case "PLACED":
       return { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" };
     case "PROCESSING":
-      return { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500" };
+      return {
+        bg: "bg-purple-50",
+        text: "text-purple-700",
+        dot: "bg-purple-500",
+      };
     case "SHIPPED":
       return { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" };
     case "DELIVERED":
-      return { bg: "bg-green-100", text: "text-green-700", dot: "bg-green-500" };
+      return {
+        bg: "bg-green-100",
+        text: "text-green-700",
+        dot: "bg-green-500",
+      };
     case "CANCELLED":
       return { bg: "bg-red-50", text: "text-red-600", dot: "bg-red-500" };
     default:
-      return { bg: "bg-charcoal/10", text: "text-charcoal/60", dot: "bg-charcoal/40" };
+      return {
+        bg: "bg-charcoal/10",
+        text: "text-charcoal/60",
+        dot: "bg-charcoal/40",
+      };
   }
 }
 
@@ -116,7 +130,9 @@ function paymentBadge(status: string) {
   }
 }
 
-function buildQuery(params: Record<string, string | number | boolean | undefined>) {
+function buildQuery(
+  params: Record<string, string | number | boolean | undefined>,
+) {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === "" || value === "All") return;
@@ -188,7 +204,9 @@ export default function AdminOrdersPage() {
           setCurrentPage(page - 1);
         }
       } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+        setErrorMessage(
+          error instanceof Error ? error.message : "Something went wrong.",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -216,7 +234,8 @@ export default function AdminOrdersPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Unable to update order status.");
+      if (!res.ok)
+        throw new Error(data.error || "Unable to update order status.");
 
       // A status change can move the row out of the current status filter
       // (e.g. filtering by "Pending" and marking one Shipped), so reload
@@ -252,13 +271,18 @@ export default function AdminOrdersPage() {
         }));
       }
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Something went wrong.");
+      setActionError(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     } finally {
       setUpdatingId(null);
     }
   };
 
-  const handlePaymentChange = async (orderId: number, newPaymentStatus: string) => {
+  const handlePaymentChange = async (
+    orderId: number,
+    newPaymentStatus: string,
+  ) => {
     setUpdatingId(orderId);
     setActionError("");
     const token = localStorage.getItem("token");
@@ -273,7 +297,8 @@ export default function AdminOrdersPage() {
         body: JSON.stringify({ paymentStatus: newPaymentStatus }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Unable to update payment status.");
+      if (!res.ok)
+        throw new Error(data.error || "Unable to update payment status.");
 
       // Same idea as status changes: if the row no longer matches the
       // active payment filter, reload instead of patching in place.
@@ -287,7 +312,9 @@ export default function AdminOrdersPage() {
         );
       }
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Something went wrong.");
+      setActionError(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     } finally {
       setUpdatingId(null);
     }
@@ -350,7 +377,10 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      <ErrorBanner message={errorMessage} onRetry={() => loadOrders(currentPage)} />
+      <ErrorBanner
+        message={errorMessage}
+        onRetry={() => loadOrders(currentPage)}
+      />
       <ErrorBanner message={actionError} />
 
       {/* Filter toolbar */}
@@ -407,7 +437,12 @@ export default function AdminOrdersPage() {
             className="grid items-center border-b border-charcoal/10"
             style={{ gridTemplateColumns: GRID_COLS }}
           >
-            <SortHeader label="Order" sortKeyName="id" sortConfig={sortConfig} onSort={handleSort} />
+            <SortHeader
+              label="Order"
+              sortKeyName="id"
+              sortConfig={sortConfig}
+              onSort={handleSort}
+            />
             <PlainHeader label="Customer" />
             <SortHeader
               label="Items"
@@ -492,12 +527,16 @@ export default function AdminOrdersPage() {
                     style={{ gridTemplateColumns: GRID_COLS }}
                   >
                     <div role="cell" className="px-5">
-                      <span className="font-body text-sm text-charcoal">TA-{order.id}</span>
+                      <span className="font-body text-sm text-charcoal">
+                        TA-{order.id}
+                      </span>
                       {unpaidOnline && (
                         <span
                           className={`mt-1 block w-fit whitespace-nowrap font-body text-[10px] px-2 py-0.5 rounded-full ${pBadge.bg} ${pBadge.text}`}
                         >
-                          {order.paymentStatus === "failed" ? "Payment failed" : "Unpaid"}
+                          {order.paymentStatus === "failed"
+                            ? "Payment failed"
+                            : "Unpaid"}
                         </span>
                       )}
                     </div>
@@ -532,7 +571,9 @@ export default function AdminOrdersPage() {
                       <CustomSelect
                         id={`order-status-${order.id}`}
                         value={order.status}
-                        onChange={(value) => handleStatusChange(order.id, value)}
+                        onChange={(value) =>
+                          handleStatusChange(order.id, value)
+                        }
                         options={rowStatusOptions(order)}
                         disabled={updatingId === order.id}
                         triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${badge.bg} ${badge.text}`}
@@ -555,7 +596,10 @@ export default function AdminOrdersPage() {
 
           {!isLoading && orders.length === 0 && (
             <div role="row" className="px-5 py-10">
-              <div role="cell" className="flex flex-col items-center gap-2 text-center">
+              <div
+                role="cell"
+                className="flex flex-col items-center gap-2 text-center"
+              >
                 <ClipboardList className="w-8 h-8 text-charcoal/20" />
                 <span className="font-body text-sm text-charcoal/40">
                   No orders match your filters.

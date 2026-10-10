@@ -23,10 +23,16 @@ export async function POST(req: Request) {
   }
 
   if (file.size > 5 * 1024 * 1024) {
-    return NextResponse.json({ error: "Image must be under 5MB." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Image must be under 5MB." },
+      { status: 400 },
+    );
   }
   if (!["image/jpeg", "image/png"].includes(file.type)) {
-    return NextResponse.json({ error: "Only JPG or PNG images are supported." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Only JPG or PNG images are supported." },
+      { status: 400 },
+    );
   }
 
   const bytes = await file.arrayBuffer();
@@ -45,6 +51,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: uploadResult.secure_url });
   } catch (error) {
     console.error("Avatar upload error:", error);
-    return NextResponse.json({ error: "Unable to upload photo." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to upload photo." },
+      { status: 500 },
+    );
   }
 }

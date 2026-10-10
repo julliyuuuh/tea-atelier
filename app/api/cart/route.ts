@@ -8,7 +8,8 @@ function toAvailability(status: string): "In Stock" | "Out of Stock" {
 
 export async function GET(req: Request) {
   const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const result = await pool.query(
     `SELECT
@@ -24,7 +25,7 @@ export async function GET(req: Request) {
      FROM cart c
      JOIN products p ON p.product_id = c.product_id
      WHERE c.user_id = $1`,
-    [userId]
+    [userId],
   );
 
   const items = result.rows.map((row) => ({
@@ -46,16 +47,20 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { productId, quantity = 1 } = await req.json();
   if (!productId) {
-    return NextResponse.json({ error: "productId is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "productId is required" },
+      { status: 400 },
+    );
   }
 
   const productResult = await pool.query(
     "SELECT stock_quantity FROM products WHERE product_id = $1",
-    [productId]
+    [productId],
   );
   const product = productResult.rows[0];
   if (!product) {
@@ -64,7 +69,7 @@ export async function POST(req: Request) {
 
   const existing = await pool.query(
     "SELECT quantity FROM cart WHERE user_id = $1 AND product_id = $2",
-    [userId, productId]
+    [userId, productId],
   );
 
   const currentCartQuantity = existing.rows[0]?.quantity || 0;
@@ -73,19 +78,19 @@ export async function POST(req: Request) {
   if (newTotalQuantity > product.stock_quantity) {
     return NextResponse.json(
       { error: `Only ${product.stock_quantity} in stock.` },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   if (existing.rows.length > 0) {
     await pool.query(
       "UPDATE cart SET quantity = quantity + $1 WHERE user_id = $2 AND product_id = $3",
-      [quantity, userId, productId]
+      [quantity, userId, productId],
     );
   } else {
     await pool.query(
       "INSERT INTO cart (user_id, product_id, quantity) VALUES ($1, $2, $3)",
-      [userId, productId, quantity]
+      [userId, productId, quantity],
     );
   }
 
@@ -94,7 +99,8 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await pool.query("DELETE FROM cart WHERE user_id = $1", [userId]);
   return NextResponse.json({ success: true });

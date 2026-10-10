@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   if (error) return error;
 
   const result = await pool.query(
-    "SELECT * FROM homepage_categories ORDER BY sort_order ASC"
+    "SELECT * FROM homepage_categories ORDER BY sort_order ASC",
   );
   return NextResponse.json({ categories: result.rows });
 }
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     `INSERT INTO homepage_categories (name, image, description, sort_order)
      VALUES ($1, $2, $3, COALESCE($4, 0))
      RETURNING *`,
-    [name, image, description, sort_order]
+    [name, image, description, sort_order],
   );
 
   return NextResponse.json({ category: result.rows[0] }, { status: 201 });

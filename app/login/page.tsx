@@ -12,7 +12,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
   const googleButtonRef = useRef<HTMLDivElement>(null);
-  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [totpCode, setTotpCode] = useState("");
@@ -46,7 +46,10 @@ function LoginForm() {
 
   const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
     if (!pasted) return;
     const next = Array(6).fill("");
     pasted.split("").forEach((d, i) => (next[i] = d));
@@ -56,7 +59,12 @@ function LoginForm() {
   };
 
   useEffect(() => {
-    if (  !authLoading && user && user.role !== "admin" && user.role !== "super_admin") {
+    if (
+      !authLoading &&
+      user &&
+      user.role !== "admin" &&
+      user.role !== "super_admin"
+    ) {
       window.location.href = redirectTo || "/";
     }
   }, [user, authLoading, redirectTo]);
@@ -123,7 +131,11 @@ function LoginForm() {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, totpCode: needsTotp ? totpCode : undefined }),
+        body: JSON.stringify({
+          email,
+          password,
+          totpCode: needsTotp ? totpCode : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed.");

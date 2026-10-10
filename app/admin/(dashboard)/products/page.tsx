@@ -33,16 +33,16 @@ type Stats = {
 // selection. Both resolve down to the same single-id DELETE endpoint below —
 // bulk delete is N sequential calls to the existing endpoint, not a new one.
 type ConfirmTarget =
-  | { type: "single"; id: string }
-  | { type: "bulk"; ids: string[] }
-  | null;
+  { type: "single"; id: string } | { type: "bulk"; ids: string[] } | null;
 
 // Shared column layout so the header, skeleton rows, and data rows always line up.
 // First column is the row-select checkbox.
 const GRID_COLS =
   "40px minmax(220px,2.2fr) minmax(110px,1fr) minmax(90px,0.8fr) minmax(90px,0.8fr) minmax(120px,1.1fr) minmax(140px,1fr)";
 
-function buildQuery(params: Record<string, string | number | boolean | undefined>) {
+function buildQuery(
+  params: Record<string, string | number | boolean | undefined>,
+) {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === "" || value === "All") return;
@@ -155,7 +155,8 @@ export default function AdminProductsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to load archived products.");
+      if (!res.ok)
+        throw new Error(data.error || "Unable to load archived products.");
       setArchivedProducts(data.products);
       setArchivedLoaded(true);
     } catch (error) {
@@ -230,7 +231,9 @@ export default function AdminProductsPage() {
       ),
     );
 
-    const succeededCount = results.filter((r) => r.status === "fulfilled").length;
+    const succeededCount = results.filter(
+      (r) => r.status === "fulfilled",
+    ).length;
     const failedCount = results.length - succeededCount;
 
     if (failedCount > 0) {
@@ -346,7 +349,11 @@ export default function AdminProductsPage() {
           <div className="flex flex-wrap gap-1.5">
             <StatChip label="Active Products" value={stats.active} />
             <StatChip label="Low Stock" value={stats.lowStock} tone="warning" />
-            <StatChip label="Out of Stock" value={stats.outOfStock} tone="danger" />
+            <StatChip
+              label="Out of Stock"
+              value={stats.outOfStock}
+              tone="danger"
+            />
           </div>
 
           <button
@@ -359,7 +366,10 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      <ErrorBanner message={errorMessage} onRetry={() => loadProducts(currentPage)} />
+      <ErrorBanner
+        message={errorMessage}
+        onRetry={() => loadProducts(currentPage)}
+      />
       <ErrorBanner message={actionError} />
 
       {/* Filter toolbar */}
@@ -575,7 +585,10 @@ export default function AdminProductsPage() {
                         className="w-3.5 h-3.5 rounded border-charcoal/30 accent-charcoal cursor-pointer"
                       />
                     </div>
-                    <div role="cell" className="px-5 flex items-center gap-3 min-w-0">
+                    <div
+                      role="cell"
+                      className="px-5 flex items-center gap-3 min-w-0"
+                    >
                       <div className="w-10 h-10 rounded-lg bg-sand overflow-hidden shrink-0">
                         <img
                           src={product.image}
@@ -629,7 +642,10 @@ export default function AdminProductsPage() {
                             : "In Stock"}
                       </span>
                     </div>
-                    <div role="cell" className="px-5 flex items-center justify-end gap-4">
+                    <div
+                      role="cell"
+                      className="px-5 flex items-center justify-end gap-4"
+                    >
                       <button
                         onClick={() => openEditModal(product)}
                         className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal hover:bg-sand/30 transition-colors"
@@ -653,7 +669,10 @@ export default function AdminProductsPage() {
 
           {!isLoading && products.length === 0 && (
             <div role="row" className="px-5 py-10">
-              <div role="cell" className="flex flex-col items-center gap-2 text-center">
+              <div
+                role="cell"
+                className="flex flex-col items-center gap-2 text-center"
+              >
                 <Package className="w-8 h-8 text-charcoal/20" />
                 <span className="font-body text-sm text-charcoal/40">
                   No products match your filters.
@@ -725,7 +744,9 @@ export default function AdminProductsPage() {
                   {archivedLoading ? (
                     <div className="px-5 py-6 flex items-center gap-2 text-charcoal/50">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="font-body text-sm">Loading archived products...</span>
+                      <span className="font-body text-sm">
+                        Loading archived products...
+                      </span>
                     </div>
                   ) : (
                     <table className="w-full text-left">

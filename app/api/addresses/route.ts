@@ -1,102 +1,115 @@
 import { NextResponse } from "next/server";
+import type { PoolClient } from "pg";
 import { pool } from "@/lib/db";
-import { verifyToken } from "@/lib/auth-server";
+import { requireUser } from "@/lib/require-user";
+import {
+  parseAddress,
+  parseDefaults,
+  parseBillingDetails,
+} from "@/lib/profile-address";
+import {
+  ADDRESS_COLUMNS,
+  clearOtherDefaults,
+  lockAddressOwner,
+} from "@/lib/profile-address-store";
 
-function getUserId(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  const token = authHeader?.replace("Bearer ", "");
-  if (!token) return null;
+export async function GET(req: Request) {
+  const { userId, error } = await requireUser(req);
+  if (error) return error;
   try {
-    const decoded = verifyToken(token);
-    return decoded.userId;
+    const { rows } = await pool.query(
+      `SELECT ${ADDRESS_COLUMNS} FROM user_address
+       WHERE user_id = $1 AND is_deleted = false AND is_saved = true
+       ORDER BY default_address DESC, default_billing DESC, address_id ASC`,
+      [userId],
+    );
+    return NextResponse.json({ addresses: rows });
   } catch {
-    return null;
+    return NextResponse.json(
+      { error: "Unable to load addresses." },
+      { status: 500 },
+    );
   }
 }
 
-export async function GET(req: Request) {
-  const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-
-  // Only addresses the customer chose to keep. Rows created just to ship an
-  // order have is_saved = false and stay out of the profile list.
-  const { rows } = await pool.query(
-    `SELECT address_id, address_line1, address_line2, address_line3, default_address, default_billing
-     FROM user_address
-     WHERE user_id = $1 AND is_deleted = false AND is_saved = true
-     ORDER BY default_address DESC, address_id ASC`,
-    [userId]
-  );
-
-  return NextResponse.json({ addresses: rows });
-}
-
 export async function POST(req: Request) {
-  const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-
+  const { userId, error } = await requireUser(req);
+  if (error) return error;
+  let address;
+  let defaults;
+  let details;
   try {
     const body = await req.json();
-
-    let line1: string;
-    let line2: string | null;
-    let line3: string | null = null;
-    let barangay: string | null = null;
-
-    if (body.street !== undefined) {
-      // Structured address from the province / city / barangay dropdowns
-      const street = String(body.street ?? "").trim();
-      const city = String(body.city ?? "").trim();
-      const province = String(body.province ?? "").trim();
-      if (!street || !city || !province) {
-        return NextResponse.json(
-          { error: "Street, city and province are required." },
-          { status: 400 }
+    if (!body || typeof body !== "object" || Array.isArray(body))
+      throw new Error("Invalid address.");
+    address = parseAddress(body);
+    defaults = parseDefaults(body);
+    details = parseBillingDetails(body);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Invalid address." },
+      { status: 400 },
+    );
+  }
+  let client: PoolClient | undefined;
+  try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+    await lockAddressOwner(client, userId);
+    const existing = await client.query(
+      `SELECT ${ADDRESS_COLUMNS} FROM user_address WHERE user_id = $1
+       AND address_line1 = $2 AND address_line2 IS NOT DISTINCT FROM $3
+       AND address_line3 IS NOT DISTINCT FROM $4
+       AND business_name IS NOT DISTINCT FROM $5
+       AND billing_contact IS NOT DISTINCT FROM $6
+       AND tax_id IS NOT DISTINCT FROM $7 AND is_deleted = false
+       ORDER BY is_saved DESC, address_id ASC LIMIT 1`,
+      [
+        userId,
+        address.addressLine1,
+        address.addressLine2,
+        address.addressLine3,
+        details.businessName ?? null,
+        details.billingContact ?? null,
+        details.taxId ?? null,
+      ],
+    );
+    const old = existing.rows[0];
+    const shipping = defaults.shipping ?? old?.default_address ?? false;
+    const billing = defaults.billing ?? old?.default_billing ?? false;
+    await clearOtherDefaults(client, userId, shipping, billing);
+    const { rows } = old
+      ? await client.query(
+          `UPDATE user_address SET is_saved = true, default_address = $2, default_billing = $3
+         WHERE address_id = $1 RETURNING ${ADDRESS_COLUMNS}`,
+          [old.address_id, shipping, billing],
+        )
+      : await client.query(
+          `INSERT INTO user_address (user_id, address_line1, address_line2, address_line3, barangay,
+          default_address, default_billing, business_name, billing_contact, tax_id, is_deleted, is_saved)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, true) RETURNING ${ADDRESS_COLUMNS}`,
+          [
+            userId,
+            address.addressLine1,
+            address.addressLine2,
+            address.addressLine3,
+            address.barangay,
+            shipping,
+            billing,
+            details.businessName ?? null,
+            details.billingContact ?? null,
+            details.taxId ?? null,
+          ],
         );
-      }
-      barangay = body.barangay ? String(body.barangay).trim() : null;
-      line1 = street;
-      line2 = [...new Set([barangay, city, province].filter(Boolean))].join(", ");
-    } else {
-      // Free-text lines, kept for older clients (e.g. the mobile app)
-      if (!body.addressLine1?.trim()) {
-        return NextResponse.json({ error: "Address line 1 is required." }, { status: 400 });
-      }
-      line1 = body.addressLine1.trim();
-      line2 = body.addressLine2?.trim() || null;
-      line3 = body.addressLine3?.trim() || null;
-    }
-
-    // If this user already has an identical address (say, from a past order),
-    // flag that row as saved instead of creating a duplicate.
-    const existing = await pool.query(
-      `UPDATE user_address SET is_saved = true
-       WHERE address_id = (
-         SELECT address_id FROM user_address
-         WHERE user_id = $1
-           AND address_line1 = $2
-           AND address_line2 IS NOT DISTINCT FROM $3
-           AND address_line3 IS NOT DISTINCT FROM $4
-           AND is_deleted IS NOT TRUE
-         LIMIT 1
-       )
-       RETURNING address_id, address_line1, address_line2, address_line3, default_address, default_billing`,
-      [userId, line1, line2, line3]
+    await client.query("COMMIT");
+    return NextResponse.json({ address: rows[0] });
+  } catch {
+    if (client) await client.query("ROLLBACK");
+    return NextResponse.json(
+      { error: "Unable to save address." },
+      { status: 500 },
     );
-    if (existing.rows.length > 0) {
-      return NextResponse.json({ address: existing.rows[0] });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO user_address (user_id, address_line1, address_line2, address_line3, barangay, default_address, default_billing, is_deleted, is_saved)
-       VALUES ($1, $2, $3, $4, $5, false, false, false, true)
-       RETURNING address_id, address_line1, address_line2, address_line3, default_address, default_billing`,
-      [userId, line1, line2, line3, barangay]
-    );
-
-    return NextResponse.json({ address: result.rows[0] });
-  } catch (error) {
-    console.error("Create address error:", error);
-    return NextResponse.json({ error: "Unable to save address." }, { status: 500 });
+  } finally {
+    client?.release();
   }
 }

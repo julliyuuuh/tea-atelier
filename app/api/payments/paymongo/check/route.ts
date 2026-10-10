@@ -13,10 +13,7 @@ export async function POST(req: Request) {
   const orderId = Number(body?.orderId);
 
   if (!Number.isSafeInteger(orderId) || orderId <= 0) {
-    return NextResponse.json(
-      { error: "Invalid order ID." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid order ID." }, { status: 400 });
   }
 
   try {
@@ -25,7 +22,7 @@ export async function POST(req: Request) {
         `SELECT order_id, payment_status, paymongo_source_id
          FROM orders
          WHERE order_id = $1 AND user_id = $2`,
-        [orderId, userId]
+        [orderId, userId],
       );
 
       return result.rows[0];
@@ -34,10 +31,7 @@ export async function POST(req: Request) {
     const order = await readOrder();
 
     if (!order) {
-      return NextResponse.json(
-        { error: "Order not found." },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
 
     if (
@@ -62,7 +56,7 @@ export async function POST(req: Request) {
     if (!secretKey) {
       return NextResponse.json(
         { error: "Unable to verify payment. Please check again." },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
@@ -77,7 +71,7 @@ export async function POST(req: Request) {
         },
         cache: "no-store",
         signal: AbortSignal.timeout(15000),
-      }
+      },
     );
 
     const source = await res.json().catch(() => null);
@@ -85,7 +79,7 @@ export async function POST(req: Request) {
     if (!res.ok || source?.data?.id !== sourceId) {
       return NextResponse.json(
         { error: "Unable to verify payment. Please check again." },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
@@ -95,10 +89,7 @@ export async function POST(req: Request) {
     const latest = await readOrder();
 
     if (!latest) {
-      return NextResponse.json(
-        { error: "Order not found." },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
 
     if (
@@ -114,7 +105,7 @@ export async function POST(req: Request) {
     if (latest.paymongo_source_id !== sourceId) {
       return NextResponse.json(
         { error: "Payment attempt changed. Please check again." },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -131,7 +122,7 @@ export async function POST(req: Request) {
            AND paymongo_source_id = $3
            AND payment_status IN ('pending', 'failed')
          RETURNING payment_status`,
-        [orderId, userId, sourceId]
+        [orderId, userId, sourceId],
       );
 
       if (updated.rows.length > 0) {
@@ -141,19 +132,19 @@ export async function POST(req: Request) {
       // Never report failure if a webhook won the race.
       const current = await readOrder();
 
-    if (
-      current?.payment_status === "paid" ||
-      current?.payment_status === "processing" ||
-      current?.payment_status === "cancelled"
-    ) {
-      return NextResponse.json({
-        paymentStatus: current.payment_status,
-      });
-    }
+      if (
+        current?.payment_status === "paid" ||
+        current?.payment_status === "processing" ||
+        current?.payment_status === "cancelled"
+      ) {
+        return NextResponse.json({
+          paymentStatus: current.payment_status,
+        });
+      }
 
       return NextResponse.json(
         { error: "Payment status changed. Please check again." },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -170,14 +161,14 @@ export async function POST(req: Request) {
     // An unknown provider status must not enable another payment attempt.
     return NextResponse.json(
       { error: "Payment outcome is unresolved. Please check again." },
-      { status: 502 }
+      { status: 502 },
     );
   } catch (error) {
     console.error("Payment status check failed:", error);
 
     return NextResponse.json(
       { error: "Unable to verify payment. Please check again." },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

@@ -17,7 +17,13 @@
 // Authority, CC BY 4.0. Filtered by island group and reduced to code and name
 // fields. Keep the attribution line on the site.
 
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 
 // ---- env -----------------------------------------------------------------
 function loadEnvLocal() {
@@ -38,9 +44,12 @@ function loadEnvLocal() {
 loadEnvLocal();
 
 const TOKEN = process.env.PSGC_API_TOKEN;
-const BASE = process.env.PSGC_API_BASE ?? "https://classification.psa.gov.ph/psgc";
+const BASE =
+  process.env.PSGC_API_BASE ?? "https://classification.psa.gov.ph/psgc";
 const VERSION = process.env.PSGC_VERSION ?? "Q2_2026";
-const ISLANDS = (process.env.PSGC_ISLANDS ?? "L").split(",").map((s) => s.trim());
+const ISLANDS = (process.env.PSGC_ISLANDS ?? "L")
+  .split(",")
+  .map((s) => s.trim());
 const DELAY_MS = Number(process.env.PSGC_DELAY_MS ?? 400);
 const PAGE_SIZE = Number(process.env.PSGC_PAGE_SIZE ?? 1000);
 const RETRY_BASE_MS = Number(process.env.PSGC_RETRY_BASE_MS ?? 2000);
@@ -50,7 +59,9 @@ const OUT_DIR = "data/psgc";
 const CACHE_DIR = `node_modules/.cache/psgc/${VERSION}`;
 
 if (!TOKEN) {
-  console.error("PSGC_API_TOKEN is missing. Add it to .env.local and run again.");
+  console.error(
+    "PSGC_API_TOKEN is missing. Add it to .env.local and run again.",
+  );
   process.exit(1);
 }
 
@@ -68,8 +79,11 @@ async function getJson(url, label) {
       // time out instead of hanging silently if the PSA server stalls
       res = await fetch(url, { signal: AbortSignal.timeout(90_000) });
     } catch {
-      if (attempt === MAX_TRIES) throw new Error(`${label}: network error or timeout`);
-      console.warn(`  ${label}: no response (try ${attempt}/${MAX_TRIES}), retrying...`);
+      if (attempt === MAX_TRIES)
+        throw new Error(`${label}: network error or timeout`);
+      console.warn(
+        `  ${label}: no response (try ${attempt}/${MAX_TRIES}), retrying...`,
+      );
       await sleep(RETRY_BASE_MS * attempt);
       continue;
     }
@@ -81,9 +95,11 @@ async function getJson(url, label) {
       // honor Retry-After if the server sends it, otherwise back off exponentially
       const retryAfter = Number(res.headers.get("retry-after"));
       const waitMs =
-        retryAfter > 0 ? retryAfter * 1000 : Math.min(60_000, RETRY_BASE_MS * 2 ** (attempt - 1));
+        retryAfter > 0
+          ? retryAfter * 1000
+          : Math.min(60_000, RETRY_BASE_MS * 2 ** (attempt - 1));
       console.warn(
-        `  ${label}: HTTP ${res.status}, waiting ${Math.round(waitMs / 1000)}s (try ${attempt}/${MAX_TRIES})`
+        `  ${label}: HTTP ${res.status}, waiting ${Math.round(waitMs / 1000)}s (try ${attempt}/${MAX_TRIES})`,
       );
       await sleep(waitMs);
       continue;
@@ -94,7 +110,8 @@ async function getJson(url, label) {
     try {
       return await res.json();
     } catch {
-      if (attempt === MAX_TRIES) throw new Error(`${label}: unreadable response`);
+      if (attempt === MAX_TRIES)
+        throw new Error(`${label}: unreadable response`);
       await sleep(RETRY_BASE_MS * attempt);
     }
   }
@@ -103,12 +120,18 @@ async function getJson(url, label) {
 // Fetches every page of one level. Responses look like
 // { count, next, previous, results: [...] }.
 async function fetchAll(level, params = {}) {
-  const qs = new URLSearchParams({ token: TOKEN, page_size: String(PAGE_SIZE), ...params });
+  const qs = new URLSearchParams({
+    token: TOKEN,
+    page_size: String(PAGE_SIZE),
+    ...params,
+  });
   const origin = new URL(BASE).origin;
   const out = [];
   let url = `${BASE}/${VERSION}/${level}?${qs}`;
   while (url) {
-    console.log(`  fetching ${level}${params.prv ? ` (prv ${params.prv})` : ""}...`);
+    console.log(
+      `  fetching ${level}${params.prv ? ` (prv ${params.prv})` : ""}...`,
+    );
     const json = await getJson(url, level);
     if (Array.isArray(json)) {
       out.push(...json);
@@ -130,7 +153,8 @@ const slim = (r) => ({
   mun: r.mun,
 });
 const byName = (a, b) => a.name.localeCompare(b.name, "en", { numeric: true });
-const byCode = (a, b) => String(a.code ?? a[0]).localeCompare(String(b.code ?? b[0]));
+const byCode = (a, b) =>
+  String(a.code ?? a[0]).localeCompare(String(b.code ?? b[0]));
 
 // ---- build ---------------------------------------------------------------
 console.log(`PSGC ${VERSION}, island groups: ${ISLANDS.join(", ")}\n`);
@@ -151,7 +175,9 @@ for (const r of [...provRows, ...hucRows]) {
 }
 const provinces = [...top.values()].sort(byName);
 if (provinces.length === 0) {
-  console.error("No provinces matched the island filter. Check PSGC_ISLANDS and the version.");
+  console.error(
+    "No provinces matched the island filter. Check PSGC_ISLANDS and the version.",
+  );
   process.exit(1);
 }
 console.log(`${provinces.length} provinces / highly urbanized cities\n`);
@@ -171,7 +197,9 @@ for (const r of await fetchAll("municipalities")) {
 if (extras.size > 0) {
   provinces.push(...extras.values());
   provinces.sort(byName);
-  console.log(`Added ${extras.size} not covered by a province: ${[...extras.values()].map((e) => e.name).join(", ")}\n`);
+  console.log(
+    `Added ${extras.size} not covered by a province: ${[...extras.values()].map((e) => e.name).join(", ")}\n`,
+  );
 } else {
   console.log("None found.\n");
 }
@@ -198,7 +226,7 @@ for (const [i, p] of provinces.entries()) {
 
   if (entry) {
     console.log(
-      `${tag}: ${entry.cities.length} cities/municipalities, ${entry.barangays.length} barangays (cached)`
+      `${tag}: ${entry.cities.length} cities/municipalities, ${entry.barangays.length} barangays (cached)`,
     );
   } else {
     try {
@@ -214,13 +242,18 @@ for (const [i, p] of provinces.entries()) {
       // Everything filed under this prv. For HUCs like Manila this includes the
       // barangays that sit under its districts.
       const bRows = (await fetchAll("barangays", { prv: String(p.prv) }))
-        .filter((r) => r.reg === p.reg && r.prv === p.prv && (p.mun === 0 || r.mun === p.mun))
+        .filter(
+          (r) =>
+            r.reg === p.reg &&
+            r.prv === p.prv &&
+            (p.mun === 0 || r.mun === p.mun),
+        )
         .map((r) => [r.code, r.area_name, r.reg, r.prv, r.mun]);
 
       entry = { cities: cityRows, barangays: bRows };
       writeFileSync(cacheFile, JSON.stringify(entry));
       console.log(
-        `${tag}: ${cityRows.length} cities/municipalities, ${bRows.length} barangays`
+        `${tag}: ${cityRows.length} cities/municipalities, ${bRows.length} barangays`,
       );
       await sleep(DELAY_MS);
     } catch (e) {
@@ -236,9 +269,11 @@ for (const [i, p] of provinces.entries()) {
 }
 
 if (failed.length > 0) {
-  console.error(`\nDid not finish. ${failed.length} failed: ${failed.join(", ")}`);
   console.error(
-    "Nothing was written. Run the script again: finished provinces are cached, so it only retries these."
+    `\nDid not finish. ${failed.length} failed: ${failed.join(", ")}`,
+  );
+  console.error(
+    "Nothing was written. Run the script again: finished provinces are cached, so it only retries these.",
   );
   process.exit(1);
 }
@@ -248,7 +283,8 @@ barangays.sort(byCode);
 
 // ---- write ---------------------------------------------------------------
 // One entry per line so a quarterly refresh shows up as a readable diff.
-const asLines = (rows) => "[\n" + rows.map((r) => JSON.stringify(r)).join(",\n") + "\n]\n";
+const asLines = (rows) =>
+  "[\n" + rows.map((r) => JSON.stringify(r)).join(",\n") + "\n]\n";
 
 mkdirSync(OUT_DIR, { recursive: true });
 writeFileSync(`${OUT_DIR}/provinces.json`, asLines(provinces));
@@ -258,7 +294,8 @@ writeFileSync(
   `${OUT_DIR}/meta.json`,
   JSON.stringify(
     {
-      source: "Philippine Standard Geographic Code (PSGC), Philippine Statistics Authority",
+      source:
+        "Philippine Standard Geographic Code (PSGC), Philippine Statistics Authority",
       license: "CC BY 4.0",
       version: VERSION,
       islandGroups: ISLANDS,
@@ -271,19 +308,19 @@ writeFileSync(
       note: "Filtered by island group and reduced to code and name fields.",
     },
     null,
-    2
-  ) + "\n"
+    2,
+  ) + "\n",
 );
 
 // ---- summary -------------------------------------------------------------
 const kb = (f) => (statSync(`${OUT_DIR}/${f}`).size / 1024).toFixed(0);
 console.log(
   `\nWrote ${OUT_DIR}/: provinces.json (${kb("provinces.json")} KB), cities.json (${kb(
-    "cities.json"
-  )} KB), barangays.json (${kb("barangays.json")} KB), meta.json`
+    "cities.json",
+  )} KB), barangays.json (${kb("barangays.json")} KB), meta.json`,
 );
 console.log(
-  `Totals: ${provinces.length} provinces/HUCs, ${cities.length} cities/municipalities, ${barangays.length} barangays`
+  `Totals: ${provinces.length} provinces/HUCs, ${cities.length} cities/municipalities, ${barangays.length} barangays`,
 );
 
 if (noBarangays.length > 0) {
@@ -291,5 +328,7 @@ if (noBarangays.length > 0) {
   console.warn("  Check these in the checkout before you ship.");
 }
 if (barangays.length < 10000 && ISLANDS.join() === "L") {
-  console.warn("\n! Fewer barangays than expected for Luzon. Worth a look before you commit.");
+  console.warn(
+    "\n! Fewer barangays than expected for Luzon. Worth a look before you commit.",
+  );
 }

@@ -5,10 +5,11 @@ import { getUserId } from "@/lib/api-auth";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
 
@@ -16,7 +17,7 @@ export async function GET(
     `SELECT message_id, subject, message, status, admin_reply, created_at, replied_at, customer_viewed_at
      FROM contact_messages
      WHERE message_id = $1 AND user_id = $2`,
-    [id, userId]
+    [id, userId],
   );
 
   if (result.rows.length === 0) {
@@ -30,7 +31,7 @@ export async function GET(
       `UPDATE contact_messages SET customer_viewed_at = NOW()
        WHERE message_id = $1
        RETURNING message_id, subject, message, status, admin_reply, created_at, replied_at, customer_viewed_at`,
-      [id]
+      [id],
     );
     m = updated.rows[0];
   }

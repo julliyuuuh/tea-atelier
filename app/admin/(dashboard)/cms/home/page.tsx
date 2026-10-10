@@ -9,7 +9,13 @@ import WhyChooseUsTab from "./WhyChooseUsTab";
 import CategoriesTab from "./CategoriesTab";
 import ReviewsTab from "./ReviewsTab";
 
-const TABS = ["Hero", "Promo", "Why Choose Us", "Categories", "Reviews"] as const;
+const TABS = [
+  "Hero",
+  "Promo",
+  "Why Choose Us",
+  "Categories",
+  "Reviews",
+] as const;
 type Tab = (typeof TABS)[number];
 
 export default function AdminHomeCmsPage() {

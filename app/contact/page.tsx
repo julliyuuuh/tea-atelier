@@ -81,8 +81,8 @@ export default function ContactPage() {
               Log in to send a message
             </p>
             <p className="font-body text-sm text-charcoal/60 mb-6">
-              Create an account or sign in so we can get back to you and you
-              can track your messages.
+              Create an account or sign in so we can get back to you and you can
+              track your messages.
             </p>
             <Link
               href="/login"
@@ -101,8 +101,8 @@ export default function ContactPage() {
               Message sent
             </p>
             <p className="font-body text-sm text-charcoal/60">
-              We'll get back to you within 1-2 business days. You can track
-              this message from your account page.
+              We'll get back to you within 1-2 business days. You can track this
+              message from your account page.
             </p>
           </motion.div>
         ) : (

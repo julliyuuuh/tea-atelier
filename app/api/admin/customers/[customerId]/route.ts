@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/require-admin";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ customerId: string }> }
+  { params }: { params: Promise<{ customerId: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;
@@ -15,7 +15,7 @@ export async function GET(
     `SELECT user_id, first_name, last_name, email, phone_number, avatar_url, is_verified, is_suspended, date_created
      FROM users
      WHERE user_id = $1 AND role = 'customer'`,
-    [customerId]
+    [customerId],
   );
 
   const customer = customerResult.rows[0];
@@ -25,15 +25,18 @@ export async function GET(
 
   // Orders are paginated: ?page=1&limit=5 (limit capped at 50).
   const url = new URL(req.url);
-  const requestedPage = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
+  const requestedPage = Math.max(
+    1,
+    parseInt(url.searchParams.get("page") || "1", 10) || 1,
+  );
   const limit = Math.min(
     50,
-    Math.max(1, parseInt(url.searchParams.get("limit") || "5", 10) || 5)
+    Math.max(1, parseInt(url.searchParams.get("limit") || "5", 10) || 5),
   );
 
   const countResult = await pool.query(
     `SELECT COUNT(*)::int AS count FROM orders WHERE user_id = $1`,
-    [customerId]
+    [customerId],
   );
   const ordersTotal = countResult.rows[0].count;
   const ordersTotalPages = Math.max(1, Math.ceil(ordersTotal / limit));
@@ -45,7 +48,7 @@ export async function GET(
      WHERE user_id = $1
      ORDER BY created_at DESC, order_id DESC
      LIMIT $2 OFFSET $3`,
-    [customerId, limit, (ordersPage - 1) * limit]
+    [customerId, limit, (ordersPage - 1) * limit],
   );
 
   return NextResponse.json({
@@ -73,7 +76,7 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: Promise<{ customerId: string }> }
+  { params }: { params: Promise<{ customerId: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;
@@ -82,7 +85,10 @@ export async function PATCH(
   const { suspend } = await req.json();
 
   if (typeof suspend !== "boolean") {
-    return NextResponse.json({ error: "Missing 'suspend' boolean." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing 'suspend' boolean." },
+      { status: 400 },
+    );
   }
 
   const result = await pool.query(
@@ -90,7 +96,7 @@ export async function PATCH(
      SET is_suspended = $1
      WHERE user_id = $2 AND role = 'customer'
      RETURNING is_suspended`,
-    [suspend, customerId]
+    [suspend, customerId],
   );
 
   if (result.rows.length === 0) {

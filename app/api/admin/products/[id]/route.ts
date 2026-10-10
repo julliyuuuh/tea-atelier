@@ -4,14 +4,22 @@ import { requireAdmin } from "@/lib/require-admin";
 
 export async function PUT(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;
 
   const { id } = await params;
-  const { name, category, subCategory, type, price, image, description, stockQuantity } =
-    await req.json();
+  const {
+    name,
+    category,
+    subCategory,
+    type,
+    price,
+    image,
+    description,
+    stockQuantity,
+  } = await req.json();
   const status = stockQuantity > 0 ? "IN STOCK" : "NO STOCK";
 
   const result = await pool.query(
@@ -30,7 +38,7 @@ export async function PUT(
       status,
       stockQuantity,
       id,
-    ]
+    ],
   );
 
   const row = result.rows[0];
@@ -56,7 +64,7 @@ export async function PUT(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;
@@ -65,7 +73,7 @@ export async function PATCH(
 
   const result = await pool.query(
     "UPDATE products SET is_archived = false WHERE product_id = $1 RETURNING product_id",
-    [id]
+    [id],
   );
 
   if (result.rows.length === 0) {
@@ -77,7 +85,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;
@@ -87,16 +95,22 @@ export async function DELETE(
   try {
     const result = await pool.query(
       "UPDATE products SET is_archived = true WHERE product_id = $1 RETURNING product_id",
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {
-      return NextResponse.json({ error: "Product not found." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Product not found." },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Archive product error:", err);
-    return NextResponse.json({ error: "Unable to remove product." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to remove product." },
+      { status: 500 },
+    );
   }
 }

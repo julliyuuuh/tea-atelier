@@ -22,9 +22,12 @@ export default function Categories() {
 
     async function loadCategories() {
       try {
-        const res = await fetch("/api/cms/categories", { signal: controller.signal });
+        const res = await fetch("/api/cms/categories", {
+          signal: controller.signal,
+        });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Unable to load categories.");
+        if (!res.ok)
+          throw new Error(data.error || "Unable to load categories.");
         setCategories(data.categories);
       } catch (error) {
         if (error instanceof Error && error.name !== "AbortError") {

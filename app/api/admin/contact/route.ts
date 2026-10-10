@@ -26,17 +26,19 @@ export async function GET(req: Request) {
     params.push(`%${search}%`);
     const idx = params.length;
     conditions.push(
-      `(u.first_name ILIKE $${idx} OR u.last_name ILIKE $${idx} OR u.email ILIKE $${idx} OR cm.subject ILIKE $${idx})`
+      `(u.first_name ILIKE $${idx} OR u.last_name ILIKE $${idx} OR u.email ILIKE $${idx} OR cm.subject ILIKE $${idx})`,
     );
   }
 
-  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  const whereClause = conditions.length
+    ? `WHERE ${conditions.join(" AND ")}`
+    : "";
 
   const countResult = await pool.query(
     `SELECT COUNT(*) FROM contact_messages cm
      JOIN users u ON u.user_id = cm.user_id
      ${whereClause}`,
-    params
+    params,
   );
   const total = parseInt(countResult.rows[0].count, 10);
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -49,7 +51,7 @@ export async function GET(req: Request) {
      ${whereClause}
      ORDER BY cm.created_at DESC
      LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-    [...params, limit, offset]
+    [...params, limit, offset],
   );
 
   const messages = messagesResult.rows.map((m) => ({
@@ -71,7 +73,7 @@ export async function GET(req: Request) {
        COUNT(*) AS total,
        COUNT(*) FILTER (WHERE status = 'new') AS new,
        COUNT(*) FILTER (WHERE status = 'replied') AS replied
-     FROM contact_messages`
+     FROM contact_messages`,
   );
   const statsRow = statsResult.rows[0];
 

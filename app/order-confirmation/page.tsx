@@ -78,8 +78,7 @@ function OrderConfirmationContent() {
             );
           }
         })
-        .catch(() => {
-        });
+        .catch(() => {});
     };
 
     const poll = () => {
@@ -169,14 +168,18 @@ function OrderConfirmationContent() {
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
         <p className="font-body text-xs uppercase tracking-[0.25em] text-sage mb-4">
-          {isPendingPayment ? "Confirming Payment" : isFailedPayment ? "Payment Failed" : "Order Confirmed"}
+          {isPendingPayment
+            ? "Confirming Payment"
+            : isFailedPayment
+              ? "Payment Failed"
+              : "Order Confirmed"}
         </p>
         <h1 className="font-display text-4xl md:text-5xl text-charcoal mb-4">
           {isPendingPayment
             ? "Confirming your payment..."
             : isFailedPayment
-            ? "We couldn't confirm your payment"
-            : "Thank you for your order"}
+              ? "We couldn't confirm your payment"
+              : "Thank you for your order"}
         </h1>
         <p className="font-body text-sm text-charcoal/70 mb-2">
           Order #TA-{order.orderId}
@@ -195,17 +198,16 @@ function OrderConfirmationContent() {
         {isFailedPayment && (
           <div className="max-w-lg mx-auto mb-8 rounded-xl border border-red-300 bg-red-50 px-6 py-4">
             <p className="font-body text-sm text-charcoal/80">
-              Your payment didn't go through, so this order hasn't been
-              placed. Your cart items are still saved, you can try checking
-              out again.
+              Your payment didn't go through, so this order hasn't been placed.
+              Your cart items are still saved, you can try checking out again.
             </p>
           </div>
         )}
 
         {!isPendingPayment && !isFailedPayment && (
           <p className="font-body text-charcoal/70 leading-relaxed max-w-lg mx-auto mb-12">
-            A confirmation email is on its way. We're preparing your tea now
-            and will notify you once it ships.
+            A confirmation email is on its way. We're preparing your tea now and
+            will notify you once it ships.
           </p>
         )}
 
@@ -225,7 +227,9 @@ function OrderConfirmationContent() {
             <span>₱{order.deliveryFee.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-display text-lg text-charcoal border-t border-charcoal/10 pt-3">
-            <span>{order.paymentStatus === "paid" ? "Total Paid" : "Total Due"}</span>
+            <span>
+              {order.paymentStatus === "paid" ? "Total Paid" : "Total Due"}
+            </span>
             <span>₱{order.total.toFixed(2)}</span>
           </div>
         </div>

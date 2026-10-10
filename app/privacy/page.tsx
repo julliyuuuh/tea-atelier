@@ -27,19 +27,25 @@ export default function PrivacyPage() {
 
     async function loadAll() {
       try {
-        const introRes = await fetch("/api/cms/privacy-intro", { signal: controller.signal });
+        const introRes = await fetch("/api/cms/privacy-intro", {
+          signal: controller.signal,
+        });
         const introData = await introRes.json();
         if (introRes.ok) setIntro(introData.intro);
       } catch (error) {
-        if (error instanceof Error && error.name !== "AbortError") console.error(error.message);
+        if (error instanceof Error && error.name !== "AbortError")
+          console.error(error.message);
       }
 
       try {
-        const sectionsRes = await fetch("/api/cms/privacy-sections", { signal: controller.signal });
+        const sectionsRes = await fetch("/api/cms/privacy-sections", {
+          signal: controller.signal,
+        });
         const sectionsData = await sectionsRes.json();
         if (sectionsRes.ok) setSections(sectionsData.sections);
       } catch (error) {
-        if (error instanceof Error && error.name !== "AbortError") console.error(error.message);
+        if (error instanceof Error && error.name !== "AbortError")
+          console.error(error.message);
       }
     }
 
@@ -80,7 +86,9 @@ export default function PrivacyPage() {
               className="py-8"
             >
               <h2 className="font-display text-xl text-charcoal mb-3">
-                <span className="text-sage mr-2">{String(i + 1).padStart(2, "0")}</span>
+                <span className="text-sage mr-2">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
                 {section.heading}
               </h2>
               <p className="font-body text-sm text-charcoal/70 leading-relaxed whitespace-pre-line">

@@ -18,7 +18,9 @@ export default function WhyChooseUs() {
 
     async function loadReasons() {
       try {
-        const res = await fetch("/api/cms/why-choose-us", { signal: controller.signal });
+        const res = await fetch("/api/cms/why-choose-us", {
+          signal: controller.signal,
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to load reasons.");
         setReasons(data.reasons);

@@ -19,7 +19,9 @@ export default function Reviews() {
 
     async function loadReviews() {
       try {
-        const res = await fetch("/api/cms/reviews", { signal: controller.signal });
+        const res = await fetch("/api/cms/reviews", {
+          signal: controller.signal,
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to load reviews.");
         setReviews(data.reviews);

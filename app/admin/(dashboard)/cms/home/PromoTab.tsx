@@ -26,10 +26,17 @@ const labelClass = "block text-sm font-medium text-charcoal/70 mb-1";
 
 function authHeaders() {
   const token = localStorage.getItem("token");
-  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
 }
 
-export default function PromoTab({ onError }: { onError: (msg: string) => void }) {
+export default function PromoTab({
+  onError,
+}: {
+  onError: (msg: string) => void;
+}) {
   const [form, setForm] = useState<PromoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

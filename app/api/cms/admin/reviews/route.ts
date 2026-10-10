@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   if (error) return error;
 
   const result = await pool.query(
-    "SELECT * FROM homepage_reviews ORDER BY sort_order ASC"
+    "SELECT * FROM homepage_reviews ORDER BY sort_order ASC",
   );
   return NextResponse.json({ reviews: result.rows });
 }
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     `INSERT INTO homepage_reviews (quote, name, rating, sort_order)
      VALUES ($1, $2, $3, COALESCE($4, 0))
      RETURNING *`,
-    [quote, name, rating, sort_order]
+    [quote, name, rating, sort_order],
   );
 
   return NextResponse.json({ review: result.rows[0] }, { status: 201 });

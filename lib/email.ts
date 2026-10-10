@@ -68,7 +68,7 @@ export async function sendContactReplyEmail(
   firstName: string,
   subject: string,
   originalMessage: string,
-  reply: string
+  reply: string,
 ) {
   await resend.emails.send({
     from: `Tea Atelier <${process.env.EMAIL_FROM}>`,
@@ -104,7 +104,7 @@ export async function sendOrderConfirmationEmail(
   recipientName: string,
   orderId: number,
   items: OrderConfirmationItem[],
-  totalAmount: number
+  totalAmount: number,
 ) {
   const itemsHtml = items
     .map(
@@ -113,7 +113,7 @@ export async function sendOrderConfirmationEmail(
           <td style="padding: 8px 0; color: #333;">${item.name} × ${item.quantity}</td>
           <td style="padding: 8px 0; text-align: right; color: #333;">₱${(item.price * item.quantity).toFixed(2)}</td>
         </tr>
-      `
+      `,
     )
     .join("");
 

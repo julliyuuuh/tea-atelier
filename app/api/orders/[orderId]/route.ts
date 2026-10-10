@@ -4,10 +4,11 @@ import { getUserId } from "@/lib/api-auth";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ orderId: string }> }
+  { params }: { params: Promise<{ orderId: string }> },
 ) {
   const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { orderId } = await params;
 
@@ -16,7 +17,7 @@ export async function GET(
             created_at, payment_method, contact_phone, recipient_name
     FROM orders
     WHERE order_id = $1`,
-    [orderId]
+    [orderId],
   );
 
   const order = orderResult.rows[0];
@@ -32,12 +33,12 @@ export async function GET(
      FROM order_items oi
      JOIN products p ON p.product_id = oi.product_id
      WHERE oi.order_id = $1`,
-    [orderId]
+    [orderId],
   );
 
   const subtotal = itemsResult.rows.reduce(
     (sum, row) => sum + parseFloat(row.price) * row.quantity,
-    0
+    0,
   );
 
   return NextResponse.json({

@@ -18,10 +18,17 @@ const labelClass = "block text-xs font-medium text-charcoal/60 mb-1";
 
 function authHeaders() {
   const token = localStorage.getItem("token");
-  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
 }
 
-export default function WhyChooseUsTab({ onError }: { onError: (msg: string) => void }) {
+export default function WhyChooseUsTab({
+  onError,
+}: {
+  onError: (msg: string) => void;
+}) {
   const [reasons, setReasons] = useState<Reason[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | "new" | null>(null);
@@ -29,7 +36,9 @@ export default function WhyChooseUsTab({ onError }: { onError: (msg: string) => 
   async function load() {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/cms/admin/why-choose-us", { headers: authHeaders() });
+      const res = await fetch("/api/cms/admin/why-choose-us", {
+        headers: authHeaders(),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to load.");
       setReasons(data.reasons);
@@ -46,7 +55,9 @@ export default function WhyChooseUsTab({ onError }: { onError: (msg: string) => 
   }, []);
 
   function updateLocal(id: number, field: "title" | "copy", value: string) {
-    setReasons((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+    setReasons((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+    );
   }
 
   async function handleSave(reason: Reason) {
@@ -111,7 +122,10 @@ export default function WhyChooseUsTab({ onError }: { onError: (msg: string) => 
     if (target < 0 || target >= reasons.length) return;
 
     const reordered = [...reasons];
-    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    [reordered[index], reordered[target]] = [
+      reordered[target],
+      reordered[index],
+    ];
     const withOrders = reordered.map((r, i) => ({ ...r, sort_order: i }));
     setReasons(withOrders);
 
@@ -120,9 +134,13 @@ export default function WhyChooseUsTab({ onError }: { onError: (msg: string) => 
         fetch(`/api/cms/admin/why-choose-us/${r.id}`, {
           method: "PATCH",
           headers: authHeaders(),
-          body: JSON.stringify({ title: r.title, copy: r.copy, sort_order: r.sort_order }),
-        })
-      )
+          body: JSON.stringify({
+            title: r.title,
+            copy: r.copy,
+            sort_order: r.sort_order,
+          }),
+        }),
+      ),
     );
   }
 
@@ -131,7 +149,10 @@ export default function WhyChooseUsTab({ onError }: { onError: (msg: string) => 
   return (
     <div className="space-y-4">
       {reasons.map((reason, i) => (
-        <div key={reason.id} className="border border-charcoal/10 rounded-xl p-4 flex gap-4">
+        <div
+          key={reason.id}
+          className="border border-charcoal/10 rounded-xl p-4 flex gap-4"
+        >
           <div className="flex flex-col gap-1 pt-1">
             <button
               onClick={() => handleMove(i, -1)}
@@ -157,7 +178,9 @@ export default function WhyChooseUsTab({ onError }: { onError: (msg: string) => 
               <input
                 type="text"
                 value={reason.title}
-                onChange={(e) => updateLocal(reason.id, "title", e.target.value)}
+                onChange={(e) =>
+                  updateLocal(reason.id, "title", e.target.value)
+                }
                 className={inputClass}
               />
             </div>

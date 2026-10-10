@@ -6,8 +6,16 @@ export async function POST(req: Request) {
   const { error } = await requireAdmin(req);
   if (error) return error;
 
-  const { name, category, subCategory, type, price, image, description, stockQuantity } =
-    await req.json();
+  const {
+    name,
+    category,
+    subCategory,
+    type,
+    price,
+    image,
+    description,
+    stockQuantity,
+  } = await req.json();
 
   const status = stockQuantity > 0 ? "IN STOCK" : "NO STOCK";
 
@@ -25,7 +33,7 @@ export async function POST(req: Request) {
       price,
       status,
       stockQuantity,
-    ]
+    ],
   );
 
   const row = result.rows[0];
@@ -58,8 +66,14 @@ export async function GET(req: Request) {
   if (error) return error;
 
   const url = new URL(req.url);
-  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") || "10", 10) || 10));
+  const page = Math.max(
+    1,
+    parseInt(url.searchParams.get("page") || "1", 10) || 1,
+  );
+  const limit = Math.min(
+    100,
+    Math.max(1, parseInt(url.searchParams.get("limit") || "10", 10) || 10),
+  );
   const search = url.searchParams.get("search")?.trim() || "";
   const category = url.searchParams.get("category") || "All";
   const subCategory = url.searchParams.get("subCategory") || "All";

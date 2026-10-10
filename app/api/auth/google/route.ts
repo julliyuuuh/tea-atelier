@@ -11,7 +11,10 @@ export async function POST(req: Request) {
     const { credential } = await req.json();
 
     if (!credential) {
-      return NextResponse.json({ error: "Missing Google credential." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing Google credential." },
+        { status: 400 },
+      );
     }
 
     const ticket = await client.verifyIdToken({
@@ -21,16 +24,30 @@ export async function POST(req: Request) {
 
     const payload = ticket.getPayload();
     if (!payload || !payload.email) {
-      return NextResponse.json({ error: "Invalid Google credential." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid Google credential." },
+        { status: 401 },
+      );
     }
 
-    const { email, given_name, family_name, sub: googleId, email_verified } = payload;
+    const {
+      email,
+      given_name,
+      family_name,
+      sub: googleId,
+      email_verified,
+    } = payload;
 
     if (!email_verified) {
-      return NextResponse.json({ error: "Google email not verified." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Google email not verified." },
+        { status: 401 },
+      );
     }
 
-    const existing = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const existing = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
 
     let user;
 
@@ -42,13 +59,16 @@ export async function POST(req: Request) {
       if (user.is_suspended) {
         return NextResponse.json(
           { error: "Your account has been suspended. Please contact support." },
-          { status: 403 }
+          { status: 403 },
         );
       }
 
       // Existing account (password-based or previously Google), link automatically
       if (!user.google_id) {
-        await pool.query("UPDATE users SET google_id = $1 WHERE user_id = $2", [googleId, user.user_id]);
+        await pool.query("UPDATE users SET google_id = $1 WHERE user_id = $2", [
+          googleId,
+          user.user_id,
+        ]);
       }
     } else {
       // Brand new account via Google, already email-verified by Google
@@ -56,7 +76,7 @@ export async function POST(req: Request) {
         `INSERT INTO users (first_name, last_name, email, password_hash, role, google_id, is_verified)
          VALUES ($1, $2, $3, NULL, 'customer', $4, true)
          RETURNING user_id, first_name, last_name, email, role`,
-        [given_name || "Google", family_name || "User", email, googleId]
+        [given_name || "Google", family_name || "User", email, googleId],
       );
       user = result.rows[0];
 
@@ -69,10 +89,17 @@ export async function POST(req: Request) {
     }
 
     if (user.role === "admin" || user.role === "super_admin") {
-      return NextResponse.json({ error: "Administrators must sign in through the admin portal." }, { status: 403 });
+      return NextResponse.json(
+        { error: "Administrators must sign in through the admin portal." },
+        { status: 403 },
+      );
     }
 
-    const token = signToken({ userId: user.user_id, email: user.email, role: user.role });
+    const token = signToken({
+      userId: user.user_id,
+      email: user.email,
+      role: user.role,
+    });
 
     return NextResponse.json({
       token,
@@ -87,6 +114,9 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Google auth error:", error);
-    return NextResponse.json({ error: "Unable to sign in with Google." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to sign in with Google." },
+      { status: 500 },
+    );
   }
 }

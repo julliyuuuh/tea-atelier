@@ -10,26 +10,12 @@ import ConfirmDialog from "@/components/account/ConfirmDialog";
 import Badge from "@/components/account/Badge";
 import FormField from "@/components/account/FormField";
 import { getStatusLabel } from "@/lib/order-status";
-import PhAddressFields, {
-  PhAddress,
-  EMPTY_PH_ADDRESS,
-  isAddressComplete,
-  toAddressPayload,
-} from "@/components/checkout/PhAddressFields";
+import SavedAddresses from "@/components/account/SavedAddresses";
 import {
-  AddressSkeleton,
   OrderSkeleton,
   SecurityPanelSkeleton,
 } from "@/components/account/Skeletons";
-import {
-  Plus,
-  Trash2,
-  MapPin,
-  Package,
-  User,
-  Loader2,
-  Pencil,
-} from "lucide-react";
+import { Package, User, Loader2, Pencil } from "lucide-react";
 import { useTheme } from "@/lib/theme-context";
 
 type TabKey = "profile" | "orders" | "settings" | "messages";
@@ -275,15 +261,6 @@ const listItemVariants: Variants = {
 // Profile tab
 // ================================================================
 
-type Address = {
-  address_id: string;
-  address_line1: string;
-  address_line2: string | null;
-  address_line3: string | null;
-  default_address: boolean;
-  default_billing: boolean;
-};
-
 type SavedProfile = { firstName: string; lastName: string; phone: string };
 
 function ProfileTab() {
@@ -297,15 +274,6 @@ function ProfileTab() {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const [lastSaved, setLastSaved] = useState<SavedProfile | null>(null);
-
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loadingAddresses, setLoadingAddresses] = useState(true);
-  const [addingAddress, setAddingAddress] = useState(false);
-  const [savingAddress, setSavingAddress] = useState(false);
-  const [newAddress, setNewAddress] = useState<PhAddress>(EMPTY_PH_ADDRESS);
-  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
-    null,
-  );
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -345,29 +313,6 @@ function ProfileTab() {
       });
     }
   }, [user]);
-
-  useEffect(() => {
-    async function loadAddresses() {
-      const token = localStorage.getItem("token");
-      try {
-        const res = await fetch("/api/addresses", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (res.ok) setAddresses(data.addresses);
-      } catch {
-        // fail silently, empty list stays
-      } finally {
-        setLoadingAddresses(false);
-      }
-    }
-    if (user) loadAddresses();
-  }, [user]);
-
-  // clear the new-address form whenever it closes (after saving, cancelling or toggling)
-  useEffect(() => {
-    if (!addingAddress) setNewAddress(EMPTY_PH_ADDRESS);
-  }, [addingAddress]);
 
   const uploadAvatarFile = async (
     file: File,
@@ -418,11 +363,18 @@ function ProfileTab() {
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
 
       setSaved(true);
-      setLastSaved({ firstName, lastName, phone });
+      setFirstName(data.user.firstName);
+      setLastName(data.user.lastName);
+      setPhone(data.user.phone || "");
+      setLastSaved({
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        phone: data.user.phone || "",
+      });
       updateUser({
-        firstName,
-        lastName,
-        phone,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        phone: data.user.phone,
         ...(nextAvatarUrl !== undefined ? { avatarUrl: nextAvatarUrl } : {}),
       });
 
@@ -475,65 +427,6 @@ function ProfileTab() {
     setAvatarRemoved(true);
     setAvatarError(null);
   };
-
-  const handleAddAddress = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isAddressComplete(newAddress)) return;
-
-    setSavingAddress(true);
-    const token = localStorage.getItem("token");
-
-    try {
-      const res = await fetch("/api/addresses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(toAddressPayload(newAddress)),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to save address.");
-
-      // saving an address that's already in the list shouldn't add a second copy
-      setAddresses((prev) =>
-        prev.some((a) => a.address_id === data.address.address_id)
-          ? prev
-          : [...prev, data.address],
-      );
-      setAddingAddress(false);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setSavingAddress(false);
-    }
-  };
-
-  const handleRemoveAddress = async (addressId: string) => {
-    const token = localStorage.getItem("token");
-    try {
-      const res = await fetch(`/api/addresses/${addressId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        setAddresses((prev) => prev.filter((a) => a.address_id !== addressId));
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setConfirmingDeleteId(null);
-    }
-  };
-
-  const formatAddressLine = (addr: Address) =>
-    [addr.address_line1, addr.address_line2, addr.address_line3]
-      .filter(Boolean)
-      .join(", ");
-
-  const pendingDeleteAddress = addresses.find(
-    (a) => a.address_id === confirmingDeleteId,
-  );
 
   return (
     <div className="space-y-12">
@@ -626,12 +519,14 @@ function ProfileTab() {
                 label="First Name"
                 value={firstName}
                 onChange={setFirstName}
+                maxLength={50}
                 required
               />
               <FormField
                 label="Last Name"
                 value={lastName}
                 onChange={setLastName}
+                maxLength={50}
                 required
               />
             </div>
@@ -653,6 +548,7 @@ function ProfileTab() {
             type="tel"
             inputMode="numeric"
             maxLength={11}
+            hint="Optional: 11-digit mobile number starting with 09."
           />
 
           <div className="flex items-center gap-4 pt-2">
@@ -705,126 +601,7 @@ function ProfileTab() {
         </form>
       </div>
 
-      {/* Saved Addresses */}
-      <div className="border-t border-charcoal/10 pt-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="font-display text-xl text-charcoal">
-            Saved Addresses
-          </h2>
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setAddingAddress((v) => !v)}
-            aria-expanded={addingAddress}
-            className="flex items-center gap-1.5 rounded-full bg-charcoal text-cream font-body text-xs tracking-wide uppercase px-4 py-2 hover:bg-sage transition-colors"
-          >
-            <Plus size={14} /> Add Address
-          </motion.button>
-        </div>
-
-        {loadingAddresses ? (
-          <AddressSkeleton />
-        ) : (
-          <>
-            {addresses.length === 0 && !addingAddress && (
-              <p className="font-body text-sm text-charcoal/50">
-                No saved addresses yet.
-              </p>
-            )}
-
-            <motion.div
-              variants={listContainerVariants}
-              initial="hidden"
-              animate="show"
-              className="space-y-3 mb-4"
-            >
-              <AnimatePresence>
-                {addresses.map((addr) => (
-                  <motion.div
-                    key={addr.address_id}
-                    variants={listItemVariants}
-                    exit="exit"
-                    layout
-                    className="flex items-start justify-between bg-sand/30 rounded-xl px-5 py-4 overflow-hidden"
-                  >
-                    <div className="flex gap-3">
-                      <MapPin
-                        size={16}
-                        className="text-sage mt-0.5 shrink-0"
-                        strokeWidth={1.75}
-                      />
-                      <div>
-                        <p className="font-body text-sm text-charcoal font-medium">
-                          {addr.default_address ? "Default Address" : "Address"}
-                        </p>
-                        <p className="font-body text-xs text-charcoal/60 mt-0.5">
-                          {formatAddressLine(addr)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setConfirmingDeleteId(addr.address_id)}
-                      aria-label="Delete address"
-                      className="text-charcoal/40 hover:text-red-500 transition-colors shrink-0"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
-
-            <AnimatePresence>
-              {addingAddress && (
-                <motion.form
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.2 }}
-                  onSubmit={handleAddAddress}
-                  className="space-y-6 border-t border-charcoal/10 pt-6"
-                >
-                  <PhAddressFields onChange={setNewAddress} />
-                  <div className="flex gap-3">
-                    <motion.button
-                      whileTap={{ scale: 0.98 }}
-                      type="submit"
-                      disabled={savingAddress}
-                      className="rounded-full bg-sage text-cream font-body text-xs tracking-wide uppercase px-6 py-2.5 hover:bg-charcoal transition-colors disabled:opacity-50"
-                    >
-                      {savingAddress ? "Saving…" : "Save Address"}
-                    </motion.button>
-                    <motion.button
-                      whileTap={{ scale: 0.98 }}
-                      type="button"
-                      onClick={() => setAddingAddress(false)}
-                      className="rounded-full border border-charcoal/20 text-charcoal font-body text-xs tracking-wide uppercase px-6 py-2.5 hover:bg-sand/30 transition-colors"
-                    >
-                      Cancel
-                    </motion.button>
-                  </div>
-                </motion.form>
-              )}
-            </AnimatePresence>
-          </>
-        )}
-      </div>
-
-      <ConfirmDialog
-        open={confirmingDeleteId !== null}
-        title="Remove this address?"
-        description={
-          pendingDeleteAddress
-            ? formatAddressLine(pendingDeleteAddress)
-            : undefined
-        }
-        confirmLabel="Remove"
-        destructive
-        onConfirm={() =>
-          confirmingDeleteId && handleRemoveAddress(confirmingDeleteId)
-        }
-        onCancel={() => setConfirmingDeleteId(null)}
-      />
+      <SavedAddresses />
     </div>
   );
 }
@@ -839,17 +616,17 @@ type OrderItem = {
   quantity: number;
   price: number;
 };
-  type Order = {
-    id: number;
-    status: string;
-    paymentStatus: string;
-    paymentMethod: string;
-    recipientName: string | null;
-    shippingCost: number;
-    totalAmount: number;
-    createdAt: string;
-    items: OrderItem[];
-  };
+type Order = {
+  id: number;
+  status: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  recipientName: string | null;
+  shippingCost: number;
+  totalAmount: number;
+  createdAt: string;
+  items: OrderItem[];
+};
 function formatPaymentMethod(method: string): string {
   const labels: Record<string, string> = {
     cod: "Cash on Delivery",
@@ -876,7 +653,9 @@ function OrdersTab() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [paymentCheckUnavailable, setPaymentCheckUnavailable] = useState<number[]>([]);
+  const [paymentCheckUnavailable, setPaymentCheckUnavailable] = useState<
+    number[]
+  >([]);
   const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [cancelError, setCancelError] = useState("");
@@ -885,21 +664,44 @@ function OrdersTab() {
   const paymentRedirectedRef = useRef(false);
   const [payingId, setPayingId] = useState<number | null>(null);
   const groups = [
-    { key: "orders", title: "Orders", description: "Paid orders and Cash on Delivery orders.",
-      entries: orders.filter((order) => !isCancelledOrder(order) &&
-        (order.paymentMethod === "cod" || order.paymentStatus === "paid")) },
-    { key: "unpaid", title: "Unpaid Orders", description: "Starting a separate checkout does not cancel these orders or their payment links.",
-      entries: orders.filter((order) => !isCancelledOrder(order) &&
-        order.paymentMethod !== "cod" && order.paymentStatus !== "paid") },
-    { key: "cancelled", title: "Cancelled Orders", description: "These orders are kept for your records.",
-      entries: orders.filter(isCancelledOrder) },
+    {
+      key: "orders",
+      title: "Orders",
+      description: "Paid orders and Cash on Delivery orders.",
+      entries: orders.filter(
+        (order) =>
+          !isCancelledOrder(order) &&
+          (order.paymentMethod === "cod" || order.paymentStatus === "paid"),
+      ),
+    },
+    {
+      key: "unpaid",
+      title: "Unpaid Orders",
+      description:
+        "Starting a separate checkout does not cancel these orders or their payment links.",
+      entries: orders.filter(
+        (order) =>
+          !isCancelledOrder(order) &&
+          order.paymentMethod !== "cod" &&
+          order.paymentStatus !== "paid",
+      ),
+    },
+    {
+      key: "cancelled",
+      title: "Cancelled Orders",
+      description: "These orders are kept for your records.",
+      entries: orders.filter(isCancelledOrder),
+    },
   ].filter((group) => group.key === activeTab && group.entries.length > 0);
 
   const confirmCancellation = async () => {
     const order = cancelTarget;
     if (!order || cancelBusyRef.current || paymentBusyRef.current) return;
     const token = localStorage.getItem("token");
-    if (!token) { router.push("/login"); return; }
+    if (!token) {
+      router.push("/login");
+      return;
+    }
     cancelBusyRef.current = true;
     setCancellingId(order.id);
     setCancelTarget(null);
@@ -907,22 +709,40 @@ function OrdersTab() {
     try {
       const res = await fetch("/api/orders/cancel", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ orderId: order.id }),
         signal: AbortSignal.timeout(20000),
       });
-      if (res.status === 401) { logout(); router.push("/login"); return; }
+      if (res.status === 401) {
+        logout();
+        router.push("/login");
+        return;
+      }
       const result = await res.json();
       if (!res.ok || result.paymentStatus !== "cancelled") {
-        throw new Error(result.error || "Cancellation could not be confirmed. Please refresh its status.");
+        throw new Error(
+          result.error ||
+            "Cancellation could not be confirmed. Please refresh its status.",
+        );
       }
-      setOrders((current) => current.map((entry) => entry.id === order.id
-        ? { ...entry, paymentStatus: "cancelled", status: "CANCELLED" }
-        : entry));
-      setPaymentCheckUnavailable((current) => current.filter((id) => id !== order.id));
+      setOrders((current) =>
+        current.map((entry) =>
+          entry.id === order.id
+            ? { ...entry, paymentStatus: "cancelled", status: "CANCELLED" }
+            : entry,
+        ),
+      );
+      setPaymentCheckUnavailable((current) =>
+        current.filter((id) => id !== order.id),
+      );
       setRefreshKey((value) => value + 1);
     } catch (error) {
-      setCancelError(`Order #TA-${order.id}: ${error instanceof Error ? error.message : "Unable to confirm cancellation. Please check again."}`);
+      setCancelError(
+        `Order #TA-${order.id}: ${error instanceof Error ? error.message : "Unable to confirm cancellation. Please check again."}`,
+      );
       // A payment or cancellation may have completed despite a lost response.
       setRefreshKey((value) => value + 1);
     } finally {
@@ -934,7 +754,10 @@ function OrdersTab() {
   const resumePayment = async (order: Order) => {
     if (paymentBusyRef.current || cancelBusyRef.current) return;
     const token = localStorage.getItem("token");
-    if (!token) { router.push("/login"); return; }
+    if (!token) {
+      router.push("/login");
+      return;
+    }
     paymentBusyRef.current = true;
     setPayingId(order.id);
     setCancelError("");
@@ -942,26 +765,59 @@ function OrdersTab() {
     try {
       const post = async (url: string, body: object) => {
         const res = await fetch(url, {
-          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify(body), cache: "no-store", signal: AbortSignal.timeout(40000),
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+          cache: "no-store",
+          signal: AbortSignal.timeout(40000),
         });
-        if (res.status === 401) { logout(); router.push("/login"); throw new Error("Please sign in again."); }
+        if (res.status === 401) {
+          logout();
+          router.push("/login");
+          throw new Error("Please sign in again.");
+        }
         return { res, result: await res.json() };
       };
-      const checked = await post("/api/payments/paymongo/check", { orderId: order.id });
-      if (!checked.res.ok) throw new Error(checked.result.error || "Unable to verify payment. Please refresh and try again.");
+      const checked = await post("/api/payments/paymongo/check", {
+        orderId: order.id,
+      });
+      if (!checked.res.ok)
+        throw new Error(
+          checked.result.error ||
+            "Unable to verify payment. Please refresh and try again.",
+        );
       const status = checked.result.paymentStatus;
       if (!["pending", "failed"].includes(status)) {
         setRefreshKey((value) => value + 1);
-        if (status === "paid") { setActiveTab("orders"); setPage(1); }
-        else if (status === "cancelled") { setActiveTab("cancelled"); setPage(1); }
-        else throw new Error("Payment is being confirmed. Please check its status again shortly.");
+        if (status === "paid") {
+          setActiveTab("orders");
+          setPage(1);
+        } else if (status === "cancelled") {
+          setActiveTab("cancelled");
+          setPage(1);
+        } else
+          throw new Error(
+            "Payment is being confirmed. Please check its status again shortly.",
+          );
         return;
       }
-      const created = await post("/api/payments/paymongo/source", { orderId: order.id, type: order.paymentMethod });
-      if (!created.res.ok || typeof created.result.checkoutUrl !== "string" || !created.result.checkoutUrl) {
+      const created = await post("/api/payments/paymongo/source", {
+        orderId: order.id,
+        type: order.paymentMethod,
+      });
+      if (
+        !created.res.ok ||
+        typeof created.result.checkoutUrl !== "string" ||
+        !created.result.checkoutUrl
+      ) {
         setRefreshKey((value) => value + 1);
-        throw new Error(created.result.error || "Unable to resume payment. Please check again.");
+        throw new Error(
+          created.result.error ||
+            "Unable to resume payment. Please check again.",
+        );
       }
       // The source endpoint reuses a pending link or creates a retry for this order.
       // No new order is created from the Orders tab.
@@ -969,9 +825,14 @@ function OrdersTab() {
       navigating = true;
       window.location.href = created.result.checkoutUrl;
     } catch (error) {
-      setCancelError(`Order #TA-${order.id}: ${error instanceof Error ? error.message : "Unable to resume payment."}`);
+      setCancelError(
+        `Order #TA-${order.id}: ${error instanceof Error ? error.message : "Unable to resume payment."}`,
+      );
     } finally {
-      if (!navigating) { paymentBusyRef.current = false; setPayingId(null); }
+      if (!navigating) {
+        paymentBusyRef.current = false;
+        setPayingId(null);
+      }
     }
   };
 
@@ -1021,7 +882,7 @@ function OrdersTab() {
           (order) =>
             !isCancelledOrder(order) &&
             ["gcash", "grabpay"].includes(order.paymentMethod) &&
-            ["pending", "processing", "failed"].includes(order.paymentStatus)
+            ["pending", "processing", "failed"].includes(order.paymentStatus),
         );
         let unauthorized = false;
         const checks = await Promise.allSettled(
@@ -1040,9 +901,13 @@ function OrdersTab() {
             const result = await checkRes.json();
             if (
               !checkRes.ok ||
-              !["pending", "processing", "paid", "failed", "cancelled"].includes(
-                result.paymentStatus
-              )
+              ![
+                "pending",
+                "processing",
+                "paid",
+                "failed",
+                "cancelled",
+              ].includes(result.paymentStatus)
             ) {
               throw new Error("Unable to verify payment.");
             }
@@ -1050,7 +915,7 @@ function OrdersTab() {
               id: order.id,
               paymentStatus: result.paymentStatus as string,
             };
-          })
+          }),
         );
         if (cancelled) return;
         if (unauthorized) {
@@ -1068,23 +933,33 @@ function OrdersTab() {
           }
         });
         const refreshedOrders = loadedOrders.map((order) => ({
-          ...order, paymentStatus: statuses.get(order.id) ?? order.paymentStatus,
+          ...order,
+          paymentStatus: statuses.get(order.id) ?? order.paymentStatus,
         }));
         setOrders(refreshedOrders);
         // Refresh the filtered page if verification moved an order to another tab.
-        if (activeTab === "unpaid" && refreshedOrders.some((order) =>
-            isCancelledOrder(order) || order.paymentStatus === "paid")) {
+        if (
+          activeTab === "unpaid" &&
+          refreshedOrders.some(
+            (order) =>
+              isCancelledOrder(order) || order.paymentStatus === "paid",
+          )
+        ) {
           setRefreshKey((value) => value + 1);
         }
         setPaymentCheckUnavailable(unavailable);
         setTotalPages(Math.max(1, Number(data.totalPages) || 1));
-        if (Number.isSafeInteger(data.currentPage) && data.currentPage >= 1 && data.currentPage !== page) {
+        if (
+          Number.isSafeInteger(data.currentPage) &&
+          data.currentPage >= 1 &&
+          data.currentPage !== page
+        ) {
           setPage(data.currentPage);
         }
       } catch (error) {
         if (!cancelled) {
           setErrorMessage(
-            error instanceof Error ? error.message : "Unable to load orders."
+            error instanceof Error ? error.message : "Unable to load orders.",
           );
         }
       } finally {
@@ -1105,11 +980,13 @@ function OrdersTab() {
         aria-label="Order categories"
         className="flex flex-wrap gap-2"
       >
-        {([
-          { key: "orders", label: "Orders" },
-          { key: "cancelled", label: "Cancelled" },
-          { key: "unpaid", label: "Unpaid" },
-        ] as const).map((tab) => (
+        {(
+          [
+            { key: "orders", label: "Orders" },
+            { key: "cancelled", label: "Cancelled" },
+            { key: "unpaid", label: "Unpaid" },
+          ] as const
+        ).map((tab) => (
           <button
             key={tab.key}
             type="button"
@@ -1147,182 +1024,288 @@ function OrdersTab() {
       </button>
     </div>
   );
-  if (isLoading) return <div>{tabNavigation}<OrderSkeleton /></div>;
-  if (errorMessage) return (
-    <div>{tabNavigation}<p role="alert" className="text-center py-12 font-body text-sm text-red-600">{errorMessage}</p>
-      <button type="button" onClick={() => setRefreshKey((value) => value + 1)} className="block mx-auto font-body text-sm text-sage underline">Try Again</button>
-    </div>
-  );
+  if (isLoading)
+    return (
+      <div>
+        {tabNavigation}
+        <OrderSkeleton />
+      </div>
+    );
+  if (errorMessage)
+    return (
+      <div>
+        {tabNavigation}
+        <p
+          role="alert"
+          className="text-center py-12 font-body text-sm text-red-600"
+        >
+          {errorMessage}
+        </p>
+        <button
+          type="button"
+          onClick={() => setRefreshKey((value) => value + 1)}
+          className="block mx-auto font-body text-sm text-sage underline"
+        >
+          Try Again
+        </button>
+      </div>
+    );
   return (
     <div>
       {tabNavigation}
-      <div id="orders-category-panel" role="tabpanel" aria-labelledby={`orders-tab-${activeTab}`}>
-      {cancelError && <p role="alert" className="mb-6 rounded-xl border border-red-300 bg-red-50 p-4 font-body text-sm text-charcoal">{cancelError}</p>}
-      {cancellingId !== null && <p role="status" className="mb-6 font-body text-sm text-charcoal/70">Checking cancellation for order #TA-{cancellingId}...</p>}
-      {payingId !== null && <p role="status" className="mb-6 font-body text-sm text-charcoal/70">Opening payment for order #TA-{payingId}...</p>}
-      {groups.length === 0 && <p className="text-center py-12 font-body text-sm text-charcoal/60">
-        {activeTab === "orders" ? "No paid or Cash on Delivery orders yet." : activeTab === "cancelled" ? "No cancelled orders." : "No unpaid orders."}
-      </p>}
-      {groups.map((group) => (
-        <section key={group.title} className="mb-10">
-          <h3 className="font-display text-2xl text-charcoal mb-2">{group.title}</h3>
-          <p className="font-body text-sm text-charcoal/60 mb-5">{group.description}</p>
-      <motion.div
-        variants={listContainerVariants}
-        initial="hidden"
-        animate="show"
-        className="space-y-6"
+      <div
+        id="orders-category-panel"
+        role="tabpanel"
+        aria-labelledby={`orders-tab-${activeTab}`}
       >
-        {group.entries.map((order) => (
-          <motion.div
-            key={order.id}
-            variants={listItemVariants}
-            className="bg-sand/30 rounded-xl p-6"
+        {cancelError && (
+          <p
+            role="alert"
+            className="mb-6 rounded-xl border border-red-300 bg-red-50 p-4 font-body text-sm text-charcoal"
           >
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-4 border-b border-charcoal/10">
-            <div>
-              <p className="font-body text-sm text-charcoal">
-                Order #TA-{order.id}
-              </p>
-              <p className="font-body text-xs text-charcoal/50 mt-1">
-                {new Date(order.createdAt).toLocaleDateString("en-PH", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </p>
-              {order.recipientName && (
-                <p className="font-body text-xs text-charcoal/50 mt-1">
-                  For: {order.recipientName}
-                </p>
-              )}  
-            </div>
-            {isCancelledOrder(order) ? (
-              <Badge tone="amber">Cancelled</Badge>
-            ) : paymentCheckUnavailable.includes(order.id) ? (
-              <Badge tone="amber">Payment Status Unavailable</Badge>
-            ) : order.paymentMethod !== "cod" && order.paymentStatus !== "paid" ? (
-              <Badge tone="amber">
-                {order.paymentStatus === "failed"
-                  ? "Payment Failed"
-                  : order.paymentStatus === "processing"
-                  ? "Confirming Payment"
-                  : order.paymentStatus === "pending"
-                  ? "Awaiting Payment"
-                  : "Check Payment Status"}
-              </Badge>
-            ) : (
-              <Badge tone="sage">{getStatusLabel(order.status)}</Badge>
-            )}
-          </div>
-            <div className="space-y-3 mb-4">
-              {order.items.map((item, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-sand rounded-lg overflow-hidden shrink-0">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-body text-sm text-charcoal">
-                      {item.name}
-                    </p>
-                    <p className="font-body text-xs text-charcoal/50">
-                      Qty {item.quantity}
-                    </p>
-                  </div>
-                  <p className="font-body text-sm text-charcoal">
-                    ₱{(item.price * item.quantity).toFixed(2)}
-                  </p>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between font-body text-sm text-charcoal/70 pt-4 border-t border-charcoal/10">
-              <span>Total ({formatPaymentMethod(order.paymentMethod)})</span>
-              <span className="font-display text-base text-charcoal">
-                ₱{order.totalAmount.toFixed(2)}
-              </span>
-            </div>
-            {/* Existing order details and verified cancellation actions. */}
-            <Link
-              href={`/account/orders/${order.id}`}
-              className="mt-4 block w-full rounded-lg border border-charcoal/15 py-2.5 text-center font-body text-sm text-charcoal hover:bg-charcoal hover:text-white transition-colors"
+            {cancelError}
+          </p>
+        )}
+        {cancellingId !== null && (
+          <p role="status" className="mb-6 font-body text-sm text-charcoal/70">
+            Checking cancellation for order #TA-{cancellingId}...
+          </p>
+        )}
+        {payingId !== null && (
+          <p role="status" className="mb-6 font-body text-sm text-charcoal/70">
+            Opening payment for order #TA-{payingId}...
+          </p>
+        )}
+        {groups.length === 0 && (
+          <p className="text-center py-12 font-body text-sm text-charcoal/60">
+            {activeTab === "orders"
+              ? "No paid or Cash on Delivery orders yet."
+              : activeTab === "cancelled"
+                ? "No cancelled orders."
+                : "No unpaid orders."}
+          </p>
+        )}
+        {groups.map((group) => (
+          <section key={group.title} className="mb-10">
+            <h3 className="font-display text-2xl text-charcoal mb-2">
+              {group.title}
+            </h3>
+            <p className="font-body text-sm text-charcoal/60 mb-5">
+              {group.description}
+            </p>
+            <motion.div
+              variants={listContainerVariants}
+              initial="hidden"
+              animate="show"
+              className="space-y-6"
             >
-              View Order Details
-            </Link>
-            {!isCancelledOrder(order) && ["gcash", "grabpay"].includes(order.paymentMethod) &&
-              ["pending", "failed"].includes(order.paymentStatus) && (
-                <button type="button" disabled={cancellingId !== null || payingId !== null}
-                  onClick={() => void resumePayment(order)}
-                  className="mt-4 block w-full rounded-full bg-sage py-3 font-body text-sm text-cream hover:bg-charcoal transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                  {payingId === order.id ? "Opening Payment..." : order.paymentStatus === "failed" ? "Retry Payment" : "Continue Payment"}
-                </button>
-              )}
-            {!isCancelledOrder(order) && order.status === "PLACED" &&
-              ["gcash", "grabpay"].includes(order.paymentMethod) &&
-              ["pending", "failed"].includes(order.paymentStatus) && (
-                <button type="button" disabled={cancellingId !== null || payingId !== null}
-                  onClick={() => { setCancelError(""); setCancelTarget(order); }}
-                  className="mt-4 block mx-auto font-body text-sm text-red-700 underline underline-offset-4 hover:text-red-900 disabled:opacity-40 disabled:cursor-not-allowed">
-                  Cancel Order
-                </button>
-              )}
-          </motion.div>
+              {group.entries.map((order) => (
+                <motion.div
+                  key={order.id}
+                  variants={listItemVariants}
+                  className="bg-sand/30 rounded-xl p-6"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-4 border-b border-charcoal/10">
+                    <div>
+                      <p className="font-body text-sm text-charcoal">
+                        Order #TA-{order.id}
+                      </p>
+                      <p className="font-body text-xs text-charcoal/50 mt-1">
+                        {new Date(order.createdAt).toLocaleDateString("en-PH", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                      {order.recipientName && (
+                        <p className="font-body text-xs text-charcoal/50 mt-1">
+                          For: {order.recipientName}
+                        </p>
+                      )}
+                    </div>
+                    {isCancelledOrder(order) ? (
+                      <Badge tone="amber">Cancelled</Badge>
+                    ) : paymentCheckUnavailable.includes(order.id) ? (
+                      <Badge tone="amber">Payment Status Unavailable</Badge>
+                    ) : order.paymentMethod !== "cod" &&
+                      order.paymentStatus !== "paid" ? (
+                      <Badge tone="amber">
+                        {order.paymentStatus === "failed"
+                          ? "Payment Failed"
+                          : order.paymentStatus === "processing"
+                            ? "Confirming Payment"
+                            : order.paymentStatus === "pending"
+                              ? "Awaiting Payment"
+                              : "Check Payment Status"}
+                      </Badge>
+                    ) : (
+                      <Badge tone="sage">{getStatusLabel(order.status)}</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-3 mb-4">
+                    {order.items.map((item, i) => (
+                      <div key={i} className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-sand rounded-lg overflow-hidden shrink-0">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-body text-sm text-charcoal">
+                            {item.name}
+                          </p>
+                          <p className="font-body text-xs text-charcoal/50">
+                            Qty {item.quantity}
+                          </p>
+                        </div>
+                        <p className="font-body text-sm text-charcoal">
+                          ₱{(item.price * item.quantity).toFixed(2)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between font-body text-sm text-charcoal/70 pt-4 border-t border-charcoal/10">
+                    <span>
+                      Total ({formatPaymentMethod(order.paymentMethod)})
+                    </span>
+                    <span className="font-display text-base text-charcoal">
+                      ₱{order.totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  {/* Existing order details and verified cancellation actions. */}
+                  <Link
+                    href={`/account/orders/${order.id}`}
+                    className="mt-4 block w-full rounded-lg border border-charcoal/15 py-2.5 text-center font-body text-sm text-charcoal hover:bg-charcoal hover:text-white transition-colors"
+                  >
+                    View Order Details
+                  </Link>
+                  {!isCancelledOrder(order) &&
+                    ["gcash", "grabpay"].includes(order.paymentMethod) &&
+                    ["pending", "failed"].includes(order.paymentStatus) && (
+                      <button
+                        type="button"
+                        disabled={cancellingId !== null || payingId !== null}
+                        onClick={() => void resumePayment(order)}
+                        className="mt-4 block w-full rounded-full bg-sage py-3 font-body text-sm text-cream hover:bg-charcoal transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {payingId === order.id
+                          ? "Opening Payment..."
+                          : order.paymentStatus === "failed"
+                            ? "Retry Payment"
+                            : "Continue Payment"}
+                      </button>
+                    )}
+                  {!isCancelledOrder(order) &&
+                    order.status === "PLACED" &&
+                    ["gcash", "grabpay"].includes(order.paymentMethod) &&
+                    ["pending", "failed"].includes(order.paymentStatus) && (
+                      <button
+                        type="button"
+                        disabled={cancellingId !== null || payingId !== null}
+                        onClick={() => {
+                          setCancelError("");
+                          setCancelTarget(order);
+                        }}
+                        className="mt-4 block mx-auto font-body text-sm text-red-700 underline underline-offset-4 hover:text-red-900 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Cancel Order
+                      </button>
+                    )}
+                </motion.div>
+              ))}
+            </motion.div>
+          </section>
         ))}
-      </motion.div>
-        </section>
-      ))}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4 mt-10">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1 || cancellingId !== null || payingId !== null}
-            className="font-body text-lg uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            &lt;
-          </button>
-          <span className="font-body text-base text-charcoal/50">
-            Page {page} of {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages || cancellingId !== null || payingId !== null}
-            className="font-body text-lg uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            &gt;
-          </button>
-        </div>
-      )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-10">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={
+                page === 1 || cancellingId !== null || payingId !== null
+              }
+              className="font-body text-lg uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              &lt;
+            </button>
+            <span className="font-body text-base text-charcoal/50">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={
+                page === totalPages ||
+                cancellingId !== null ||
+                payingId !== null
+              }
+              className="font-body text-lg uppercase tracking-wide text-charcoal/70 hover:text-charcoal disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              &gt;
+            </button>
+          </div>
+        )}
       </div>
       {cancelTarget && (
-        <div className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6"
+        <div
+          className="fixed inset-0 bg-charcoal/40 flex items-center justify-center z-[100] p-6"
           onKeyDown={(event) => {
             if (event.key === "Escape") setCancelTarget(null);
             if (event.key === "Tab") {
-              const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
-              const first = buttons[0]; const last = buttons[buttons.length - 1];
+              const buttons =
+                event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                  "button:not(:disabled)",
+                );
+              const first = buttons[0];
+              const last = buttons[buttons.length - 1];
               if (event.shiftKey && document.activeElement === first) {
-                event.preventDefault(); last?.focus();
+                event.preventDefault();
+                last?.focus();
               } else if (!event.shiftKey && document.activeElement === last) {
-                event.preventDefault(); first?.focus();
+                event.preventDefault();
+                first?.focus();
               }
             }
-          }}>
-          <div role="dialog" aria-modal="true" aria-labelledby="account-cancel-title"
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="account-cancel-title"
             aria-describedby="account-cancel-description"
-            className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center">
-            <h3 id="account-cancel-title" className="font-display text-2xl text-charcoal mb-4">Cancel this order?</h3>
-            <p id="account-cancel-description" className="font-body text-sm text-charcoal/70 mb-6">
+            className="bg-cream border border-charcoal/10 rounded-2xl p-8 max-w-sm w-full text-center"
+          >
+            <h3
+              id="account-cancel-title"
+              className="font-display text-2xl text-charcoal mb-4"
+            >
+              Cancel this order?
+            </h3>
+            <p
+              id="account-cancel-description"
+              className="font-body text-sm text-charcoal/70 mb-6"
+            >
               We'll check whether order #TA-{cancelTarget.id} can be cancelled.
-              Your current cart will stay. An active or authorized payment may prevent cancellation.
+              Your current cart will stay. An active or authorized payment may
+              prevent cancellation.
             </p>
             <div className="flex gap-3">
-              <button type="button" autoFocus onClick={() => setCancelTarget(null)}
-                className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors">Keep Order</button>
-              <button type="button" onClick={() => void confirmCancellation()} disabled={cancellingId !== null || payingId !== null}
-                className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Cancel Order</button>
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setCancelTarget(null)}
+                className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
+              >
+                Keep Order
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmCancellation()}
+                disabled={cancellingId !== null || payingId !== null}
+                className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel Order
+              </button>
             </div>
           </div>
         </div>
@@ -1330,7 +1313,6 @@ function OrdersTab() {
     </div>
   );
 }
-
 
 // ================================================================
 // Settings tab
@@ -1726,7 +1708,10 @@ type ContactMessage = {
   customerViewedAt: string | null;
 };
 
-const statusTone: Record<ContactMessage["status"], "sage" | "amber" | "neutral"> = {
+const statusTone: Record<
+  ContactMessage["status"],
+  "sage" | "amber" | "neutral"
+> = {
   new: "amber",
   read: "neutral",
   replied: "sage",
@@ -1835,7 +1820,10 @@ function MessagesTab() {
                   </p>
                   <div className="flex items-center gap-2 shrink-0">
                     {isUnread && (
-                      <span className="w-2 h-2 rounded-full bg-sage" aria-label="Unread" />
+                      <span
+                        className="w-2 h-2 rounded-full bg-sage"
+                        aria-label="Unread"
+                      />
                     )}
                     <Badge tone={statusTone[m.status]}>{m.status}</Badge>
                   </div>

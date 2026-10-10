@@ -19,8 +19,14 @@ const emptyForm = {
 };
 
 type FieldErrors = Partial<
-  Record <
-    "name" | "price" | "stockQuantity" | "description" | "subCategory" | "type" | "image",
+  Record<
+    | "name"
+    | "price"
+    | "stockQuantity"
+    | "description"
+    | "subCategory"
+    | "type"
+    | "image",
     string
   >
 >;
@@ -82,13 +88,20 @@ export default function ProductFormModal({
   }, [imageFile]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
   ) => {
     const { name, value } = e.target;
     setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
 
     if (name === "category") {
-      setForm((prev) => ({ ...prev, category: value as Product["category"], subCategory: "", type: "" }));
+      setForm((prev) => ({
+        ...prev,
+        category: value as Product["category"],
+        subCategory: "",
+        type: "",
+      }));
       return;
     }
     if (name === "subCategory") {
@@ -99,7 +112,12 @@ export default function ProductFormModal({
   };
 
   const handleCategorySelect = (value: string) => {
-    setForm((prev) => ({ ...prev, category: value as Product["category"], subCategory: "", type: "" }));
+    setForm((prev) => ({
+      ...prev,
+      category: value as Product["category"],
+      subCategory: "",
+      type: "",
+    }));
   };
 
   const handleSubCategorySelect = (value: string) => {
@@ -131,14 +149,17 @@ export default function ProductFormModal({
   const validate = (): boolean => {
     const errors: FieldErrors = {};
     if (!form.name.trim()) errors.name = "Name is required.";
-    if (!form.price || parseFloat(form.price) <= 0) errors.price = "Enter a valid price.";
+    if (!form.price || parseFloat(form.price) <= 0)
+      errors.price = "Enter a valid price.";
     if (form.stockQuantity === "" || parseInt(form.stockQuantity, 10) < 0)
       errors.stockQuantity = "Enter a valid stock quantity.";
-    if (!form.description.trim()) errors.description = "Description is required.";
+    if (!form.description.trim())
+      errors.description = "Description is required.";
     if (categoryTree[form.category as MainCategory] && !form.subCategory)
       errors.subCategory = "Select a subcategory.";
     if (form.subCategory && !form.type) errors.type = "Select a type.";
-    if (!editingId && !imageFile) errors.image = "Please select an image to add the new product.";
+    if (!editingId && !imageFile)
+      errors.image = "Please select an image to add the new product.";
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -162,7 +183,8 @@ export default function ProductFormModal({
           body: uploadData,
         });
         const uploadResult = await uploadRes.json();
-        if (!uploadRes.ok) throw new Error(uploadResult.error || "Image upload failed.");
+        if (!uploadRes.ok)
+          throw new Error(uploadResult.error || "Image upload failed.");
         imageUrl = uploadResult.url;
       }
 
@@ -180,7 +202,10 @@ export default function ProductFormModal({
       if (editingId) {
         const res = await fetch(`/api/admin/products/${editingId}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify(payload),
         });
         const data = await res.json();
@@ -189,7 +214,10 @@ export default function ProductFormModal({
       } else {
         const res = await fetch("/api/admin/products", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify(payload),
         });
         const data = await res.json();
@@ -199,7 +227,9 @@ export default function ProductFormModal({
 
       onClose();
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Something went wrong.");
+      setSaveError(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -228,7 +258,10 @@ export default function ProductFormModal({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-8 pt-8 pb-6 border-b border-charcoal/10 sticky top-0 bg-white z-10">
-              <h2 id="product-modal-title" className="font-body text-lg font-medium text-charcoal">
+              <h2
+                id="product-modal-title"
+                className="font-body text-lg font-medium text-charcoal"
+              >
                 {editingId ? "Edit Product" : "Add Product"}
               </h2>
               <button
@@ -250,7 +283,10 @@ export default function ProductFormModal({
                     Basic Info
                   </h3>
                   <div>
-                    <label htmlFor="product-name" className="font-body text-xs text-charcoal/60 block mb-1.5">
+                    <label
+                      htmlFor="product-name"
+                      className="font-body text-xs text-charcoal/60 block mb-1.5"
+                    >
                       Name
                     </label>
                     <input
@@ -261,7 +297,9 @@ export default function ProductFormModal({
                       onChange={handleChange}
                       required
                       aria-invalid={!!fieldErrors.name}
-                      aria-describedby={fieldErrors.name ? "name-error" : undefined}
+                      aria-describedby={
+                        fieldErrors.name ? "name-error" : undefined
+                      }
                       className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                         fieldErrors.name
                           ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
@@ -269,14 +307,20 @@ export default function ProductFormModal({
                       }`}
                     />
                     {fieldErrors.name && (
-                      <p id="name-error" className="font-body text-xs text-red-600 mt-1">
+                      <p
+                        id="name-error"
+                        className="font-body text-xs text-red-600 mt-1"
+                      >
                         {fieldErrors.name}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label htmlFor="product-category" className="font-body text-xs text-charcoal/60 block mb-1.5">
+                    <label
+                      htmlFor="product-category"
+                      className="font-body text-xs text-charcoal/60 block mb-1.5"
+                    >
                       Category
                     </label>
                     <CustomSelect
@@ -303,7 +347,10 @@ export default function ProductFormModal({
                         className="overflow-hidden"
                       >
                         <div>
-                          <label htmlFor="product-subcategory" className="font-body text-xs text-charcoal/60 block mb-1.5">
+                          <label
+                            htmlFor="product-subcategory"
+                            className="font-body text-xs text-charcoal/60 block mb-1.5"
+                          >
                             Subcategory
                           </label>
                           <CustomSelect
@@ -312,7 +359,9 @@ export default function ProductFormModal({
                             onChange={handleSubCategorySelect}
                             placeholder="Select subcategory..."
                             invalid={!!fieldErrors.subCategory}
-                            options={Object.keys(categoryTree[form.category as MainCategory]).map((sub) => ({
+                            options={Object.keys(
+                              categoryTree[form.category as MainCategory],
+                            ).map((sub) => ({
                               value: sub,
                               label: sub,
                             }))}
@@ -323,7 +372,9 @@ export default function ProductFormModal({
                             }`}
                           />
                           {fieldErrors.subCategory && (
-                            <p className="font-body text-xs text-red-600 mt-1">{fieldErrors.subCategory}</p>
+                            <p className="font-body text-xs text-red-600 mt-1">
+                              {fieldErrors.subCategory}
+                            </p>
                           )}
                         </div>
                       </motion.div>
@@ -341,7 +392,10 @@ export default function ProductFormModal({
                         className="overflow-hidden"
                       >
                         <div>
-                          <label htmlFor="product-type" className="font-body text-xs text-charcoal/60 block mb-1.5">
+                          <label
+                            htmlFor="product-type"
+                            className="font-body text-xs text-charcoal/60 block mb-1.5"
+                          >
                             Type
                           </label>
                           <CustomSelect
@@ -351,7 +405,11 @@ export default function ProductFormModal({
                             placeholder="Select type..."
                             invalid={!!fieldErrors.type}
                             options={(
-                              (categoryTree[form.category as MainCategory] as any)[form.subCategory] as string[]
+                              (
+                                categoryTree[
+                                  form.category as MainCategory
+                                ] as any
+                              )[form.subCategory] as string[]
                             ).map((t) => ({ value: t, label: t }))}
                             triggerClassName={`w-full bg-white rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                               fieldErrors.type
@@ -360,7 +418,9 @@ export default function ProductFormModal({
                             }`}
                           />
                           {fieldErrors.type && (
-                            <p className="font-body text-xs text-red-600 mt-1">{fieldErrors.type}</p>
+                            <p className="font-body text-xs text-red-600 mt-1">
+                              {fieldErrors.type}
+                            </p>
                           )}
                         </div>
                       </motion.div>
@@ -374,7 +434,10 @@ export default function ProductFormModal({
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="product-price" className="font-body text-xs text-charcoal/60 block mb-1.5">
+                      <label
+                        htmlFor="product-price"
+                        className="font-body text-xs text-charcoal/60 block mb-1.5"
+                      >
                         Price (₱)
                       </label>
                       <input
@@ -386,7 +449,9 @@ export default function ProductFormModal({
                         onChange={handleChange}
                         required
                         aria-invalid={!!fieldErrors.price}
-                        aria-describedby={fieldErrors.price ? "price-error" : undefined}
+                        aria-describedby={
+                          fieldErrors.price ? "price-error" : undefined
+                        }
                         className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                           fieldErrors.price
                             ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
@@ -394,14 +459,20 @@ export default function ProductFormModal({
                         }`}
                       />
                       {fieldErrors.price && (
-                        <p id="price-error" className="font-body text-xs text-red-600 mt-1">
+                        <p
+                          id="price-error"
+                          className="font-body text-xs text-red-600 mt-1"
+                        >
                           {fieldErrors.price}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label htmlFor="product-stock" className="font-body text-xs text-charcoal/60 block mb-1.5">
+                      <label
+                        htmlFor="product-stock"
+                        className="font-body text-xs text-charcoal/60 block mb-1.5"
+                      >
                         Stock Quantity
                       </label>
                       <input
@@ -414,7 +485,9 @@ export default function ProductFormModal({
                         onChange={handleChange}
                         required
                         aria-invalid={!!fieldErrors.stockQuantity}
-                        aria-describedby={fieldErrors.stockQuantity ? "stock-error" : undefined}
+                        aria-describedby={
+                          fieldErrors.stockQuantity ? "stock-error" : undefined
+                        }
                         className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                           fieldErrors.stockQuantity
                             ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
@@ -422,7 +495,10 @@ export default function ProductFormModal({
                         }`}
                       />
                       {fieldErrors.stockQuantity && (
-                        <p id="stock-error" className="font-body text-xs text-red-600 mt-1">
+                        <p
+                          id="stock-error"
+                          className="font-body text-xs text-red-600 mt-1"
+                        >
                           {fieldErrors.stockQuantity}
                         </p>
                       )}
@@ -456,7 +532,9 @@ export default function ProductFormModal({
                       {imagePreviewUrl || (form.image && !imageFile) ? (
                         <img
                           src={imagePreviewUrl || form.image}
-                          alt={imagePreviewUrl ? "New image preview" : "Current"}
+                          alt={
+                            imagePreviewUrl ? "New image preview" : "Current"
+                          }
                           className="w-24 h-24 rounded-lg object-cover"
                         />
                       ) : (
@@ -475,7 +553,9 @@ export default function ProductFormModal({
                         className="flex items-center gap-1.5 font-body text-xs text-charcoal underline hover:text-sage transition-colors"
                       >
                         <UploadCloud className="w-3.5 h-3.5" />
-                        {editingId && form.image ? "Replace image" : "Browse files"}
+                        {editingId && form.image
+                          ? "Replace image"
+                          : "Browse files"}
                       </button>
                     </div>
 
@@ -489,7 +569,9 @@ export default function ProductFormModal({
                     />
                   </div>
                   {fieldErrors.image && (
-                    <p className="font-body text-xs text-red-600">{fieldErrors.image}</p>
+                    <p className="font-body text-xs text-red-600">
+                      {fieldErrors.image}
+                    </p>
                   )}
                 </div>
 
@@ -506,7 +588,11 @@ export default function ProductFormModal({
                       rows={4}
                       required
                       aria-invalid={!!fieldErrors.description}
-                      aria-describedby={fieldErrors.description ? "description-error" : undefined}
+                      aria-describedby={
+                        fieldErrors.description
+                          ? "description-error"
+                          : undefined
+                      }
                       className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                         fieldErrors.description
                           ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
@@ -514,7 +600,10 @@ export default function ProductFormModal({
                       }`}
                     />
                     {fieldErrors.description && (
-                      <p id="description-error" className="font-body text-xs text-red-600 mt-1">
+                      <p
+                        id="description-error"
+                        className="font-body text-xs text-red-600 mt-1"
+                      >
                         {fieldErrors.description}
                       </p>
                     )}
@@ -526,18 +615,26 @@ export default function ProductFormModal({
                     type="submit"
                     disabled={isSaving}
                     className={`flex-1 font-body text-sm py-2.5 rounded-full transition-colors flex items-center justify-center gap-2 ${
-                      isSaving ? "bg-charcoal/60 text-cream cursor-not-allowed" : "bg-charcoal text-cream hover:bg-sage"
+                      isSaving
+                        ? "bg-charcoal/60 text-cream cursor-not-allowed"
+                        : "bg-charcoal text-cream hover:bg-sage"
                     }`}
                   >
                     {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {isSaving ? "Saving..." : editingId ? "Save Changes" : "Add Product"}
+                    {isSaving
+                      ? "Saving..."
+                      : editingId
+                        ? "Save Changes"
+                        : "Add Product"}
                   </button>
                   <button
                     type="button"
                     onClick={() => onClose()}
                     disabled={isSaving}
                     className={`flex-1 border border-charcoal/20 text-charcoal font-body text-sm py-2.5 rounded-full transition-colors ${
-                      isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-sand/30"
+                      isSaving
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:bg-sand/30"
                     }`}
                   >
                     Cancel

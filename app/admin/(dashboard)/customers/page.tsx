@@ -49,7 +49,9 @@ const VERIFIED_OPTIONS = [
 const GRID_COLS =
   "minmax(220px,2.4fr) minmax(130px,1fr) minmax(120px,0.9fr) minmax(120px,0.9fr) minmax(160px,1.1fr)";
 
-function buildQuery(params: Record<string, string | number | boolean | undefined>) {
+function buildQuery(
+  params: Record<string, string | number | boolean | undefined>,
+) {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === "" || value === "All") return;
@@ -60,7 +62,11 @@ function buildQuery(params: Record<string, string | number | boolean | undefined
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [stats, setStats] = useState<Stats>({ total: 0, verified: 0, unverified: 0 });
+  const [stats, setStats] = useState<Stats>({
+    total: 0,
+    verified: 0,
+    unverified: 0,
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -116,7 +122,9 @@ export default function AdminCustomersPage() {
           setCurrentPage(page - 1);
         }
       } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+        setErrorMessage(
+          error instanceof Error ? error.message : "Something went wrong.",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -174,10 +182,14 @@ export default function AdminCustomersPage() {
       if (!res.ok) throw new Error(data.error || "Unable to update customer.");
 
       setCustomers((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, isSuspended: data.isSuspended } : c)),
+        prev.map((c) =>
+          c.id === id ? { ...c, isSuspended: data.isSuspended } : c,
+        ),
       );
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Something went wrong.");
+      setActionError(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
     } finally {
       setIsSuspending(false);
     }
@@ -214,11 +226,18 @@ export default function AdminCustomersPage() {
         <div className="flex flex-wrap gap-1.5">
           <StatChip label="Total Customers" value={stats.total} />
           <StatChip label="Verified" value={stats.verified} />
-          <StatChip label="Unverified" value={stats.unverified} tone="warning" />
+          <StatChip
+            label="Unverified"
+            value={stats.unverified}
+            tone="warning"
+          />
         </div>
       </div>
 
-      <ErrorBanner message={errorMessage} onRetry={() => loadCustomers(currentPage)} />
+      <ErrorBanner
+        message={errorMessage}
+        onRetry={() => loadCustomers(currentPage)}
+      />
       <ErrorBanner message={actionError} />
 
       {/* Filter toolbar */}
@@ -267,7 +286,12 @@ export default function AdminCustomersPage() {
             className="grid items-center border-b border-charcoal/10"
             style={{ gridTemplateColumns: GRID_COLS }}
           >
-            <SortHeader label="Customer" sortKeyName="name" sortConfig={sortConfig} onSort={handleSort} />
+            <SortHeader
+              label="Customer"
+              sortKeyName="name"
+              sortConfig={sortConfig}
+              onSort={handleSort}
+            />
             <PlainHeader label="Phone" />
             <SortHeader
               label="Joined"
@@ -355,13 +379,18 @@ export default function AdminCustomersPage() {
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
-                          customer.isVerified ? "bg-green-500" : "bg-charcoal/40"
+                          customer.isVerified
+                            ? "bg-green-500"
+                            : "bg-charcoal/40"
                         }`}
                       />
                       {customer.isVerified ? "Verified" : "Unverified"}
                     </span>
                   </div>
-                  <div role="cell" className="px-5 flex items-center justify-end gap-2">
+                  <div
+                    role="cell"
+                    className="px-5 flex items-center justify-end gap-2"
+                  >
                     <button
                       onClick={() => openView(customer.id)}
                       className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal hover:bg-sand/30 transition-colors"
@@ -371,7 +400,10 @@ export default function AdminCustomersPage() {
                     <button
                       disabled={isSuspending}
                       onClick={() =>
-                        setConfirmTarget({ id: customer.id, suspend: !customer.isSuspended })
+                        setConfirmTarget({
+                          id: customer.id,
+                          suspend: !customer.isSuspended,
+                        })
                       }
                       className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal hover:bg-sand/30 transition-colors"
                     >
@@ -385,7 +417,10 @@ export default function AdminCustomersPage() {
 
           {!isLoading && customers.length === 0 && (
             <div role="row" className="px-5 py-10">
-              <div role="cell" className="flex flex-col items-center gap-2 text-center">
+              <div
+                role="cell"
+                className="flex flex-col items-center gap-2 text-center"
+              >
                 <Users className="w-8 h-8 text-charcoal/20" />
                 <span className="font-body text-sm text-charcoal/40">
                   No customers match your filters.
@@ -423,7 +458,11 @@ export default function AdminCustomersPage() {
         </div>
       )}
 
-      <CustomerDetailPanel open={panelOpen} customerId={viewingId} onClose={closeView} />
+      <CustomerDetailPanel
+        open={panelOpen}
+        customerId={viewingId}
+        onClose={closeView}
+      />
 
       <ConfirmDialog
         open={confirmTarget !== null}

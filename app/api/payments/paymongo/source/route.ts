@@ -41,19 +41,18 @@ export async function POST(req: Request) {
     console.error("PayMongo configuration is missing");
     return Response.json(
       { error: "Payment initiation is unavailable." },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
   const headers = {
     "Content-Type": "application/json",
-    Authorization:
-      "Basic " + Buffer.from(secretKey + ":").toString("base64"),
+    Authorization: "Basic " + Buffer.from(secretKey + ":").toString("base64"),
   };
 
   const requestSource = async (
     url: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<PaymongoSource> => {
     const res = await fetch(url, {
       ...options,
@@ -88,7 +87,7 @@ export async function POST(req: Request) {
          FROM orders
          WHERE order_id = $1 AND user_id = $2
          FOR UPDATE`,
-        [orderId, userId]
+        [orderId, userId],
       );
       const order = orderRes.rows[0];
 
@@ -104,7 +103,7 @@ export async function POST(req: Request) {
       if (order.payment_method !== type) {
         return finish(
           { error: "Payment method doesn't match this order." },
-          400
+          400,
         );
       }
 
@@ -118,14 +117,14 @@ export async function POST(req: Request) {
             paymentStatus: order.payment_status,
             error: "This order is paid, being processed, or cancelled.",
           },
-          409
+          409,
         );
       }
 
       if (!["pending", "failed"].includes(order.payment_status)) {
         return finish(
           { error: "This order is not available for payment." },
-          409
+          409,
         );
       }
 
@@ -144,8 +143,8 @@ export async function POST(req: Request) {
       if (order.paymongo_source_id) {
         const existing = await requestSource(
           `https://api.paymongo.com/v1/sources/${encodeURIComponent(
-            order.paymongo_source_id
-          )}`
+            order.paymongo_source_id,
+          )}`,
         );
 
         if (
@@ -168,7 +167,7 @@ export async function POST(req: Request) {
           await client.query(
             `UPDATE orders SET payment_status = 'pending'
              WHERE order_id = $1 AND user_id = $2`,
-            [orderId, userId]
+            [orderId, userId],
           );
 
           return finish({
@@ -186,7 +185,7 @@ export async function POST(req: Request) {
               paymentStatus: "processing",
               error: "Payment confirmation is in progress. Check status.",
             },
-            409
+            409,
           );
         }
 
@@ -214,7 +213,7 @@ export async function POST(req: Request) {
               },
             },
           }),
-        }
+        },
       );
 
       const checkoutUrl = source.attributes.redirect?.checkout_url;
@@ -231,7 +230,7 @@ export async function POST(req: Request) {
         `UPDATE orders
          SET paymongo_source_id = $1, payment_status = 'pending'
          WHERE order_id = $2 AND user_id = $3`,
-        [source.id, orderId, userId]
+        [source.id, orderId, userId],
       );
 
       // Save before exposing the payment link to the customer.
@@ -250,7 +249,7 @@ export async function POST(req: Request) {
     console.error("PayMongo source request failed:", error);
     return Response.json(
       { error: "Unable to start or resume payment. Please check again." },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

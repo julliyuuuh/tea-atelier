@@ -18,7 +18,10 @@ type MessageDetails = {
   repliedAt: string | null;
 };
 
-const statusTone: Record<MessageDetails["status"], "sage" | "amber" | "neutral"> = {
+const statusTone: Record<
+  MessageDetails["status"],
+  "sage" | "amber" | "neutral"
+> = {
   new: "amber",
   read: "neutral",
   replied: "sage",
@@ -121,40 +124,40 @@ export default function MessageDetailsPage({
           </div>
 
           {/* message */}
-            <div className="bg-cream border border-charcoal/10 rounded-xl p-6">
+          <div className="bg-cream border border-charcoal/10 rounded-xl p-6">
             <h3 className="font-display text-base text-charcoal mb-4">
-                Your Message
+              Your Message
             </h3>
             <p className="font-body text-sm text-charcoal/80 whitespace-pre-wrap">
-                {data.message}
+              {data.message}
             </p>
-            </div>
-            
-            {/* admin reply */}
-            <div className="bg-sage/5 border border-sage/30 rounded-xl p-6">
-                <h3 className="font-display text-base text-sage mb-4">Reply</h3>
-                {data.adminReply ? (
-                    <>
-                    <p className="font-body text-sm text-charcoal/80 whitespace-pre-wrap">
-                        {data.adminReply}
-                    </p>
-                    {data.repliedAt && (
-                        <p className="font-body text-xs text-charcoal/50 mt-3 pt-3 border-t border-sage/25">
-                        Replied on{" "}
-                        {new Date(data.repliedAt).toLocaleDateString("en-PH", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                        })}
-                        </p>
-                    )}
-                    </>
-                ) : (
-                    <p className="font-body text-sm text-charcoal/50">
-                    We haven&apos;t replied yet — we&apos;ll get back to you soon.
-                    </p>
+          </div>
+
+          {/* admin reply */}
+          <div className="bg-sage/5 border border-sage/30 rounded-xl p-6">
+            <h3 className="font-display text-base text-sage mb-4">Reply</h3>
+            {data.adminReply ? (
+              <>
+                <p className="font-body text-sm text-charcoal/80 whitespace-pre-wrap">
+                  {data.adminReply}
+                </p>
+                {data.repliedAt && (
+                  <p className="font-body text-xs text-charcoal/50 mt-3 pt-3 border-t border-sage/25">
+                    Replied on{" "}
+                    {new Date(data.repliedAt).toLocaleDateString("en-PH", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
                 )}
-            </div>
+              </>
+            ) : (
+              <p className="font-body text-sm text-charcoal/50">
+                We haven&apos;t replied yet — we&apos;ll get back to you soon.
+              </p>
+            )}
+          </div>
         </motion.div>
       )}
     </main>

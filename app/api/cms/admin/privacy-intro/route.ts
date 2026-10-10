@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest) {
      SET heading = $1, intro = $2, last_updated = $3
      WHERE id = (SELECT id FROM privacy_intro LIMIT 1)
      RETURNING *`,
-    [heading, intro, last_updated]
+    [heading, intro, last_updated],
   );
 
   return NextResponse.json({ intro: result.rows[0] });

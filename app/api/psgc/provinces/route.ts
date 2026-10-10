@@ -5,6 +5,9 @@ export async function GET() {
   try {
     return NextResponse.json(await getProvinces());
   } catch {
-    return NextResponse.json({ error: "Address data unavailable" }, { status: 502 });
+    return NextResponse.json(
+      { error: "Address data unavailable" },
+      { status: 502 },
+    );
   }
 }

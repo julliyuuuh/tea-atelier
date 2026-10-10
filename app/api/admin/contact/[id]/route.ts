@@ -6,7 +6,7 @@ import { sendContactReplyEmail } from "@/lib/email";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;
@@ -20,11 +20,14 @@ export async function PATCH(
        SET status = 'read'
        WHERE message_id = $1 AND status = 'new'
        RETURNING message_id, subject, message, status, admin_reply, created_at, replied_at`,
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {
-      return NextResponse.json({ error: "Message not found or already actioned." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Message not found or already actioned." },
+        { status: 404 },
+      );
     }
 
     const m = result.rows[0];
@@ -43,7 +46,10 @@ export async function PATCH(
     const { adminReply } = body;
 
     if (!adminReply || typeof adminReply !== "string" || !adminReply.trim()) {
-      return NextResponse.json({ error: "Reply is required." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Reply is required." },
+        { status: 400 },
+      );
     }
 
     const result = await pool.query(
@@ -53,11 +59,14 @@ export async function PATCH(
        RETURNING message_id, subject, message, status, admin_reply, replied_at,
          (SELECT email FROM users WHERE user_id = contact_messages.user_id) AS user_email,
          (SELECT first_name FROM users WHERE user_id = contact_messages.user_id) AS user_first_name`,
-      [adminReply.trim(), id]
+      [adminReply.trim(), id],
     );
 
     if (result.rows.length === 0) {
-      return NextResponse.json({ error: "Message not found." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Message not found." },
+        { status: 404 },
+      );
     }
 
     const updated = result.rows[0];
@@ -67,7 +76,7 @@ export async function PATCH(
       updated.user_first_name,
       updated.subject,
       updated.message,
-      updated.admin_reply
+      updated.admin_reply,
     );
 
     return NextResponse.json({

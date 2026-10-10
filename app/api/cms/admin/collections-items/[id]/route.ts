@@ -5,20 +5,21 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;
 
   const { id } = await params;
-  const { name, description, image, href, sort_order, is_active } = await req.json();
+  const { name, description, image, href, sort_order, is_active } =
+    await req.json();
 
   const result = await pool.query(
     `UPDATE collections_items
      SET name = $1, description = $2, image = $3, href = $4, sort_order = $5, is_active = $6
      WHERE id = $7
      RETURNING *`,
-    [name, description, image, href, sort_order, is_active, id]
+    [name, description, image, href, sort_order, is_active, id],
   );
 
   if (result.rows.length === 0) {
@@ -30,7 +31,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = await requireAdmin(req);
   if (error) return error;

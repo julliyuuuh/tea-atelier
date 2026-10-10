@@ -20,10 +20,17 @@ const labelClass = "block text-xs font-medium text-charcoal/60 mb-1";
 
 function authHeaders() {
   const token = localStorage.getItem("token");
-  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
 }
 
-export default function CategoriesTab({ onError }: { onError: (msg: string) => void }) {
+export default function CategoriesTab({
+  onError,
+}: {
+  onError: (msg: string) => void;
+}) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | "new" | null>(null);
@@ -31,7 +38,9 @@ export default function CategoriesTab({ onError }: { onError: (msg: string) => v
   async function load() {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/cms/admin/categories", { headers: authHeaders() });
+      const res = await fetch("/api/cms/admin/categories", {
+        headers: authHeaders(),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to load.");
       setCategories(data.categories);
@@ -47,8 +56,14 @@ export default function CategoriesTab({ onError }: { onError: (msg: string) => v
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function updateLocal<K extends keyof Category>(id: number, field: K, value: Category[K]) {
-    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
+  function updateLocal<K extends keyof Category>(
+    id: number,
+    field: K,
+    value: Category[K],
+  ) {
+    setCategories((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
+    );
   }
 
   async function handleSave(cat: Category) {
@@ -116,7 +131,10 @@ export default function CategoriesTab({ onError }: { onError: (msg: string) => v
     if (target < 0 || target >= categories.length) return;
 
     const reordered = [...categories];
-    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    [reordered[index], reordered[target]] = [
+      reordered[target],
+      reordered[index],
+    ];
     const withOrders = reordered.map((c, i) => ({ ...c, sort_order: i }));
     setCategories(withOrders);
 
@@ -132,8 +150,8 @@ export default function CategoriesTab({ onError }: { onError: (msg: string) => v
             sort_order: c.sort_order,
             is_active: c.is_active,
           }),
-        })
-      )
+        }),
+      ),
     );
   }
 
@@ -142,7 +160,10 @@ export default function CategoriesTab({ onError }: { onError: (msg: string) => v
   return (
     <div className="space-y-4">
       {categories.map((cat, i) => (
-        <div key={cat.id} className="border border-charcoal/10 rounded-xl p-4 flex gap-4">
+        <div
+          key={cat.id}
+          className="border border-charcoal/10 rounded-xl p-4 flex gap-4"
+        >
           <div className="flex flex-col gap-1 pt-1">
             <button
               onClick={() => handleMove(i, -1)}
@@ -187,7 +208,9 @@ export default function CategoriesTab({ onError }: { onError: (msg: string) => v
               <label className={labelClass}>Description</label>
               <textarea
                 value={cat.description}
-                onChange={(e) => updateLocal(cat.id, "description", e.target.value)}
+                onChange={(e) =>
+                  updateLocal(cat.id, "description", e.target.value)
+                }
                 rows={2}
                 className={inputClass}
               />
@@ -196,7 +219,9 @@ export default function CategoriesTab({ onError }: { onError: (msg: string) => v
               <input
                 type="checkbox"
                 checked={cat.is_active}
-                onChange={(e) => updateLocal(cat.id, "is_active", e.target.checked)}
+                onChange={(e) =>
+                  updateLocal(cat.id, "is_active", e.target.checked)
+                }
               />
               Active (visible on storefront)
             </label>

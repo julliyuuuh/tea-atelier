@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest) {
      SET heading = $1, subheading = $2
      WHERE id = (SELECT id FROM about_hero LIMIT 1)
      RETURNING *`,
-    [heading, subheading]
+    [heading, subheading],
   );
 
   return NextResponse.json({ hero: result.rows[0] });

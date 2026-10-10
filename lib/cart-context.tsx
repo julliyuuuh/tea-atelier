@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Product } from "./products";
 import { useAuth } from "./auth-context";
@@ -73,7 +81,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = useCallback(() => {
     loadId.current++; // invalidate any request still in flight
     setItems([]);
-    fetch("/api/cart", { method: "DELETE", headers: authHeaders() }).catch(() => {});
+    fetch("/api/cart", { method: "DELETE", headers: authHeaders() }).catch(
+      () => {},
+    );
   }, []);
 
   const addToCart = async (product: Product, quantity: number = 1) => {
@@ -159,7 +169,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (!res.ok && previousQuantity !== undefined) {
         setItems((prev) =>
           prev.map((i) =>
-            i.product.id === productId ? { ...i, quantity: previousQuantity } : i,
+            i.product.id === productId
+              ? { ...i, quantity: previousQuantity }
+              : i,
           ),
         );
         const data = await res.json();
@@ -169,7 +181,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (previousQuantity !== undefined) {
         setItems((prev) =>
           prev.map((i) =>
-            i.product.id === productId ? { ...i, quantity: previousQuantity } : i,
+            i.product.id === productId
+              ? { ...i, quantity: previousQuantity }
+              : i,
           ),
         );
       }

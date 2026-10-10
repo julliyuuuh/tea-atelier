@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
     const result = await pool.query(
       "SELECT user_id, first_name, last_name, email, role, phone_number, is_verified, is_suspended, avatar_url FROM users WHERE user_id = $1",
-      [decoded.userId]
+      [decoded.userId],
     );
 
     const user = result.rows[0];
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     if (user.is_suspended) {
       return NextResponse.json(
         { error: "Your account has been suspended. Please contact support." },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -44,6 +44,9 @@ export async function GET(req: Request) {
       },
     });
   } catch {
-    return NextResponse.json({ error: "Invalid or expired token." }, { status: 401 });
+    return NextResponse.json(
+      { error: "Invalid or expired token." },
+      { status: 401 },
+    );
   }
 }

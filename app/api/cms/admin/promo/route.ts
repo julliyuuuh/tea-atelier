@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest) {
      SET label = $1, heading = $2, image_url = $3, cta_text = $4, cta_link = $5
      WHERE id = (SELECT id FROM homepage_promo LIMIT 1)
      RETURNING *`,
-    [label, heading, image_url, cta_text, cta_link]
+    [label, heading, image_url, cta_text, cta_link],
   );
 
   return NextResponse.json({ promo: result.rows[0] });
