@@ -7,9 +7,6 @@ import { PAYMENT_STATUSES } from "@/lib/payment-status";
 const VALID_STATUSES: string[] = ORDER_STATUSES.map((s) => s.value);
 const VALID_PAYMENT_STATUSES: string[] = PAYMENT_STATUSES.map((s) => s.value);
 
-// Column allowlist for ORDER BY — never interpolate the sort key directly,
-// since it comes from the query string. item_count/total_amount are safe to
-// reference by their SELECT alias since they're computed above the ORDER BY.
 const SORT_COLUMNS: Record<string, string> = {
   id: "o.order_id",
   totalAmount: "o.total_amount",
@@ -99,7 +96,7 @@ export async function GET(req: Request) {
   const dataResult = await pool.query(
     `SELECT
        o.order_id, o.total_amount, o.order_status, o.payment_method, o.payment_status,
-       o.recipient_name, o.created_at,
+       o.recipient_name, o.created_at, to_jsonb(o)->>'payment_fulfillment_issue' AS fulfillment_issue,
        u.email AS customer_email,
        COUNT(oi.order_items_id) AS item_count
      FROM orders o
@@ -120,6 +117,7 @@ export async function GET(req: Request) {
     status: row.order_status,
     paymentMethod: row.payment_method,
     paymentStatus: row.payment_status,
+    fulfillmentIssue: row.fulfillment_issue,
     itemCount: parseInt(row.item_count, 10),
     createdAt: row.created_at,
   }));

@@ -1,5 +1,5 @@
 import { pool } from "@/lib/db";
-import { getUserId } from "@/lib/api-auth";
+import { requireUser } from "@/lib/require-user";
 
 const ALLOWED_TYPES = ["gcash", "grabpay"];
 const TERMINAL_SOURCE_STATUSES = ["expired", "failed", "cancelled"];
@@ -8,6 +8,7 @@ type PaymongoSource = {
   id: string;
   attributes: {
     status: string;
+    livemode: boolean;
     amount: number;
     currency: string;
     type: string;
@@ -16,10 +17,8 @@ type PaymongoSource = {
 };
 
 export async function POST(req: Request) {
-  const userId = getUserId(req);
-  if (!userId) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { userId, error } = await requireUser(req);
+  if (error) return error;
 
   const body = await req.json().catch(() => null);
   const orderId = Number(body?.orderId);
@@ -67,6 +66,14 @@ export async function POST(req: Request) {
       typeof result?.data?.id !== "string" ||
       !result.data.attributes
     ) {
+      console.error("PayMongo source request rejected", {
+        orderId,
+        type,
+        httpStatus: res.status,
+        codes: Array.isArray(result?.errors)
+          ? result.errors.map((error: { code?: string }) => error.code)
+          : [],
+      });
       throw new Error("Unable to obtain a valid PayMongo source");
     }
 
@@ -83,7 +90,7 @@ export async function POST(req: Request) {
       // Serialize source creation for this order across requests.
       const orderRes = await client.query(
         `SELECT order_id, total_amount, payment_status,
-                payment_method, paymongo_source_id
+                payment_method, paymongo_source_id, order_status
          FROM orders
          WHERE order_id = $1 AND user_id = $2
          FOR UPDATE`,
@@ -108,13 +115,17 @@ export async function POST(req: Request) {
       }
 
       if (
+        order.order_status === "CANCELLED" ||
         order.payment_status === "paid" ||
         order.payment_status === "processing" ||
         order.payment_status === "cancelled"
       ) {
         return finish(
           {
-            paymentStatus: order.payment_status,
+            paymentStatus:
+              order.order_status === "CANCELLED"
+                ? "cancelled"
+                : order.payment_status,
             error: "This order is paid, being processed, or cancelled.",
           },
           409,
@@ -138,7 +149,8 @@ export async function POST(req: Request) {
       const matchesOrder = (source: PaymongoSource) =>
         source.attributes.amount === amount &&
         source.attributes.currency === "PHP" &&
-        source.attributes.type === sourceType;
+        source.attributes.type === sourceType &&
+        source.attributes.livemode === !secretKey.startsWith("sk_test_");
 
       if (order.paymongo_source_id) {
         const existing = await requestSource(

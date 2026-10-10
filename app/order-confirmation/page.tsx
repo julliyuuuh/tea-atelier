@@ -22,7 +22,8 @@ type OrderDetails = {
   recipientName: string | null;
   orderStatus: string;
   paymentMethod: string;
-  paymentStatus: "pending" | "processing" | "paid" | "failed";
+  fulfillmentOnHold?: boolean;
+  paymentStatus: "pending" | "processing" | "paid" | "failed" | "cancelled";
   subtotal: number;
   deliveryFee: number;
   total: number;
@@ -49,96 +50,83 @@ function OrderConfirmationContent() {
       return;
     }
 
-    if (!orderId) {
-      setError(true);
-      setLoading(false);
-      return;
-    }
+    if (!orderId) return;
 
     const token = localStorage.getItem("token");
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
     let attempts = 0;
-    const maxAttempts = 10; // ~20s of polling
-    let cancelled = false;
+    let receivedOrder = false;
+    hasCleared.current = false;
 
-    const checkWithPaymongo = () => {
-      fetch("/api/payments/paymongo/check", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ orderId: Number(orderId) }),
-      })
-        .then((res) => res.json())
-        .then((result: { paymentStatus: string }) => {
-          if (cancelled) return;
-          if (result.paymentStatus === "failed") {
-            setOrder((prev) =>
-              prev ? { ...prev, paymentStatus: "failed" } : prev,
-            );
-          }
-        })
-        .catch(() => {});
-    };
-
-    const poll = () => {
-      fetch(`/api/orders/${orderId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("not found");
-          return res.json();
-        })
-        .then((data: OrderDetails) => {
-          if (cancelled) return;
-          setOrder(data);
-          setLoading(false);
-
-          const isCod = data.paymentMethod === "cod";
-
-          // Clear cart once: immediately for COD, or once payment confirms paid for e-wallets
-          if (!hasCleared.current && (isCod || data.paymentStatus === "paid")) {
-            hasCleared.current = true;
-            refreshCart();
-          }
-
-          // "processing" = webhook has claimed the order and is mid-charge,
-          // so treat it the same as "pending" and keep polling
-          const awaitingPayment =
-            !isCod &&
-            (data.paymentStatus === "pending" ||
-              data.paymentStatus === "processing");
-
-          if (awaitingPayment) {
-            if (attempts < maxAttempts) {
-              attempts++;
-              setTimeout(poll, 2000);
-            } else {
-              // Polling window ran out, go ask PayMongo directly whether it actually failed
-              checkWithPaymongo();
-            }
-          }
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setError(true);
-            setLoading(false);
-          }
+    const poll = async () => {
+      if (controller.signal.aborted) return;
+      try {
+        // Periodically reconcile a captured payment whose webhook finalization
+        // was interrupted. This endpoint never initiates another charge.
+        if (attempts > 0 && attempts % 5 === 0) {
+          await fetch("/api/payments/paymongo/check", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ orderId: Number(orderId) }),
+            signal: AbortSignal.any([
+              controller.signal,
+              AbortSignal.timeout(15000),
+            ]),
+          }).catch(() => undefined);
+        }
+        const response = await fetch(`/api/orders/${orderId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          cache: "no-store",
+          signal: AbortSignal.any([
+            controller.signal,
+            AbortSignal.timeout(15000),
+          ]),
         });
+        if (!response.ok) throw new Error("Order unavailable");
+        const data: OrderDetails = await response.json();
+        if (controller.signal.aborted) return;
+        receivedOrder = true;
+        setOrder(data);
+        setError(false);
+        setLoading(false);
+        const isCod = data.paymentMethod === "cod";
+        if (!hasCleared.current && (isCod || data.paymentStatus === "paid")) {
+          hasCleared.current = true;
+          refreshCart();
+        }
+        if (
+          data.orderStatus === "CANCELLED" ||
+          isCod ||
+          !["pending", "processing"].includes(data.paymentStatus)
+        )
+          return;
+      } catch {
+        if (controller.signal.aborted) return;
+        if (!receivedOrder && attempts >= 3) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
+      }
+      attempts++;
+      if (attempts < 40) timer = setTimeout(poll, attempts < 10 ? 2000 : 5000);
     };
-
-    poll();
-
+    void poll();
     return () => {
-      cancelled = true;
+      controller.abort();
+      if (timer) clearTimeout(timer);
     };
   }, [user, authLoading, orderId, router, refreshCart]);
 
-  if (authLoading || loading) {
+  if (orderId && (authLoading || loading)) {
     return <div className="py-24 text-center">Loading...</div>;
   }
 
-  if (error || !order) {
+  if (!orderId || error || !order) {
     return (
       <section className="max-w-3xl mx-auto px-6 md:px-8 py-24 text-center">
         <p className="font-body text-charcoal/70 mb-8">
@@ -155,10 +143,14 @@ function OrderConfirmationContent() {
   }
 
   const isCod = order.paymentMethod === "cod";
+  const isCancelled =
+    order.orderStatus === "CANCELLED" || order.paymentStatus === "cancelled";
   const isPendingPayment =
+    !isCancelled &&
     !isCod &&
     (order.paymentStatus === "pending" || order.paymentStatus === "processing");
-  const isFailedPayment = !isCod && order.paymentStatus === "failed";
+  const isFailedPayment =
+    !isCancelled && !isCod && order.paymentStatus === "failed";
 
   return (
     <section className="max-w-3xl mx-auto px-6 md:px-8 py-24 text-center">
@@ -168,18 +160,22 @@ function OrderConfirmationContent() {
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
         <p className="font-body text-xs uppercase tracking-[0.25em] text-sage mb-4">
-          {isPendingPayment
-            ? "Confirming Payment"
-            : isFailedPayment
-              ? "Payment Failed"
-              : "Order Confirmed"}
+          {isCancelled
+            ? "Order Cancelled"
+            : isPendingPayment
+              ? "Confirming Payment"
+              : isFailedPayment
+                ? "Payment Failed"
+                : "Order Confirmed"}
         </p>
         <h1 className="font-display text-4xl md:text-5xl text-charcoal mb-4">
-          {isPendingPayment
-            ? "Confirming your payment..."
-            : isFailedPayment
-              ? "We couldn't confirm your payment"
-              : "Thank you for your order"}
+          {isCancelled
+            ? "This order was cancelled"
+            : isPendingPayment
+              ? "Confirming your payment..."
+              : isFailedPayment
+                ? "We couldn't confirm your payment"
+                : "Thank you for your order"}
         </h1>
         <p className="font-body text-sm text-charcoal/70 mb-2">
           Order #TA-{order.orderId}
@@ -188,26 +184,43 @@ function OrderConfirmationContent() {
         {isPendingPayment && (
           <div className="max-w-lg mx-auto mb-8 rounded-xl border border-sage/30 bg-sage/10 px-6 py-4">
             <p className="font-body text-sm text-charcoal/80">
-              We're still waiting for confirmation from your payment provider.
-              This usually takes a few seconds, this page will update
-              automatically once it's confirmed. No need to refresh.
+              We&apos;re still waiting for confirmation from your payment
+              provider. This page checks automatically for a few minutes. If
+              confirmation takes longer, check again or view the order in My
+              Orders. Please avoid starting another payment while this one is
+              unresolved.
             </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-3 underline font-body text-sm"
+            >
+              Check again
+            </button>
+            <Link
+              href={`/account/orders/${order.orderId}`}
+              className="ml-4 underline font-body text-sm"
+            >
+              View order
+            </Link>
           </div>
         )}
 
         {isFailedPayment && (
           <div className="max-w-lg mx-auto mb-8 rounded-xl border border-red-300 bg-red-50 px-6 py-4">
             <p className="font-body text-sm text-charcoal/80">
-              Your payment didn't go through, so this order hasn't been placed.
-              Your cart items are still saved, you can try checking out again.
+              Your payment did not go through. Your order is saved for another
+              attempt. Your cart items are still saved, you can try checking out
+              again.
             </p>
           </div>
         )}
 
-        {!isPendingPayment && !isFailedPayment && (
+        {!isCancelled && !isPendingPayment && !isFailedPayment && (
           <p className="font-body text-charcoal/70 leading-relaxed max-w-lg mx-auto mb-12">
-            A confirmation email is on its way. We're preparing your tea now and
-            will notify you once it ships.
+            {order.fulfillmentOnHold
+              ? "Your payment was received, but your order needs a stock review. Our team will contact you about available items and refund options."
+              : "Your order is confirmed. We will notify you once it ships."}
           </p>
         )}
 

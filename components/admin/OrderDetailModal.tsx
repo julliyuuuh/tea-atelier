@@ -30,6 +30,8 @@ type OrderDetail = {
     paymentMethod: string;
     paymentStatus: string;
     paymongoSourceId: string | null;
+    paymongoPaymentId: string | null;
+    fulfillmentIssue: string | null;
   };
   customer: {
     name: string | null;
@@ -154,6 +156,7 @@ export default function OrderDetailModal({
   const [errorMessage, setErrorMessage] = useState("");
   const [actionError, setActionError] = useState("");
   const changedRef = useRef(false);
+  const [paymentId, setPaymentId] = useState("");
 
   const open = orderId !== null;
 
@@ -185,6 +188,7 @@ export default function OrderDetailModal({
   useEffect(() => {
     if (orderId === null) return;
     setData(null);
+    setPaymentId("");
     setActionError("");
     changedRef.current = false;
     load();
@@ -210,6 +214,35 @@ export default function OrderDetailModal({
       document.body.style.overflow = prevOverflow;
     };
   }, [open, handleClose]);
+
+  const recoverPayment = async () => {
+    setIsUpdating(true);
+    setActionError("");
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/admin/orders/${orderId}/payment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ paymentId: paymentId.trim() }),
+        signal: AbortSignal.timeout(20000),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || "Unable to verify payment.");
+      changedRef.current = true;
+      setPaymentId("");
+      await load(true);
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "Unable to verify payment.",
+      );
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const patch = async (body: { status?: string; paymentStatus?: string }) => {
     setIsUpdating(true);
@@ -283,6 +316,7 @@ export default function OrderDetailModal({
       <>
         <ErrorBanner message={errorMessage} onRetry={() => load()} />
         <ErrorBanner message={actionError} />
+        <ErrorBanner message={order.fulfillmentIssue || ""} />
         <div className="mb-4">
           <OrderDocumentButtons key={order.id} orderId={order.id} admin />
         </div>
@@ -457,9 +491,40 @@ export default function OrderDetailModal({
                 label="Status"
                 value={paymentLabel(order.paymentStatus, order.paymentMethod)}
               />
+              {order.paymongoPaymentId && (
+                <Row label="PayMongo payment" value={order.paymongoPaymentId} />
+              )}
               {order.paymongoSourceId && (
                 <Row label="PayMongo ref" value={order.paymongoSourceId} />
               )}
+              {!isCod(order.paymentMethod) &&
+                order.paymentStatus !== "paid" && (
+                  <div className="mt-4 space-y-3">
+                    <p className="font-body text-sm text-charcoal/70">
+                      If PayMongo shows a successful payment but this order is
+                      still unconfirmed, copy its payment ID here. Verification
+                      checks the existing payment and does not charge again.
+                    </p>
+                    <label className="block font-body text-sm">
+                      Captured PayMongo payment ID
+                      <input
+                        value={paymentId}
+                        onChange={(event) => setPaymentId(event.target.value)}
+                        placeholder="pay_..."
+                        maxLength={100}
+                        className="mt-1 w-full rounded border border-charcoal/20 px-3 py-2"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      disabled={isUpdating || !paymentId.trim()}
+                      onClick={() => void recoverPayment()}
+                      className="rounded border border-charcoal/20 px-3 py-2 font-body text-sm disabled:opacity-50"
+                    >
+                      Verify captured payment
+                    </button>
+                  </div>
+                )}
             </Section>
           </div>
         </div>

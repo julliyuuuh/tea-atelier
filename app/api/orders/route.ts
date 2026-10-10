@@ -259,7 +259,7 @@ export async function POST(req: Request) {
               p.price, p.stock_quantity, p.product_name
       FROM cart c
       JOIN products p ON p.product_id = c.product_id
-      WHERE c.user_id = $1`,
+      WHERE c.user_id = $1 ORDER BY c.product_id`,
       [userId],
     );
     if (cartResult.rows.length === 0) {

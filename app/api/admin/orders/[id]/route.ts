@@ -87,6 +87,8 @@ export async function GET(
       createdAt: o.created_at,
       paymentMethod: o.payment_method,
       paymentStatus: o.payment_status,
+      fulfillmentIssue: o.payment_fulfillment_issue ?? null,
+      paymongoPaymentId: o.paymongo_payment_id ?? null,
       paymongoSourceId: isCod(o.payment_method)
         ? null
         : (o.paymongo_source_id ?? null),
@@ -135,7 +137,7 @@ export async function PATCH(
   }
 
   const current = await pool.query(
-    "SELECT order_status, payment_method, payment_status FROM orders WHERE order_id = $1",
+    "SELECT order_status, payment_method, payment_status, to_jsonb(orders)->>'payment_fulfillment_issue' AS fulfillment_issue FROM orders WHERE order_id = $1",
     [id],
   );
   if (current.rows.length === 0) {
@@ -151,6 +153,34 @@ export async function PATCH(
       {
         error:
           "Cancelled orders cannot be reopened. Create a new order instead.",
+      },
+      { status: 409 },
+    );
+  }
+
+  if (
+    status === "CANCELLED" &&
+    !isCod(order.payment_method) &&
+    order.payment_status === "processing"
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Verify the pending payment outcome before cancelling this order.",
+      },
+      { status: 409 },
+    );
+  }
+  if (
+    order.fulfillment_issue &&
+    status !== undefined &&
+    status !== "PLACED" &&
+    status !== "CANCELLED"
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "This order has a stock shortage. Contact the customer and arrange cancellation/refund before fulfillment.",
       },
       { status: 409 },
     );
@@ -200,7 +230,12 @@ export async function PATCH(
   vals.push(id);
 
   const idPosition = vals.length;
-  vals.push(order.order_status, order.payment_status, order.payment_method);
+  vals.push(
+    order.order_status,
+    order.payment_status,
+    order.payment_method,
+    order.fulfillment_issue ?? null,
+  );
   // Check the values used for validation again inside the update. A concurrent
   // cancellation or payment update must not be overwritten by a stale request.
   const updated = await pool.query(
@@ -208,6 +243,7 @@ export async function PATCH(
       AND order_status IS NOT DISTINCT FROM $${idPosition + 1}
       AND payment_status IS NOT DISTINCT FROM $${idPosition + 2}
       AND payment_method IS NOT DISTINCT FROM $${idPosition + 3}
+      AND (to_jsonb(orders)->>'payment_fulfillment_issue') IS NOT DISTINCT FROM $${idPosition + 4}
       RETURNING order_id`,
     vals,
   );

@@ -95,7 +95,10 @@ export function validatePayment(
 export async function getPayment(id: string) {
   if (!/^pay_[a-zA-Z0-9]+$/.test(id))
     throw new ReturnError("Enter a valid PayMongo payment ID.");
-  return request(`payments/${encodeURIComponent(id)}`);
+  const payment = await request(`payments/${encodeURIComponent(id)}`);
+  if (payment.id !== id)
+    throw new RefundProviderError("Payment ID could not be verified.");
+  return payment;
 }
 export function refundOutcome(
   refund: Resource,
@@ -159,6 +162,8 @@ export async function checkRefund(
 ) {
   if (refundId) {
     const refund = await request(`refunds/${encodeURIComponent(refundId)}`);
+    if (refund.id !== refundId)
+      throw new RefundProviderError("Refund ID could not be verified.");
     return refundOutcome(refund, payment.id, amount);
   }
   const matches = payment.attributes.refunds!.filter(

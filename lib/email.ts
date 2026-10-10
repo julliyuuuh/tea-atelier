@@ -105,26 +105,40 @@ export async function sendOrderConfirmationEmail(
   orderId: number,
   items: OrderConfirmationItem[],
   totalAmount: number,
+  fulfillmentOnHold = false,
 ) {
+  const escape = (value: string) =>
+    value.replace(
+      /[&<>"']/g,
+      (character) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[character]!,
+    );
   const itemsHtml = items
     .map(
       (item) => `
         <tr>
-          <td style="padding: 8px 0; color: #333;">${item.name} × ${item.quantity}</td>
+          <td style="padding: 8px 0; color: #333;">${escape(item.name)} × ${item.quantity}</td>
           <td style="padding: 8px 0; text-align: right; color: #333;">₱${(item.price * item.quantity).toFixed(2)}</td>
         </tr>
       `,
     )
     .join("");
 
-  await resend.emails.send({
-    from: `Tea Atelier <${process.env.EMAIL_FROM}>`,
-    to,
-    subject: `Your Tea Atelier order #${orderId} is confirmed`,
-    html: `
+  const result = await resend.emails.send(
+    {
+      from: `Tea Atelier <${process.env.EMAIL_FROM}>`,
+      to,
+      subject: `Your Tea Atelier order #${orderId} is confirmed`,
+      html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-        <h2>Thanks for your order, ${recipientName}!</h2>
-        <p>We've received order #${orderId} and we're getting it ready.</p>
+        <h2>Thanks for your order, ${escape(recipientName)}!</h2>
+        <p>${fulfillmentOnHold ? `Payment for order #${orderId} was received. Your order needs a stock review; our team will contact you about available items and refund options.` : `We've received order #${orderId} and we're getting it ready.`}</p>
         <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
           ${itemsHtml}
           <tr>
@@ -136,9 +150,13 @@ export async function sendOrderConfirmationEmail(
           Track Your Order
         </a>
         <p style="color: #888; font-size: 12px; margin-top: 24px;">
-          You'll get another email when your order ships.
+          You'll get another email when your order is delivered or cancelled.
         </p>
       </div>
     `,
-  });
+    },
+    { idempotencyKey: `order-confirmation:${orderId}` },
+  );
+  if (result.error)
+    throw new Error("Order confirmation email could not be sent.");
 }

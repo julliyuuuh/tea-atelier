@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
+import { fetchPayment, finalizePayment } from "@/lib/paymongo-payment";
 import { pool } from "@/lib/db";
-import { getUserId } from "@/lib/api-auth";
+import { requireUser } from "@/lib/require-user";
 
 export async function POST(req: Request) {
-  const userId = getUserId(req);
-
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { userId, error } = await requireUser(req);
+  if (error) return error;
 
   const body = await req.json().catch(() => null);
   const orderId = Number(body?.orderId);
@@ -19,7 +17,7 @@ export async function POST(req: Request) {
   try {
     const readOrder = async () => {
       const result = await pool.query(
-        `SELECT order_id, payment_status, paymongo_source_id
+        `SELECT *
          FROM orders
          WHERE order_id = $1 AND user_id = $2`,
         [orderId, userId],
@@ -34,6 +32,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
 
+    if (order.payment_status !== "paid" && order.paymongo_payment_id) {
+      const payment = await fetchPayment(order.paymongo_payment_id);
+      await finalizePayment(order, payment);
+      return NextResponse.json({ paymentStatus: "paid" });
+    }
+    if (order.order_status === "CANCELLED") {
+      return NextResponse.json({ paymentStatus: "cancelled" });
+    }
     if (
       order.payment_status === "paid" ||
       order.payment_status === "processing" ||
@@ -76,7 +82,14 @@ export async function POST(req: Request) {
 
     const source = await res.json().catch(() => null);
 
-    if (!res.ok || source?.data?.id !== sourceId) {
+    if (
+      !res.ok ||
+      source?.data?.id !== sourceId ||
+      source.data.attributes?.amount !==
+        Math.round(Number(order.total_amount) * 100) ||
+      source.data.attributes.currency !== "PHP" ||
+      source.data.attributes.livemode !== !secretKey.startsWith("sk_test_")
+    ) {
       return NextResponse.json(
         { error: "Unable to verify payment. Please check again." },
         { status: 502 },

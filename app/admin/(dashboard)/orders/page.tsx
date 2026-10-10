@@ -33,6 +33,7 @@ type Order = {
   status: string;
   paymentMethod: string;
   paymentStatus: string;
+  fulfillmentIssue?: string | null;
   itemCount: number;
   createdAt: string;
 };
@@ -576,6 +577,11 @@ export default function AdminOrdersPage() {
                       <span className="font-body text-sm text-charcoal">
                         TA-{order.id}
                       </span>
+                      {order.fulfillmentIssue && (
+                        <span className="mt-1 block font-body text-[10px] text-red-700">
+                          Stock shortage · on hold
+                        </span>
+                      )}
                       {unpaidOnline && (
                         <span
                           className={`mt-1 block w-fit whitespace-nowrap font-body text-[10px] px-2 py-0.5 rounded-full ${pBadge.bg} ${pBadge.text}`}

@@ -12,9 +12,13 @@ export async function GET(
 
   const { orderId } = await params;
 
+  if (!/^[1-9]\d*$/.test(orderId) || Number(orderId) > 2147483647) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
   const orderResult = await pool.query(
     `SELECT order_id, user_id, shipping_cost, total_amount, order_status, payment_status,
-            created_at, payment_method, contact_phone, recipient_name
+            created_at, payment_method, contact_phone, recipient_name,
+            to_jsonb(orders)->>'payment_fulfillment_issue' AS fulfillment_issue
     FROM orders
     WHERE order_id = $1`,
     [orderId],
@@ -46,6 +50,7 @@ export async function GET(
     recipientName: order.recipient_name,
     orderStatus: order.order_status,
     paymentStatus: order.payment_status,
+    fulfillmentOnHold: !!order.fulfillment_issue,
     paymentMethod: order.payment_method,
     createdAt: order.created_at,
     subtotal,
