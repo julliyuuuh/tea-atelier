@@ -30,6 +30,7 @@ type DocumentItem = {
   quantity: number;
   price: string;
   product_name_snapshot?: string | null;
+  current_product_name?: string | null;
 };
 export type DocumentKind = "invoice" | "packing-slip";
 
@@ -44,8 +45,10 @@ export async function loadOrderDocument(orderId: number, userId?: number) {
     `SELECT to_jsonb(o) AS "order",
       jsonb_build_object('address_line1', a.address_line1,
         'address_line2', a.address_line2, 'address_line3', a.address_line3) AS address,
-      COALESCE((SELECT jsonb_agg(to_jsonb(oi) ORDER BY oi.order_items_id)
-        FROM order_items oi WHERE oi.order_id = o.order_id), '[]'::jsonb) AS items
+      COALESCE((SELECT jsonb_agg(to_jsonb(oi) ||
+          jsonb_build_object('current_product_name', p.product_name) ORDER BY oi.order_items_id)
+        FROM order_items oi LEFT JOIN products p ON p.product_id = oi.product_id
+        WHERE oi.order_id = o.order_id), '[]'::jsonb) AS items
      FROM orders o LEFT JOIN user_address a ON a.address_id = o.address_id
      WHERE o.order_id = $1 AND ($2::integer IS NULL OR o.user_id = $2)`,
     [orderId, userId ?? null],
@@ -109,8 +112,6 @@ export function renderOrderDocument(
     month: "long",
     day: "numeric",
   });
-
-  //The main docu
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tea Atelier — ${title} TA-${escape(order.order_id)}</title>
@@ -141,9 +142,10 @@ thead { display: table-header-group; } tr, .totals, .addresses, footer { break-i
 ${invoice ? `<section><h3>Bill to</h3>${billing ? `${billing.business_name ? `<strong>${escape(billing.business_name)}</strong>` : ""}<div>${escape(billing.billing_contact || customer?.name || "Customer")}</div>${addressLines(billing)}${billing.tax_id ? `<div>TIN: ${escape(billing.tax_id)}</div>` : ""}` : `<div>${escape(customer?.name || order.recipient_name || "Customer")}</div><p class="notice">No separate billing address was recorded for this order.</p>`}${customer?.email ? `<div>${escape(customer.email)}</div>` : ""}</section>` : ""}
 <section><h3>Ship to</h3><strong>${escape(order.recipient_name || "Recipient not recorded")}</strong>${addressLines(shipping)}${order.contact_phone ? `<div>${escape(order.contact_phone)}</div>` : ""}</section></div>
 <table><thead><tr><th>Item</th><th class="number">Qty</th>${invoice ? '<th class="number">Unit price</th><th class="number">Amount</th>' : ""}</tr></thead><tbody>
-${items.map((item) => `<tr><td>${escape(item.product_name_snapshot || `Product #${item.product_id} (name not recorded)`)}</td><td class="number">${escape(item.quantity)}</td>${invoice ? `<td class="number">${escape(money(Number(item.price)))}</td><td class="number">${escape(money(Number(item.price) * item.quantity))}</td>` : ""}</tr>`).join("")}
+${items.map((item) => `<tr><td>${escape(item.product_name_snapshot || item.current_product_name || `Product #${item.product_id} (name unavailable)`)}</td><td class="number">${escape(item.quantity)}</td>${invoice ? `<td class="number">${escape(money(Number(item.price)))}</td><td class="number">${escape(money(Number(item.price) * item.quantity))}</td>` : ""}</tr>`).join("")}
 </tbody></table>
 ${invoice ? `<div class="totals"><p><span>Subtotal</span><span>${escape(money(subtotal))}</span></p><p><span>Shipping</span><span>${escape(money(Number(order.shipping_cost)))}</span></p><p class="total"><span>Order total</span><span>${escape(money(Number(order.total_amount)))}</span></p></div><p>Payment method: ${escape(methods[order.payment_method] || order.payment_method)}</p>` : `<p>Total units: ${items.reduce((sum, item) => sum + item.quantity, 0)}</p>`}
 ${!snapshot ? '<p class="notice">Historical order: billing details and product names were not captured at checkout. Available order records are shown.</p>' : ""}
+${items.some((item) => !item.product_name_snapshot && item.current_product_name) ? '<p class="notice">Where the original product name was not recorded, the current catalog name is shown.</p>' : ""}
 <footer>${invoice ? '<p class="notice">Order summary for your records. This is not a BIR tax invoice or proof of payment.</p>' : '<p class="notice">Packing checklist for shipment preparation.</p>'}</footer></main></body></html>`;
 }
