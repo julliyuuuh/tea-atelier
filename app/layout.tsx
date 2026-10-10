@@ -26,8 +26,8 @@ export const metadata: Metadata = {
   title: "Tea Atelier",
   description: "Where every leaf tells a story",
   icons: {
-    icon: { url: "/images/favicon.png", type: "image/png" },
-    apple: "/images/favicon.png",
+    icon: { url: "/images/mainfavicon.png", type: "image/png" },
+    apple: "/images/mainfavicon.png",
   },
 };
 
