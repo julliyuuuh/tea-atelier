@@ -102,7 +102,27 @@ export async function POST(req: Request) {
         },
       }),
     });
-    const body = await response.json();
+    const body = await response.json().catch(() => null);
+    // An explicit authentication rejection did not execute a capture. Release
+    // only this unconfirmed claim so a retry can recover after credentials are
+    // corrected. Validation/state errors, throttling and timeouts stay blocked:
+    // they do not prove that the source was never charged.
+    if (response.status === 401 || response.status === 403) {
+      await pool.query(
+        `UPDATE orders SET payment_status = 'failed'
+         WHERE order_id = $1 AND paymongo_source_id = $2
+           AND payment_status = 'processing' AND paymongo_payment_id IS NULL`,
+        [order.order_id, sourceId],
+      );
+      console.error("PayMongo rejected capture authentication", {
+        orderId: order.order_id,
+        httpStatus: response.status,
+      });
+      return new Response(
+        "Capture credentials rejected; retry after correcting configuration",
+        { status: 503 },
+      );
+    }
     const payment = body?.data;
     if (!response.ok || !matchesPayment(payment, order)) {
       console.error("PayMongo capture response requires verification", {

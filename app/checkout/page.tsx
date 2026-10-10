@@ -396,6 +396,9 @@ function CheckoutContent() {
       ? activeOrder.cartFingerprint !== cartFingerprint
       : summaryFingerprint(activeOrder.items) !==
         summaryFingerprint(currentSummary));
+  const canStartNewCheckout = ["pending", "failed", "cancelled"].includes(
+    paymentStatus,
+  );
   const showSavedOrder = !!activeOrder && !cartChanged;
   const total = showSavedOrder
     ? (activeOrder.total ?? subtotal + DELIVERY_FEE)
@@ -700,20 +703,29 @@ function CheckoutContent() {
                           ? "Your order is saved. Continue payment or check its status."
                           : "Payment status is unavailable. Check again before resuming."}
             </p>
-            {cartChanged ? (
+            {cartChanged && (
               <p className="mt-2">
                 Your cart has changed. The summary below shows your current
-                cart. Start New Checkout uses these items; Continue Payment or
-                Retry Payment pays for the saved order. View Order Details shows
-                its original items.
+                cart. View Order Details shows the saved order&apos;s original
+                items.
+              </p>
+            )}
+            {canStartNewCheckout ? (
+              <p className="mt-2">
+                Start New Checkout uses your current cart. Continue Payment or
+                Retry Payment applies to the saved order.
+              </p>
+            ) : paymentStatus === "paid" ? (
+              <p className="mt-2">
+                View your confirmed order before returning to checkout.
               </p>
             ) : (
               <p className="mt-2">
-                Choose Start New Checkout below to use your current cart.
-                Payment actions apply to this saved order.
+                Check this order&apos;s payment status before starting another
+                checkout.
               </p>
             )}
-            {paymentStatus !== "cancelled" && (
+            {canStartNewCheckout && paymentStatus !== "cancelled" && (
               <p className="mt-2">
                 Starting a new checkout leaves this order in your Orders list.
                 It does not cancel the previous payment link.
@@ -738,9 +750,7 @@ function CheckoutContent() {
                 Cancel Order
               </button>
             )}
-            {(paymentStatus === "pending" ||
-              paymentStatus === "failed" ||
-              paymentStatus === "cancelled") && (
+            {canStartNewCheckout && (
               <button
                 type="button"
                 onClick={() => void startNewCheckout()}
