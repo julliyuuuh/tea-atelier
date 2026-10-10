@@ -189,17 +189,14 @@ export async function listAdminReturns(
   if (term.length > 100)
     throw new ReturnError("Search must be 100 characters or fewer.");
   const pattern = term ? `%${term.replace(/[\\%_]/g, "\\$&")}%` : null;
-  const orderMatch = /^(?:#?TA-)?([1-9]\d*)$/i.exec(term);
-  const orderId =
-    orderMatch && Number(orderMatch[1]) <= 2147483647
-      ? Number(orderMatch[1])
-      : null;
+  const orderMatch = /^(?:#?TA-)?(\d+)$/i.exec(term);
+  const orderPattern = orderMatch ? `%${orderMatch[1]}%` : null;
   const where = `($1::text IS NULL OR r.status=$1)
     AND ($2::text IS NULL OR u.email ILIKE $2 OR o.recipient_name ILIKE $2
-      OR ($3::integer IS NOT NULL AND o.order_id=$3))`;
+      OR ($3::text IS NOT NULL AND o.order_id::text LIKE $3))`;
   const joins =
     "FROM order_returns r JOIN orders o ON o.order_id=r.order_id JOIN users u ON u.user_id=r.user_id";
-  const filters = [status, pattern, orderId];
+  const filters = [status, pattern, orderPattern];
   const rows = (
     await pool.query<ReturnCase>(
       `SELECT r.*,o.recipient_name,o.total_amount,o.payment_method,o.payment_status,o.order_status,
