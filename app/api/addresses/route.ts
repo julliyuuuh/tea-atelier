@@ -6,6 +6,7 @@ import {
   parseAddress,
   parseDefaults,
   parseBillingDetails,
+  parseAddressLabel,
 } from "@/lib/profile-address";
 import {
   ADDRESS_COLUMNS,
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
   let address;
   let defaults;
   let details;
+  let label;
   try {
     const body = await req.json();
     if (!body || typeof body !== "object" || Array.isArray(body))
@@ -45,6 +47,7 @@ export async function POST(req: Request) {
     address = parseAddress(body);
     defaults = parseDefaults(body);
     details = parseBillingDetails(body);
+    label = parseAddressLabel(body);
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Invalid address." },
@@ -62,7 +65,8 @@ export async function POST(req: Request) {
        AND address_line3 IS NOT DISTINCT FROM $4
        AND business_name IS NOT DISTINCT FROM $5
        AND billing_contact IS NOT DISTINCT FROM $6
-       AND tax_id IS NOT DISTINCT FROM $7 AND is_deleted = false
+       AND tax_id IS NOT DISTINCT FROM $7
+       AND address_label IS NOT DISTINCT FROM $8 AND is_deleted = false
        ORDER BY is_saved DESC, address_id ASC LIMIT 1`,
       [
         userId,
@@ -72,6 +76,7 @@ export async function POST(req: Request) {
         details.businessName ?? null,
         details.billingContact ?? null,
         details.taxId ?? null,
+        label ?? null,
       ],
     );
     const old = existing.rows[0];
@@ -86,8 +91,8 @@ export async function POST(req: Request) {
         )
       : await client.query(
           `INSERT INTO user_address (user_id, address_line1, address_line2, address_line3, barangay,
-          default_address, default_billing, business_name, billing_contact, tax_id, is_deleted, is_saved)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, true) RETURNING ${ADDRESS_COLUMNS}`,
+          default_address, default_billing, business_name, billing_contact, tax_id, address_label, is_deleted, is_saved)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false, true) RETURNING ${ADDRESS_COLUMNS}`,
           [
             userId,
             address.addressLine1,
@@ -99,6 +104,7 @@ export async function POST(req: Request) {
             details.businessName ?? null,
             details.billingContact ?? null,
             details.taxId ?? null,
+            label ?? null,
           ],
         );
     await client.query("COMMIT");

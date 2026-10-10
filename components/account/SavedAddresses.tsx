@@ -15,6 +15,7 @@ import { AddressSkeleton } from "./Skeletons";
 
 type Address = {
   address_id: number;
+  address_label: string | null;
   address_line1: string;
   address_line2: string | null;
   address_line3: string | null;
@@ -63,6 +64,7 @@ export default function SavedAddresses() {
   const [line3, setLine3] = useState("");
   const [shipping, setShipping] = useState(false);
   const [billing, setBilling] = useState(false);
+  const [label, setLabel] = useState("");
   const [business, setBusiness] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [billingContact, setBillingContact] = useState("");
@@ -95,6 +97,7 @@ export default function SavedAddresses() {
     setEditing(address ?? null);
     setAdding(!address);
     setNewAddress(EMPTY_PH_ADDRESS);
+    setLabel(address?.address_label ?? "");
     setLine1(address?.address_line1 ?? "");
     setLine2(address?.address_line2 ?? "");
     setLine3(address?.address_line3 ?? "");
@@ -177,6 +180,7 @@ export default function SavedAddresses() {
         : toAddressPayload(newAddress)),
       defaultAddress: shipping,
       defaultBilling: billing,
+      addressLabel: label,
       businessName: business ? businessName : null,
       billingContact,
       taxId: business ? taxId : null,
@@ -257,6 +261,11 @@ export default function SavedAddresses() {
                   aria-hidden
                 />
                 <div className="min-w-0 flex-1">
+                  {address.address_label && (
+                    <p className="mb-1 font-body text-sm font-medium text-charcoal">
+                      {address.address_label}
+                    </p>
+                  )}
                   {address.business_name && (
                     <p className="font-body text-sm font-medium text-charcoal">
                       {address.business_name}
@@ -353,6 +362,29 @@ export default function SavedAddresses() {
             {editing ? "Edit Address" : "Add Address"}
           </h3>
           <fieldset disabled={busy} className="space-y-5 disabled:opacity-60">
+            <FormField
+              label="Address label (optional)"
+              value={label}
+              onChange={setLabel}
+              maxLength={40}
+              hint="For example: Home, Work, Warehouse or Main Branch."
+            />
+            <div
+              className="flex flex-wrap gap-2"
+              aria-label="Suggested address labels"
+            >
+              {["Home", "Work"].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  className={buttonClass}
+                  aria-pressed={label === suggestion}
+                  onClick={() => setLabel(suggestion)}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
             {editing ? (
               <>
                 <FormField

@@ -1,7 +1,7 @@
 import type { PoolClient } from "pg";
 
 export const ADDRESS_COLUMNS =
-  "address_id, address_line1, address_line2, address_line3, barangay, default_address, default_billing, business_name, billing_contact, tax_id";
+  "address_id, address_line1, address_line2, address_line3, barangay, default_address, default_billing, business_name, billing_contact, tax_id, address_label";
 
 // Serialize all profile address writes for a customer, including concurrent
 // requests to choose a default, so at most one saved address has each default.

@@ -6,6 +6,7 @@ import {
   parseAddress,
   parseDefaults,
   parseBillingDetails,
+  parseAddressLabel,
 } from "@/lib/profile-address";
 import {
   ADDRESS_COLUMNS,
@@ -24,12 +25,14 @@ export async function PATCH(req: Request, { params }: Context) {
   let address;
   let defaults;
   let details;
+  let label;
   try {
     const body = await req.json();
     if (!body || typeof body !== "object" || Array.isArray(body))
       throw new Error("Invalid address.");
     defaults = parseDefaults(body);
     details = parseBillingDetails(body);
+    label = parseAddressLabel(body);
     const changesAddress = [
       "street",
       "addressLine1",
@@ -40,6 +43,7 @@ export async function PATCH(req: Request, { params }: Context) {
     address = changesAddress ? parseAddress(body) : null;
     if (
       !address &&
+      label === undefined &&
       Object.values(details).every((value) => value === undefined) &&
       defaults.shipping === undefined &&
       defaults.billing === undefined
@@ -74,9 +78,9 @@ export async function PATCH(req: Request, { params }: Context) {
     await clearOtherDefaults(client, userId, shipping, billing);
     // Orders reference address rows. Replace an edited profile address instead
     // of rewriting the delivery details of orders already placed.
-    const changesDetails = Object.values(details).some(
-      (value) => value !== undefined,
-    );
+    const changesDetails =
+      label !== undefined ||
+      Object.values(details).some((value) => value !== undefined);
     const replacement = address ?? {
       addressLine1: old.address_line1,
       addressLine2: old.address_line2,
@@ -96,8 +100,8 @@ export async function PATCH(req: Request, { params }: Context) {
       address || changesDetails
         ? await client.query(
             `INSERT INTO user_address (user_id, address_line1, address_line2, address_line3, barangay,
-         default_address, default_billing, business_name, billing_contact, tax_id, is_deleted, is_saved)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, true) RETURNING ${ADDRESS_COLUMNS}`,
+         default_address, default_billing, business_name, billing_contact, tax_id, address_label, is_deleted, is_saved)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false, true) RETURNING ${ADDRESS_COLUMNS}`,
             [
               userId,
               replacement.addressLine1,
@@ -109,6 +113,7 @@ export async function PATCH(req: Request, { params }: Context) {
               businessName ?? null,
               billingContact ?? null,
               taxId ?? null,
+              label === undefined ? (old.address_label ?? null) : label,
             ],
           )
         : await client.query(

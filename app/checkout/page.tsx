@@ -5,9 +5,11 @@ import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SavedAddressPicker from "@/components/checkout/SavedAddressPicker";
 import PhAddressFields, {
   PhAddress,
   isAddressComplete,
+  EMPTY_PH_ADDRESS,
 } from "@/components/checkout/PhAddressFields";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
@@ -58,6 +60,11 @@ function CheckoutContent() {
   const [restored, setRestored] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const statusSequenceRef = useRef(0);
+  const [addressesReady, setAddressesReady] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
+    null,
+  );
+  const [addressLabel, setAddressLabel] = useState("");
   const [saveAddress, setSaveAddress] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -70,6 +77,11 @@ function CheckoutContent() {
     barangay: null,
     street: "",
   });
+
+  const selectDeliveryAddress = useCallback((id: number | null) => {
+    setSelectedAddressId(id);
+    setAddress(EMPTY_PH_ADDRESS);
+  }, []);
 
   const rememberOrder = useCallback((order: SavedOrder) => {
     activeOrderRef.current = order;
@@ -494,13 +506,14 @@ function CheckoutContent() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (
+      !addressesReady ||
       !restored ||
       cartLoading ||
       authLoading ||
       activeOrderRef.current ||
       submittingRef.current ||
       isCartEmpty ||
-      !isAddressComplete(address)
+      (selectedAddressId === null && !isAddressComplete(address))
     )
       return;
     setShowConfirm(true);
@@ -508,6 +521,7 @@ function CheckoutContent() {
 
   const confirmOrder = async () => {
     if (
+      !addressesReady ||
       !restored ||
       cartLoading ||
       authLoading ||
@@ -520,21 +534,31 @@ function CheckoutContent() {
       router.push("/login");
       return;
     }
-    if (isCartEmpty || !isAddressComplete(address)) return;
+    if (
+      isCartEmpty ||
+      (selectedAddressId === null && !isAddressComplete(address))
+    )
+      return;
     submittingRef.current = true;
     setIsSubmitting(true);
     setShowConfirm(false);
     let navigating = false;
     try {
       const orderPayload = {
-        street: address.street.trim(),
-        barangay: address.barangay?.name,
-        saveAddress,
-        city: address.city?.name,
-        province:
-          address.province?.level !== "Prov" && address.province?.reg === 13
-            ? "Metro Manila"
-            : address.province?.name,
+        ...(selectedAddressId !== null
+          ? { savedAddressId: selectedAddressId }
+          : {
+              street: address.street.trim(),
+              barangay: address.barangay?.name,
+              saveAddress,
+              city: address.city?.name,
+              province:
+                address.province?.level !== "Prov" &&
+                address.province?.reg === 13
+                  ? "Metro Manila"
+                  : address.province?.name,
+              ...(saveAddress ? { addressLabel } : {}),
+            }),
         paymentMethod,
         phone: formData.phone,
         fullName: formData.fullName,
@@ -823,18 +847,42 @@ function CheckoutContent() {
                 <h2 className="font-display text-2xl text-charcoal mb-6">
                   Delivery Address
                 </h2>
-                <PhAddressFields onChange={setAddress} />
-                <label className="mt-5 flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={saveAddress}
-                    onChange={(e) => setSaveAddress(e.target.checked)}
-                    className="accent-sage"
-                  />
-                  <span className="font-body text-sm text-charcoal/70">
-                    Save this address to my profile
-                  </span>
-                </label>
+                <SavedAddressPicker
+                  key={user?.email}
+                  accountEmail={user?.email ?? null}
+                  selectedId={selectedAddressId}
+                  onSelect={selectDeliveryAddress}
+                  onReady={setAddressesReady}
+                />
+                {selectedAddressId === null && (
+                  <fieldset disabled={!addressesReady}>
+                    <PhAddressFields onChange={setAddress} />
+                    <label className="mt-5 flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={saveAddress}
+                        onChange={(e) => setSaveAddress(e.target.checked)}
+                        className="accent-sage"
+                      />
+                      <span className="font-body text-sm text-charcoal/70">
+                        Save this address to my profile
+                      </span>
+                    </label>
+                    {saveAddress && (
+                      <label className="mt-4 block font-body text-sm text-charcoal/70">
+                        Address label (optional)
+                        <input
+                          type="text"
+                          value={addressLabel}
+                          onChange={(e) => setAddressLabel(e.target.value)}
+                          maxLength={40}
+                          placeholder="Home, Work, Main Branch…"
+                          className="mt-2 w-full rounded-xl border border-charcoal/20 px-4 py-3"
+                        />
+                      </label>
+                    )}
+                  </fieldset>
+                )}
               </div>
               <div className="bg-cream border border-charcoal/10 rounded-2xl p-6 md:p-8">
                 <h2 className="font-display text-2xl text-charcoal mb-6">

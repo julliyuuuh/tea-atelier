@@ -79,3 +79,16 @@ export function parseBillingDetails(body: Record<string, unknown>) {
   }
   return { businessName, billingContact, taxId };
 }
+
+export function parseAddressLabel(
+  body: Record<string, unknown>,
+): string | null | undefined {
+  if (body.addressLabel === undefined) return undefined;
+  if (body.addressLabel === null) return null;
+  if (typeof body.addressLabel !== "string")
+    throw new Error("Address label must be text.");
+  const label = body.addressLabel.trim();
+  if (label.length > 40)
+    throw new Error("Address label must be 40 characters or fewer.");
+  return label || null;
+}

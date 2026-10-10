@@ -4,6 +4,11 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getUserId } from "@/lib/api-auth";
 import { sendOrderConfirmationEmail } from "@/lib/email";
+import { parseAddressLabel } from "@/lib/profile-address";
+import {
+  getSavedDeliveryAddress,
+  parseSavedAddressId,
+} from "@/lib/checkout-address";
 import { getShippingFee } from "@/lib/shipping";
 const ALLOWED_PAYMENT_METHODS = ["cod", "gcash", "grabpay"];
 // Optional fields may be empty; required fields must be non-empty strings.
@@ -111,17 +116,29 @@ export async function POST(req: Request) {
     phone,
     fullName,
   } = body;
-  if (!street || !city || !province) {
+  let savedAddressId: number | null;
+  let addressLabel: string | null | undefined;
+  try {
+    savedAddressId = parseSavedAddressId(body.savedAddressId);
+    addressLabel = parseAddressLabel(body);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Invalid address." },
+      { status: 400 },
+    );
+  }
+  if (savedAddressId === null && (!street || !city || !province)) {
     return NextResponse.json(
       { error: "All address fields are required." },
       { status: 400 },
     );
   }
   if (
-    !isValidText(street, 200, true) ||
-    !isValidText(city, 100, true) ||
-    !isValidText(province, 100, true) ||
-    !isValidText(barangay, 100) ||
+    (savedAddressId === null &&
+      (!isValidText(street, 200, true) ||
+        !isValidText(city, 100, true) ||
+        !isValidText(province, 100, true) ||
+        !isValidText(barangay, 100))) ||
     !isValidText(phone, 20) ||
     !isValidText(fullName, 100)
   ) {
@@ -154,11 +171,16 @@ export async function POST(req: Request) {
   const requestHash = createHash("sha256")
     .update(
       JSON.stringify({
-        street,
-        city,
-        province,
-        barangay: barangay || null,
-        saveAddress: saveAddress === true,
+        ...(savedAddressId !== null
+          ? { savedAddressId }
+          : {
+              street,
+              city,
+              province,
+              barangay: barangay || null,
+              saveAddress: saveAddress === true,
+              ...(saveAddress === true && addressLabel ? { addressLabel } : {}),
+            }),
         paymentMethod: method,
         phone: phone || null,
         fullName: fullName || null,
@@ -217,6 +239,20 @@ export async function POST(req: Request) {
         total: total.toFixed(2),
       });
     }
+    const savedDelivery =
+      savedAddressId !== null
+        ? await getSavedDeliveryAddress(client, userId, savedAddressId)
+        : null;
+    if (savedAddressId !== null && !savedDelivery) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        {
+          error:
+            "That saved address is no longer available. Choose another address or enter a new one.",
+        },
+        { status: 409 },
+      );
+    }
     // Get the user's current cart, with live prices/stock based from products table
     const cartResult = await client.query(
       `SELECT c.product_id, c.quantity, c.checkout_revision,
@@ -252,41 +288,72 @@ export async function POST(req: Request) {
         );
       }
     }
-    // Save the delivery address. Every order needs an address row, but only
-    // addresses the customer opted to keep (is_saved) show up in their profile.
-    // If this user already has an identical address, reuse it instead of
-    // creating another copy.
-    // Highly urbanized cities like Baguio have no separate province, so drop
-    // repeated values ("City of Baguio, City of Baguio").
-    const addressLine2 = [
-      ...new Set([barangay, city, province].filter(Boolean)),
-    ].join(", ");
-    const existingAddress = await client.query(
-      `SELECT address_id FROM user_address
-       WHERE user_id = $1
-         AND address_line1 = $2
-         AND address_line2 = $3
-         AND is_deleted IS NOT TRUE
-       LIMIT 1`,
-      [userId, street, addressLine2],
-    );
     let addressId: string | number;
-    if (existingAddress.rows.length > 0) {
-      addressId = existingAddress.rows[0].address_id;
-      if (saveAddress === true) {
-        await client.query(
-          `UPDATE user_address SET is_saved = true WHERE address_id = $1`,
-          [addressId],
-        );
-      }
-    } else {
-      const addressResult = await client.query(
-        `INSERT INTO user_address (user_id, address_line1, address_line2, barangay, is_saved)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING address_id`,
-        [userId, street, addressLine2, barangay || null, saveAddress === true],
+    if (savedDelivery) {
+      // Snapshot the stored address, never delivery text supplied alongside its ID.
+      const snapshot = await client.query(
+        `INSERT INTO user_address (user_id, address_line1, address_line2, address_line3, barangay, is_saved)
+         VALUES ($1, $2, $3, $4, $5, false) RETURNING address_id`,
+        [
+          userId,
+          savedDelivery.address_line1,
+          savedDelivery.address_line2,
+          savedDelivery.address_line3,
+          savedDelivery.barangay,
+        ],
       );
-      addressId = addressResult.rows[0].address_id;
+      addressId = snapshot.rows[0].address_id;
+    } else {
+      // Save a new delivery address. Every order needs an address row, but only
+      // addresses the customer opted to keep (is_saved) show up in their profile.
+      // If this user already has an identical address, reuse it instead of
+      // creating another copy.
+      // Highly urbanized cities like Baguio have no separate province, so drop
+      // repeated values ("City of Baguio, City of Baguio").
+      const addressLine2 = [
+        ...new Set([barangay, city, province].filter(Boolean)),
+      ].join(", ");
+      const existingAddress = await client.query(
+        `SELECT address_id FROM user_address
+         WHERE user_id = $1
+           AND address_line1 = $2
+           AND address_line2 = $3
+           AND address_line3 IS NULL
+           AND address_label IS NOT DISTINCT FROM $4
+           AND business_name IS NULL AND billing_contact IS NULL AND tax_id IS NULL
+           AND is_deleted IS NOT TRUE
+         LIMIT 1`,
+        [
+          userId,
+          street,
+          addressLine2,
+          saveAddress === true ? (addressLabel ?? null) : null,
+        ],
+      );
+      if (existingAddress.rows.length > 0) {
+        addressId = existingAddress.rows[0].address_id;
+        if (saveAddress === true) {
+          await client.query(
+            `UPDATE user_address SET is_saved = true WHERE address_id = $1`,
+            [addressId],
+          );
+        }
+      } else {
+        const addressResult = await client.query(
+          `INSERT INTO user_address (user_id, address_line1, address_line2, barangay, is_saved, address_label)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING address_id`,
+          [
+            userId,
+            street,
+            addressLine2,
+            barangay || null,
+            saveAddress === true,
+            saveAddress === true ? (addressLabel ?? null) : null,
+          ],
+        );
+        addressId = addressResult.rows[0].address_id;
+      }
     }
     // Calculate totals from real DB prices and the server-side shipping fee,
     // never from client-supplied numbers
