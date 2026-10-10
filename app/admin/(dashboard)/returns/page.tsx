@@ -1,5 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { RefreshCw, RotateCcw, Inbox } from "lucide-react";
+import { CustomSelect } from "@/components/admin/AdminUI";
 import ReturnReviewCard from "@/components/admin/ReturnReviewCard";
 import type { ReturnCase } from "@/lib/returns";
 export default function AdminReturnsPage() {
@@ -53,49 +55,63 @@ export default function AdminReturnsPage() {
     };
   }, [load]);
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6 md:p-8">
+    <div className="mx-auto max-w-5xl space-y-6 p-6 md:p-8">
       <div>
         <p className="font-body text-xs uppercase tracking-widest text-charcoal/50">
           Order support
         </p>
-        <h1 className="font-display text-3xl">Returns & refunds</h1>
+        <h1 className="mt-2 flex items-center gap-3 font-display text-3xl sm:text-4xl">
+          <RotateCcw size={28} className="text-sage" aria-hidden="true" />
+          Returns & refunds
+        </h1>
         <p className="mt-2 font-body text-sm text-charcoal/60">
           Review requests, inspect returned items, and issue test refunds or
           record COD refunds.
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="font-body text-sm">
-          Status{" "}
-          <select
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-charcoal/10 bg-white p-4">
+        <div className="flex items-center gap-3">
+          <label
+            htmlFor="return-status-filter"
+            className="font-body text-sm text-charcoal/60"
+          >
+            Status
+          </label>
+          <CustomSelect
+            id="return-status-filter"
             value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
+            onChange={(value) => {
+              setStatus(value);
               setPage(1);
             }}
-            className="rounded-lg border border-charcoal/15 bg-cream p-2"
-          >
-            <option value="">All requests</option>
-            {[
-              "REQUESTED",
-              "APPROVED",
-              "RECEIVED",
-              "REFUNDED",
-              "REJECTED",
-              "CLOSED",
-            ].map((s) => (
-              <option key={s} value={s}>
-                {s.toLowerCase()}
-              </option>
-            ))}
-          </select>
-        </label>
+            triggerClassName="min-w-44 rounded-xl border border-charcoal/15 bg-cream px-3.5 py-2.5 font-body text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage/40"
+            options={[
+              { value: "", label: "All requests" },
+              ...[
+                "REQUESTED",
+                "APPROVED",
+                "RECEIVED",
+                "REFUNDED",
+                "REJECTED",
+                "CLOSED",
+              ].map((value) => ({
+                value,
+                label: value.charAt(0) + value.slice(1).toLowerCase(),
+              })),
+            ]}
+          />
+        </div>
         <button
           type="button"
           onClick={() => void load()}
           disabled={loading}
-          className="font-body text-sm text-sage hover:underline"
+          className="inline-flex items-center gap-2 rounded-xl px-3 py-2 font-body text-sm text-sage transition hover:bg-sage/10 disabled:opacity-50"
         >
+          <RefreshCw
+            size={15}
+            className={loading ? "animate-spin" : ""}
+            aria-hidden="true"
+          />
           Refresh
         </button>
       </div>
@@ -107,7 +123,16 @@ export default function AdminReturnsPage() {
       {loading ? (
         <p className="font-body text-sm text-charcoal/60">Loading requests…</p>
       ) : !requests.length ? (
-        <p className="font-body text-sm text-charcoal/60">No requests found.</p>
+        <div className="rounded-2xl border border-dashed border-charcoal/15 bg-white p-12 text-center">
+          <Inbox
+            size={28}
+            className="mx-auto mb-3 text-sage"
+            aria-hidden="true"
+          />
+          <p className="font-body text-sm text-charcoal/60">
+            No requests found.
+          </p>
+        </div>
       ) : (
         requests.map((request) => (
           <ReturnReviewCard
@@ -122,7 +147,7 @@ export default function AdminReturnsPage() {
           type="button"
           disabled={loading || page === 1}
           onClick={() => setPage((p) => p - 1)}
-          className="disabled:opacity-40"
+          className="rounded-xl border border-charcoal/10 px-4 py-2 transition hover:bg-white disabled:opacity-40"
         >
           Previous
         </button>
@@ -133,7 +158,7 @@ export default function AdminReturnsPage() {
           type="button"
           disabled={loading || page >= pages}
           onClick={() => setPage((p) => p + 1)}
-          className="disabled:opacity-40"
+          className="rounded-xl border border-charcoal/10 px-4 py-2 transition hover:bg-white disabled:opacity-40"
         >
           Next
         </button>

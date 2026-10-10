@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { RefreshCw, RotateCcw, Send, MessageSquare } from "lucide-react";
+import { CustomSelect } from "@/components/admin/AdminUI";
+import ReturnStatusBadge from "@/components/ReturnStatusBadge";
 import { RETURN_REASONS, peso, type ReturnCase } from "@/lib/returns";
 type Data = {
   request: ReturnCase | null;
@@ -78,24 +81,29 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
   }
   const request = data?.request;
   const field =
-    "w-full rounded-lg border border-charcoal/15 bg-cream p-2 font-body text-sm text-charcoal";
+    "w-full rounded-xl border border-charcoal/15 bg-cream px-3.5 py-3 font-body text-sm text-charcoal transition focus:outline-none focus:ring-2 focus:ring-sage/40 disabled:opacity-50";
   return (
-    <section className="space-y-4 rounded-xl bg-sand/30 p-6">
+    <section className="space-y-5 rounded-2xl border border-charcoal/10 bg-sand/30 p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-display text-base text-charcoal">
+        <h3 className="flex items-center gap-2.5 font-display text-lg text-charcoal">
+          <RotateCcw size={18} className="text-sage" aria-hidden="true" />
           Returns & refunds
         </h3>
         <button
           type="button"
           disabled={busy}
           onClick={() => void load()}
-          className="font-body text-xs text-sage hover:underline"
+          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 font-body text-xs text-sage transition hover:bg-sage/10 disabled:opacity-50"
         >
+          <RefreshCw size={13} aria-hidden="true" />
           Refresh
         </button>
       </div>
       {error && (
-        <p role="alert" className="font-body text-sm text-red-600">
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 p-3 font-body text-sm text-red-700"
+        >
           {error}
         </p>
       )}
@@ -105,28 +113,45 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
         </p>
       )}
       {request ? (
-        <div className="space-y-2 font-body text-sm text-charcoal/80">
-          <p>
-            <strong>
-              {request.kind === "RETURN" ? "Return" : "Refund"} request:{" "}
-              {request.status.replaceAll("_", " ").toLowerCase()}
-            </strong>
+        <div className="space-y-4 font-body text-sm text-charcoal/80">
+          <div className="flex flex-wrap items-center gap-2">
+            <ReturnStatusBadge status={request.status} />
+            <span className="text-xs text-charcoal/50">
+              {request.kind === "RETURN" ? "Return request" : "Refund request"}
+            </span>
+          </div>
+          <p className="font-medium text-charcoal">
+            {RETURN_REASONS[request.reason]}
           </p>
-          <p>{RETURN_REASONS[request.reason]}</p>
           <p className="whitespace-pre-wrap break-words">{request.details}</p>
           {request.customer_message && (
             <p className="whitespace-pre-wrap rounded-lg border border-charcoal/10 p-3">
+              <span className="mb-2 flex items-center gap-2 text-xs font-medium text-charcoal/60">
+                <MessageSquare size={14} aria-hidden="true" />
+                Message from our team
+              </span>
               {request.customer_message}
             </p>
           )}
-          {request.refund_amount_cents > 0 && (
-            <p>Approved refund: {peso(request.refund_amount_cents)}</p>
-          )}
-          {request.refund_state && (
-            <p>
-              Refund: {request.refund_state.toLowerCase()}
-              {request.refund_is_test ? " · Test mode" : ""}
-            </p>
+          {(request.refund_amount_cents > 0 || request.refund_state) && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-cream/80 p-4">
+              {request.refund_amount_cents > 0 && (
+                <div>
+                  <p className="text-xs text-charcoal/50">Approved refund</p>
+                  <p className="mt-1 font-display text-2xl text-charcoal">
+                    {peso(request.refund_amount_cents)}
+                  </p>
+                </div>
+              )}
+              {request.refund_state && (
+                <div className="space-y-1">
+                  <ReturnStatusBadge status={request.refund_state} />
+                  {request.refund_is_test && (
+                    <p className="text-xs text-charcoal/50">Test mode</p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           {request.refund_state === "UNKNOWN" && (
             <p>
@@ -145,35 +170,39 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
             and refund amount before approval. Please describe the affected
             items. Do not include banking details.
           </p>
-          <label className="block space-y-1 font-body text-sm">
-            Request type
-            <select
-              className={field}
-              value={kind}
-              onChange={(e) => setKind(e.target.value)}
-              disabled={busy}
-            >
-              {data.canReturn && <option value="RETURN">Return items</option>}
-              {data.canRefund && (
-                <option value="REFUND">Refund without a return</option>
-              )}
-            </select>
-          </label>
-          <label className="block space-y-1 font-body text-sm">
-            Reason
-            <select
-              className={field}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              disabled={busy}
-            >
-              {Object.entries(RETURN_REASONS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1 font-body text-sm">
+              <label htmlFor={`return-type-${orderId}`}>Request type</label>
+              <CustomSelect
+                id={`return-type-${orderId}`}
+                value={kind}
+                onChange={setKind}
+                disabled={busy}
+                triggerClassName={field}
+                options={[
+                  ...(data.canReturn
+                    ? [{ value: "RETURN", label: "Return items" }]
+                    : []),
+                  ...(data.canRefund
+                    ? [{ value: "REFUND", label: "Refund without a return" }]
+                    : []),
+                ]}
+              />
+            </div>
+            <div className="space-y-1 font-body text-sm">
+              <label htmlFor={`return-reason-${orderId}`}>Reason</label>
+              <CustomSelect
+                id={`return-reason-${orderId}`}
+                value={reason}
+                onChange={setReason}
+                disabled={busy}
+                triggerClassName={field}
+                options={Object.entries(RETURN_REASONS).map(
+                  ([value, label]) => ({ value, label }),
+                )}
+              />
+            </div>
+          </div>
           <label className="block space-y-1 font-body text-sm">
             Details
             <textarea
@@ -190,8 +219,9 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
           <button
             type="submit"
             disabled={busy}
-            className="rounded-lg bg-charcoal px-4 py-2 font-body text-sm text-cream disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-sage px-5 py-3 font-body text-sm font-medium text-white transition hover:bg-sage/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage/50 disabled:opacity-50"
           >
+            <Send size={15} aria-hidden="true" />
             {busy ? "Submitting…" : "Submit request"}
           </button>
         </form>

@@ -1,6 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import {
+  ArrowUpRight,
+  Check,
+  ChevronDown,
+  History as HistoryIcon,
+  MessageSquare,
+  ReceiptText,
+  X,
+} from "lucide-react";
+import { CustomSelect } from "@/components/admin/AdminUI";
+import ReturnStatusBadge from "@/components/ReturnStatusBadge";
 import OrderDetailModal from "@/components/admin/OrderDetailModal";
 import { RETURN_REASONS, peso, type ReturnCase } from "@/lib/returns";
 import { isCod } from "@/lib/payment-status";
@@ -99,25 +110,32 @@ export default function ReturnReviewCard({
     }
   }
   const field =
-    "w-full rounded-lg border border-charcoal/15 bg-cream p-2 font-body text-sm text-charcoal";
+    "w-full rounded-xl border border-charcoal/15 bg-cream px-3.5 py-3 font-body text-sm text-charcoal transition focus:outline-none focus:ring-2 focus:ring-sage/40 disabled:opacity-50";
   const button =
-    "rounded-lg border border-charcoal/15 px-3 py-2 font-body text-sm hover:bg-sand/40 disabled:opacity-50";
+    "inline-flex items-center justify-center gap-2 rounded-xl border border-charcoal/15 px-4 py-2.5 font-body text-sm font-medium transition hover:bg-sand/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage/50 disabled:cursor-not-allowed disabled:opacity-50";
   return (
-    <article className="space-y-4 rounded-xl border border-charcoal/10 bg-white p-5">
+    <article className="space-y-5 rounded-2xl border border-charcoal/10 bg-white p-5 shadow-sm sm:p-7">
       <div className="flex flex-wrap justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl">Order #TA-{request.order_id}</h2>
+          <h2 className="font-display text-2xl">
+            Order #TA-{request.order_id}
+          </h2>
           <p className="font-body text-xs text-charcoal/60">
-            {request.customer_email} · {request.kind.toLowerCase()} ·{" "}
-            {request.status.toLowerCase()}
+            {request.customer_email}
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <ReturnStatusBadge status={request.status} />
+            <span className="font-body text-xs text-charcoal/50">
+              {request.kind === "RETURN" ? "Return request" : "Refund request"}
+            </span>
+          </div>
         </div>
         <button
           type="button"
           onClick={() => setViewingOrder(true)}
-          className="font-body text-sm text-sage hover:underline"
+          className="inline-flex items-center gap-1.5 self-start rounded-lg px-2 py-2 font-body text-sm text-sage transition hover:bg-sage/10"
         >
-          View order
+          View order <ArrowUpRight size={16} aria-hidden="true" />
         </button>
       </div>
       <p className="font-body text-sm">
@@ -126,18 +144,40 @@ export default function ReturnReviewCard({
       <p className="whitespace-pre-wrap break-words font-body text-sm text-charcoal/80">
         {request.details}
       </p>
-      <p className="font-body text-sm text-charcoal/60">
-        Order total: {peso(Math.round(Number(request.total_amount) * 100))} ·
-        Payment: {request.payment_method} / {request.payment_status} · Order:{" "}
-        {request.order_status}
-      </p>
+      <dl className="grid grid-cols-2 gap-4 rounded-xl bg-cream p-4 font-body text-sm sm:grid-cols-3">
+        <div>
+          <dt className="text-xs text-charcoal/50">Order total</dt>
+          <dd className="mt-1 font-medium">
+            {peso(Math.round(Number(request.total_amount) * 100))}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-charcoal/50">Payment</dt>
+          <dd className="mt-1 capitalize">
+            {cod ? "COD" : request.payment_method} · {request.payment_status}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-charcoal/50">Order status</dt>
+          <dd className="mt-1 capitalize">
+            {request.order_status?.toLowerCase()}
+          </dd>
+        </div>
+      </dl>
       {request.customer_message && (
         <p className="whitespace-pre-wrap rounded-lg bg-sand/30 p-3 font-body text-sm">
-          Customer message: {request.customer_message}
+          <span className="mb-2 flex items-center gap-2 text-xs font-medium text-charcoal/60">
+            <MessageSquare size={14} aria-hidden="true" />
+            Message to customer
+          </span>
+          {request.customer_message}
         </p>
       )}
       {error && (
-        <p role="alert" className="font-body text-sm text-red-600">
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 p-3 font-body text-sm text-red-700"
+        >
           {error}
         </p>
       )}
@@ -166,14 +206,14 @@ export default function ReturnReviewCard({
               disabled={busy}
             />
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => void act("approve")}
               disabled={busy}
-              className={button}
+              className={`${button} border-sage bg-sage text-white hover:bg-sage/90`}
             >
-              Approve request
+              <Check size={16} aria-hidden="true" /> Approve request
             </button>
             <button
               type="button"
@@ -181,7 +221,7 @@ export default function ReturnReviewCard({
               disabled={busy}
               className={button}
             >
-              Reject request
+              <X size={16} aria-hidden="true" /> Reject request
             </button>
           </div>
         </div>
@@ -212,19 +252,40 @@ export default function ReturnReviewCard({
           Close return without refund
         </button>
       )}
-      {request.refund_amount_cents > 0 && (
-        <p className="font-body text-sm">
-          Approved refund: <strong>{peso(request.refund_amount_cents)}</strong>
-        </p>
-      )}
-      {request.refund_state && (
-        <p className="font-body text-sm">
-          Refund status: <strong>{request.refund_state.toLowerCase()}</strong>
-          {request.refund_is_test ? " · PayMongo test mode" : ""}
-          {request.refund_reference
-            ? ` · Reference: ${request.refund_reference}`
-            : ""}
-        </p>
+      {(request.refund_amount_cents > 0 || request.refund_state) && (
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-sage/20 bg-sage/5 p-4">
+          {request.refund_amount_cents > 0 && (
+            <div>
+              <p className="font-body text-xs text-charcoal/60">
+                Approved refund
+              </p>
+              <p className="mt-1 font-display text-2xl">
+                {peso(request.refund_amount_cents)}
+              </p>
+            </div>
+          )}
+          {request.refund_state && (
+            <div className="space-y-2">
+              <ReturnStatusBadge status={request.refund_state} />
+              {request.refund_is_test && (
+                <p className="font-body text-xs text-charcoal/50">
+                  PayMongo test mode
+                </p>
+              )}
+            </div>
+          )}
+          {request.refund_reference && (
+            <p className="flex w-full items-start gap-2 border-t border-sage/15 pt-3 font-body text-xs text-charcoal/60">
+              <ReceiptText size={15} className="shrink-0" aria-hidden="true" />
+              <span>
+                Reference:{" "}
+                <span className="break-all text-charcoal">
+                  {request.refund_reference}
+                </span>
+              </span>
+            </p>
+          )}
+        </div>
       )}
       {request.refund_error && (
         <p className="font-body text-sm text-red-600">{request.refund_error}</p>
@@ -279,25 +340,34 @@ export default function ReturnReviewCard({
               <>
                 {cod ? (
                   <>
-                    <label className="block space-y-1 font-body text-sm">
-                      Refund method
-                      <select
+                    <div className="space-y-1 font-body text-sm">
+                      <label htmlFor={`refund-method-${request.return_id}`}>
+                        Refund method
+                      </label>
+                      <CustomSelect
+                        id={`refund-method-${request.return_id}`}
                         value={channel}
-                        onChange={(e) => setChannel(e.target.value)}
+                        onChange={setChannel}
                         disabled={busy}
-                        className={field}
-                      >
-                        <option value="bank">Bank transfer</option>
-                        <option value="ewallet">E-wallet</option>
-                        <option value="cash">Cash</option>
-                      </select>
-                    </label>
+                        triggerClassName={field}
+                        options={[
+                          { value: "bank", label: "Bank transfer" },
+                          { value: "ewallet", label: "E-wallet" },
+                          { value: "cash", label: "Cash" },
+                        ]}
+                      />
+                    </div>
                     <label className="block space-y-1 font-body text-sm">
                       Transfer / receipt reference
                       <input
                         className={field}
                         value={reference}
                         maxLength={150}
+                        placeholder={
+                          channel === "cash"
+                            ? `Cash receipt / voucher number`
+                            : "Transaction reference number"
+                        }
                         onChange={(e) => setReference(e.target.value)}
                         disabled={busy}
                       />
@@ -305,6 +375,7 @@ export default function ReturnReviewCard({
                     <label className="flex items-start gap-2 font-body text-sm">
                       <input
                         type="checkbox"
+                        className="mt-0.5 size-4 shrink-0 accent-sage"
                         checked={confirmSent}
                         onChange={(e) => setConfirmSent(e.target.checked)}
                         disabled={busy}
@@ -317,6 +388,7 @@ export default function ReturnReviewCard({
                   <label className="flex items-start gap-2 font-body text-sm">
                     <input
                       type="checkbox"
+                      className="mt-0.5 size-4 shrink-0 accent-sage"
                       checked={confirmRefund}
                       onChange={(e) => setConfirmRefund(e.target.checked)}
                       disabled={busy}
@@ -329,7 +401,7 @@ export default function ReturnReviewCard({
                   type="button"
                   disabled={busy || (cod ? !confirmSent : !confirmRefund)}
                   onClick={() => void act("refund")}
-                  className={button}
+                  className={`${button} border-sage bg-sage text-white hover:bg-sage/90`}
                 >
                   {busy
                     ? "Processing…"
@@ -343,14 +415,21 @@ export default function ReturnReviewCard({
         )}
       <button
         type="button"
-        className="font-body text-xs text-sage hover:underline"
+        className="inline-flex items-center gap-2 rounded-lg py-2 font-body text-xs text-sage hover:text-charcoal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage/50"
         disabled={busy}
+        aria-expanded={!!history}
         onClick={() => (history ? setHistory(null) : void loadHistory())}
       >
-        {history ? "Hide" : "View"} audit history
+        <HistoryIcon size={15} aria-hidden="true" />
+        {history ? "Hide" : "View"} audit history{" "}
+        <ChevronDown
+          size={14}
+          className={history ? "rotate-180" : ""}
+          aria-hidden="true"
+        />
       </button>
       {history && (
-        <ol className="space-y-2 border-t border-charcoal/10 pt-3 font-body text-xs text-charcoal/60">
+        <ol className="space-y-4 border-l-2 border-sage/20 pl-4 font-body text-xs text-charcoal/60">
           {history.map((entry) => (
             <li key={entry.event_id}>
               <strong>{entry.action.replaceAll("_", " ")}</strong> ·{" "}
