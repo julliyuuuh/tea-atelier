@@ -1,3 +1,4 @@
+import { deliverOrderNotificationEmails } from "@/lib/notification-emails";
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
@@ -187,5 +188,6 @@ export async function PATCH(
     vals,
   );
 
+  await deliverOrderNotificationEmails(Number(id));
   return NextResponse.json({ success: true });
 }

@@ -1,3 +1,4 @@
+import { deliverOrderNotificationEmails } from "@/lib/notification-emails";
 // app/api/orders/cancel/route.ts.
 
 import { NextResponse } from "next/server";
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
     if (!order)
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
     if (order.payment_status === "cancelled") {
+      await deliverOrderNotificationEmails(orderId);
       return NextResponse.json({
         orderId,
         paymentStatus: "cancelled",
@@ -125,6 +127,7 @@ export async function POST(req: Request) {
         { status: 409 },
       );
     }
+    await deliverOrderNotificationEmails(orderId);
     // No cart or stock changes: unpaid e-wallet orders have not consumed stock.
     return NextResponse.json({
       orderId,

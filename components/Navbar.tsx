@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import NotificationBell from "@/components/NotificationBell";
 import ConfirmDialog from "@/components/account/ConfirmDialog";
 import { useWishlist } from "@/lib/wishlist-context";
 
@@ -111,130 +112,135 @@ export default function Navbar() {
             ))}
           </ul>
 
-          {/* Desktop Icons */}
-          <div className="hidden md:flex items-center gap-3">
-            <div className="relative" ref={accountMenuRef}>
-              <button
-                onClick={() => setAccountMenuOpen((prev) => !prev)}
-                className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors overflow-hidden border border-transparent hover:border-charcoal/10 cursor-pointer"
-                aria-label="Account"
-              >
-                {user?.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User size={18} strokeWidth={1.5} />
-                )}
-              </button>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            {/* Desktop Icons */}
+            <div className="hidden md:flex items-center gap-3">
+              <div className="relative" ref={accountMenuRef}>
+                <button
+                  onClick={() => setAccountMenuOpen((prev) => !prev)}
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-charcoal/80 hover:bg-sand transition-colors overflow-hidden border border-transparent hover:border-charcoal/10 cursor-pointer"
+                  aria-label="Account"
+                >
+                  {user?.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={18} strokeWidth={1.5} />
+                  )}
+                </button>
 
-              <AnimatePresence>
-                {accountMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
-                  >
-                    {user ? (
-                      <>
-                        <Link
-                          href="/account"
-                          onClick={() => setAccountMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                        >
-                          <Settings size={16} strokeWidth={1.5} /> Account
-                        </Link>
-                        {showWishlist && (
+                <AnimatePresence>
+                  {accountMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-2 w-44 bg-cream border border-charcoal/10 rounded-xl shadow-lg overflow-hidden"
+                    >
+                      {user ? (
+                        <>
                           <Link
-                            href="/wishlist"
+                            href="/account"
                             onClick={() => setAccountMenuOpen(false)}
                             className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
                           >
-                            <Heart size={16} strokeWidth={1.5} /> Wishlist
-                            {wishlistItems.length > 0 && (
-                              <span className="ml-auto bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-                                {wishlistItems.length}
-                              </span>
-                            )}
+                            <Settings size={16} strokeWidth={1.5} /> Account
                           </Link>
-                        )}
-                        <Link
-                          href="/faq"
-                          onClick={() => setAccountMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                        >
-                          <HelpCircle size={16} strokeWidth={1.5} /> FAQ
-                        </Link>
-                        <button
-                          onClick={() => {
-                            setShowLogoutConfirm(true);
-                            setAccountMenuOpen(false);
-                          }}
-                          className="w-full flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                        >
-                          <LogOut size={16} strokeWidth={1.5} /> Log Out
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <Link
-                          href="/faq"
-                          onClick={() => setAccountMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                        >
-                          <HelpCircle size={16} strokeWidth={1.5} /> FAQ
-                        </Link>
-                        <Link
-                          href="/login"
-                          onClick={() => setAccountMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
-                        >
-                          <LogIn size={16} strokeWidth={1.5} /> Log In
-                        </Link>
-                      </>
-                    )}
-                  </motion.div>
+                          {showWishlist && (
+                            <Link
+                              href="/wishlist"
+                              onClick={() => setAccountMenuOpen(false)}
+                              className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                            >
+                              <Heart size={16} strokeWidth={1.5} /> Wishlist
+                              {wishlistItems.length > 0 && (
+                                <span className="ml-auto bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                                  {wishlistItems.length}
+                                </span>
+                              )}
+                            </Link>
+                          )}
+                          <Link
+                            href="/faq"
+                            onClick={() => setAccountMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                          >
+                            <HelpCircle size={16} strokeWidth={1.5} /> FAQ
+                          </Link>
+                          <button
+                            onClick={() => {
+                              setShowLogoutConfirm(true);
+                              setAccountMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                          >
+                            <LogOut size={16} strokeWidth={1.5} /> Log Out
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Link
+                            href="/faq"
+                            onClick={() => setAccountMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                          >
+                            <HelpCircle size={16} strokeWidth={1.5} /> FAQ
+                          </Link>
+                          <Link
+                            href="/login"
+                            onClick={() => setAccountMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-3 font-body text-sm text-charcoal/80 hover:bg-sand transition-colors"
+                          >
+                            <LogIn size={16} strokeWidth={1.5} /> Log In
+                          </Link>
+                        </>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <Link
+                href="/cart"
+                className="relative w-9 h-9 flex items-center justify-center rounded-full bg-sage text-cream hover:bg-charcoal transition-colors"
+                aria-label="Cart"
+              >
+                <ShoppingBag size={18} strokeWidth={1.5} />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                    {totalItems}
+                  </span>
                 )}
-              </AnimatePresence>
+              </Link>
             </div>
 
-            <Link
-              href="/cart"
-              className="relative w-9 h-9 flex items-center justify-center rounded-full bg-sage text-cream hover:bg-charcoal transition-colors"
-              aria-label="Cart"
+            {/* Mobile Hamburger */}
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden flex flex-col justify-center gap-1.5 w-8 h-8"
+              aria-label="Toggle menu"
             >
-              <ShoppingBag size={18} strokeWidth={1.5} />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
+              <motion.span
+                animate={menuOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
+                className="block h-[1.5px] w-6 bg-charcoal"
+              />
+              <motion.span
+                animate={menuOpen ? { opacity: 0 } : { opacity: 1 }}
+                className="block h-[1.5px] w-6 bg-charcoal"
+              />
+              <motion.span
+                animate={
+                  menuOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }
+                }
+                className="block h-[1.5px] w-6 bg-charcoal"
+              />
+            </button>
           </div>
-
-          {/* Mobile Hamburger */}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden flex flex-col justify-center gap-1.5 w-8 h-8"
-            aria-label="Toggle menu"
-          >
-            <motion.span
-              animate={menuOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
-              className="block h-[1.5px] w-6 bg-charcoal"
-            />
-            <motion.span
-              animate={menuOpen ? { opacity: 0 } : { opacity: 1 }}
-              className="block h-[1.5px] w-6 bg-charcoal"
-            />
-            <motion.span
-              animate={menuOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
-              className="block h-[1.5px] w-6 bg-charcoal"
-            />
-          </button>
         </nav>
 
         {/* Mobile Menu */}

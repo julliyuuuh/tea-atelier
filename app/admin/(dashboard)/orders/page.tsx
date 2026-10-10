@@ -155,6 +155,8 @@ export default function AdminOrdersPage() {
   const [viewingOrderId, setViewingOrderId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [retryingEmails, setRetryingEmails] = useState(false);
+  const [emailNotice, setEmailNotice] = useState("");
   const [actionError, setActionError] = useState("");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -320,6 +322,32 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const retryOrderEmails = async () => {
+    if (retryingEmails) return;
+    setRetryingEmails(true);
+    setEmailNotice("");
+    try {
+      const res = await fetch("/api/admin/notifications/retry", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.error || "Unable to retry order emails.");
+      setEmailNotice(
+        `${data.sent} email(s) sent, ${data.failed} failed. Each retry processes up to 20 queued emails.`,
+      );
+    } catch (error) {
+      setEmailNotice(
+        error instanceof Error
+          ? error.message
+          : "Unable to retry order emails.",
+      );
+    } finally {
+      setRetryingEmails(false);
+    }
+  };
+
   const hasActiveFilters =
     search !== "" || filterStatus !== "All" || filterPayment !== "All";
   const clearFilters = () => {
@@ -382,6 +410,21 @@ export default function AdminOrdersPage() {
         onRetry={() => loadOrders(currentPage)}
       />
       <ErrorBanner message={actionError} />
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          disabled={retryingEmails}
+          onClick={() => void retryOrderEmails()}
+          className="rounded-lg border border-charcoal/20 px-4 py-2 font-body text-sm text-charcoal hover:bg-sand/30 disabled:opacity-50"
+        >
+          {retryingEmails ? "Retrying…" : "Retry order emails"}
+        </button>
+        {emailNotice && (
+          <p role="status" className="font-body text-sm text-charcoal/70">
+            {emailNotice}
+          </p>
+        )}
+      </div>
 
       {/* Filter toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-charcoal/10 rounded-xl px-4 py-3">
