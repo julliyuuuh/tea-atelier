@@ -113,6 +113,9 @@ export async function PATCH(
   if (error) return error;
 
   const { id } = await params;
+  if (!/^[1-9]\d*$/.test(id) || Number(id) > 2147483647) {
+    return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  }
   const { status, paymentStatus } = await req.json();
 
   if (status === undefined && paymentStatus === undefined) {
@@ -139,6 +142,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
   const order = current.rows[0];
+  if (
+    order.order_status === "CANCELLED" &&
+    status !== undefined &&
+    status !== "CANCELLED"
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Cancelled orders cannot be reopened. Create a new order instead.",
+      },
+      { status: 409 },
+    );
+  }
 
   // An unpaid online order (pending, processing or failed) can only stay at
   // PLACED or be cancelled. Otherwise an admin could ship something nobody paid for.
@@ -183,10 +199,27 @@ export async function PATCH(
   }
   vals.push(id);
 
-  await pool.query(
-    `UPDATE orders SET ${sets.join(", ")} WHERE order_id = $${vals.length}`,
+  const idPosition = vals.length;
+  vals.push(order.order_status, order.payment_status, order.payment_method);
+  // Check the values used for validation again inside the update. A concurrent
+  // cancellation or payment update must not be overwritten by a stale request.
+  const updated = await pool.query(
+    `UPDATE orders SET ${sets.join(", ")} WHERE order_id = $${idPosition}
+      AND order_status IS NOT DISTINCT FROM $${idPosition + 1}
+      AND payment_status IS NOT DISTINCT FROM $${idPosition + 2}
+      AND payment_method IS NOT DISTINCT FROM $${idPosition + 3}
+      RETURNING order_id`,
     vals,
   );
+  if (!updated.rows.length) {
+    return NextResponse.json(
+      {
+        error:
+          "This order changed while you were editing. Refresh and try again.",
+      },
+      { status: 409 },
+    );
+  }
 
   await deliverOrderNotificationEmails(Number(id));
   return NextResponse.json({ success: true });

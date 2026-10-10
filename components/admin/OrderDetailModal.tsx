@@ -268,14 +268,16 @@ export default function OrderDetailModal({
       order.paymentMethod,
       order.paymentStatus,
     );
-    const statusOptions = unpaidOnline
-      ? STATUS_OPTIONS.filter(
-          (o) =>
-            o.value === order.status ||
-            o.value === "PLACED" ||
-            o.value === "CANCELLED",
-        )
-      : STATUS_OPTIONS;
+    const statusOptions = cancelled
+      ? STATUS_OPTIONS.filter((o) => o.value === "CANCELLED")
+      : unpaidOnline
+        ? STATUS_OPTIONS.filter(
+            (o) =>
+              o.value === order.status ||
+              o.value === "PLACED" ||
+              o.value === "CANCELLED",
+          )
+        : STATUS_OPTIONS;
 
     return (
       <>
@@ -387,13 +389,19 @@ export default function OrderDetailModal({
                     value={order.status}
                     onChange={(value) => patch({ status: value })}
                     options={statusOptions}
-                    disabled={isUpdating}
+                    disabled={isUpdating || cancelled}
                     triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${sBadge.bg} ${sBadge.text}`}
                   />
                   {unpaidOnline && !cancelled && (
                     <p className="font-body text-xs text-charcoal/50 mt-2">
                       This order can't move past Order Placed until its payment
                       is confirmed.
+                    </p>
+                  )}
+                  {cancelled && (
+                    <p className="font-body text-xs text-charcoal/50 mt-2">
+                      Cancellation is final. Create a new order to place it
+                      again.
                     </p>
                   )}
                 </div>

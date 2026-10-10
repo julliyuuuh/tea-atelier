@@ -56,6 +56,9 @@ const ROW_STATUS_OPTIONS = STATUS_OPTIONS.filter((o) => o.value !== "All");
 // Unpaid online orders can only stay at PLACED or be cancelled (the API
 // enforces this too), so don't offer the forward steps in the dropdown.
 function rowStatusOptions(order: Order) {
+  if (order.status === "CANCELLED") {
+    return ROW_STATUS_OPTIONS.filter((o) => o.value === "CANCELLED");
+  }
   if (!isUnpaidOnline(order.paymentMethod, order.paymentStatus)) {
     return ROW_STATUS_OPTIONS;
   }
@@ -618,7 +621,10 @@ export default function AdminOrdersPage() {
                           handleStatusChange(order.id, value)
                         }
                         options={rowStatusOptions(order)}
-                        disabled={updatingId === order.id}
+                        disabled={
+                          updatingId === order.id ||
+                          order.status === "CANCELLED"
+                        }
                         triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${badge.bg} ${badge.text}`}
                       />
                     </div>
