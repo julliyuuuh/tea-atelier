@@ -8,8 +8,8 @@ export function verifyPaymongoSignature(
   if (!header || !secret) return false;
   const parts: Record<string, string> = {};
   for (const part of header.split(",")) {
-    const match = /^\s*(t|te|li)=([^=]+?)\s*$/.exec(part);
-    if (!match || parts[match[1]]) return false;
+    const match = /^\s*(t|te|li)=([^=]*?)\s*$/.exec(part);
+    if (!match || Object.hasOwn(parts, match[1])) return false;
     parts[match[1]] = match[2];
   }
   const timestamp = Number(parts.t);
