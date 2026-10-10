@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import OrderDocumentButtons from "@/components/OrderDocumentButtons";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { ORDER_STATUSES } from "@/lib/order-status";
 import {
@@ -280,6 +281,9 @@ export default function OrderDetailModal({
       <>
         <ErrorBanner message={errorMessage} onRetry={() => load()} />
         <ErrorBanner message={actionError} />
+        <div className="mb-4">
+          <OrderDocumentButtons key={order.id} orderId={order.id} admin />
+        </div>
 
         {/* Progress */}
         <div className="border border-charcoal/10 rounded-xl p-4 mb-4 overflow-x-auto">
