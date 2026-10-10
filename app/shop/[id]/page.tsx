@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ProductReviews from "@/components/reviews/ProductReviews";
 import { useCart } from "@/lib/cart-context";
 import type { Product } from "@/lib/products";
 import Link from "next/link";
@@ -181,89 +182,7 @@ export default function ProductDetailsPage() {
             </AccordionRow>
           </div>
 
-          {/* Ratings & Reviews */}
-          <div>
-            <h2 className="font-display text-2xl text-charcoal mb-6">
-              Ratings & Reviews
-            </h2>
-
-            <div className="flex items-center gap-4 mb-6">
-              <span className="font-display text-4xl text-charcoal">4.8</span>
-              <div>
-                <div className="flex text-sage mb-1">
-                  {"★★★★★".split("").map((s, i) => (
-                    <span key={i}>{s}</span>
-                  ))}
-                </div>
-                <span className="font-body text-xs text-charcoal/50">
-                  Based on 24 reviews
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-1.5 mb-8">
-              {[
-                { stars: 5, count: 18 },
-                { stars: 4, count: 4 },
-                { stars: 3, count: 1 },
-                { stars: 2, count: 0 },
-                { stars: 1, count: 1 },
-              ].map((row) => (
-                <div key={row.stars} className="flex items-center gap-3">
-                  <span className="font-body text-xs text-charcoal/50 w-10">
-                    {row.stars} star
-                  </span>
-                  <div className="flex-1 h-1.5 rounded-full bg-sand/60 overflow-hidden">
-                    <div
-                      className="h-full bg-sage rounded-full"
-                      style={{ width: `${(row.count / 24) * 100}%` }}
-                    />
-                  </div>
-                  <span className="font-body text-xs text-charcoal/40 w-6 text-right">
-                    {row.count}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-6">
-              {[
-                {
-                  name: "Amara L.",
-                  stars: 5,
-                  text: "Rich, smoky, and perfectly balanced. This is now a weekly staple in my cabinet.",
-                },
-                {
-                  name: "Julien P.",
-                  stars: 5,
-                  text: "Packaging alone feels like a gift. The tea itself is even better.",
-                },
-                {
-                  name: "Priya S.",
-                  stars: 4,
-                  text: "Lovely flavor, arrived quickly. Would order again.",
-                },
-              ].map((review) => (
-                <div
-                  key={review.name}
-                  className="border-b border-charcoal/10 pb-6 last:border-0"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-body text-sm text-charcoal">
-                      {review.name}
-                    </span>
-                    <span className="text-sage text-xs">
-                      {"★".repeat(review.stars)}
-                      {"☆".repeat(5 - review.stars)}
-                    </span>
-                  </div>
-                  <p className="font-body text-sm text-charcoal/70 leading-relaxed">
-                    {review.text}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ProductReviews key={product.id} productId={product.id} />
         </div>
       </div>
 

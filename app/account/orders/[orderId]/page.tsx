@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth-context";
 import Badge from "@/components/account/Badge";
 import OrderDocumentButtons from "@/components/OrderDocumentButtons";
 import OrderReturnPanel from "@/components/account/OrderReturnPanel";
+import OrderReviews from "@/components/reviews/OrderReviews";
 // import Badge from wherever your Badge component lives
 
 // ---------- types (match /api/orders/[orderId] response) ----------
@@ -120,7 +121,8 @@ function OrderTracker({
     return (
       <div className="rounded-xl bg-red-50 p-4">
         <p className="font-body text-sm text-red-600">
-          This order's payment didn't go through, so it hasn't been processed.
+          This order&apos;s payment didn&apos;t go through, so it hasn&apos;t
+          been processed.
         </p>
       </div>
     );
@@ -309,6 +311,9 @@ export default function OrderDetailsPage({
                 </div>
               </div>
 
+              {order.orderStatus === "DELIVERED" && (
+                <OrderReviews key={order.orderId} orderId={order.orderId} />
+              )}
               {/* tracking */}
               <OrderDocumentButtons
                 key={order.orderId}
