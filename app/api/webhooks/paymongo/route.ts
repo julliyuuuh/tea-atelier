@@ -108,12 +108,12 @@ export async function POST(req: Request) {
         await client.query("BEGIN");
 
         const upd = await client.query(
-          `UPDATE orders SET payment_status = 'paid'
+          `UPDATE orders SET payment_status = 'paid', paymongo_payment_id = $3
         WHERE order_id = $1
           AND paymongo_source_id = $2
           AND payment_status = 'processing'
         RETURNING user_id`,
-          [order.order_id, sourceId],
+          [order.order_id, sourceId, payment.data.id],
         );
 
         // Only runs the first time (guards against duplicate webhook deliveries)

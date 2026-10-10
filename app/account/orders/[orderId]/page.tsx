@@ -16,6 +16,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import Badge from "@/components/account/Badge";
 import OrderDocumentButtons from "@/components/OrderDocumentButtons";
+import OrderReturnPanel from "@/components/account/OrderReturnPanel";
 // import Badge from wherever your Badge component lives
 
 // ---------- types (match /api/orders/[orderId] response) ----------
@@ -313,6 +314,7 @@ export default function OrderDetailsPage({
                 key={order.orderId}
                 orderId={order.orderId}
               />
+              <OrderReturnPanel key={order.orderId} orderId={order.orderId} />
               <div className="bg-sand/30 rounded-xl p-6">
                 <h3 className="font-display text-base text-charcoal mb-6">
                   Order Progress

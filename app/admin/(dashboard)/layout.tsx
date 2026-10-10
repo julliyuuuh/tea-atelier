@@ -17,6 +17,7 @@ import {
   Moon,
   Sun,
   ShieldCheck,
+  RotateCcw,
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
@@ -33,6 +34,7 @@ const navItems: NavItem[] = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
+  { label: "Returns & Refunds", href: "/admin/returns", icon: RotateCcw },
   { label: "Customers", href: "/admin/customers", icon: Users },
   { label: "Contact Messages", href: "/admin/contact", icon: Mail },
   { label: "Content Management", href: "/admin/cms", icon: FileText },
