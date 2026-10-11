@@ -17,6 +17,10 @@ type CartItem = { product: Product; quantity: number };
 
 type CartContextType = {
   items: CartItem[];
+  selectedItems: CartItem[];
+  selectedSubtotal: number;
+  setItemSelected: (productId: string, selected: boolean) => void;
+  setAllSelected: (selected: boolean) => void;
   addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -32,6 +36,28 @@ type CartContextType = {
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+const CART_SELECTION_STORAGE = "tea-atelier.cart-selection.v1";
+type CartSelection = { accountEmail: string | null; excludedIds: string[] };
+
+function readSelection(accountEmail: string | null): CartSelection {
+  let excludedIds: string[] = [];
+  try {
+    const saved = JSON.parse(
+      sessionStorage.getItem(CART_SELECTION_STORAGE) || "null",
+    );
+    if (
+      saved?.accountEmail === accountEmail &&
+      Array.isArray(saved.excludedIds)
+    ) {
+      excludedIds = saved.excludedIds.filter(
+        (id: unknown): id is string => typeof id === "string",
+      );
+    }
+  } catch {
+    // Selection is optional; an unavailable browser store keeps the default selection.
+  }
+  return { accountEmail, excludedIds };
+}
 
 function authHeaders(): Record<string, string> {
   const token = localStorage.getItem("token");
@@ -43,6 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [items, setItems] = useState<CartItem[]>([]);
+  const [selection, setSelection] = useState<CartSelection | null>(null);
   const [loading, setLoading] = useState(true);
   const [stockError, setStockError] = useState<string | null>(null);
   const clearStockError = () => setStockError(null);
@@ -53,6 +80,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // so a slow, older response can never overwrite a newer one.
   const loadId = useRef(0);
 
+  const accountEmail = user?.email ?? null;
+  const selectionReady = selection?.accountEmail === accountEmail;
+  const excludedIds = new Set(selectionReady ? selection.excludedIds : []);
+  const selectedItems = selectionReady
+    ? items.filter((item) => !excludedIds.has(item.product.id))
+    : [];
+  const selectedSubtotal = selectedItems.reduce(
+    (sum, item) => sum + Number(item.product.price) * item.quantity,
+    0,
+  );
+  const saveSelection = (nextIds: string[]) => {
+    const next = { accountEmail, excludedIds: nextIds };
+    setSelection(next);
+    try {
+      sessionStorage.setItem(CART_SELECTION_STORAGE, JSON.stringify(next));
+    } catch {
+      // The current selection still works when browser storage is unavailable.
+    }
+  };
+  const setItemSelected = (productId: string, selected: boolean) => {
+    if (!selectionReady) return;
+    const next = new Set(selection.excludedIds);
+    if (selected) next.delete(productId);
+    else next.add(productId);
+    saveSelection([...next]);
+  };
+  const setAllSelected = (selected: boolean) => {
+    if (!selectionReady) return;
+    saveSelection(selected ? [] : items.map((item) => item.product.id));
+  };
+
   const refreshCart = useCallback(async () => {
     const myId = ++loadId.current;
     try {
@@ -61,8 +119,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (myId === loadId.current) setItems(rows);
     } catch {
       // network failure: keep whatever is on screen
+    } finally {
+      if (myId === loadId.current) {
+        setSelection((previous) =>
+          previous?.accountEmail === accountEmail
+            ? previous
+            : readSelection(accountEmail),
+        );
+      }
     }
-  }, []);
+  }, [accountEmail]);
 
   useEffect(() => {
     if (authLoading) return; // wait for auth to resolve first
@@ -70,6 +136,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!user) {
       loadId.current++; // invalidate any request still in flight
       setItems([]); // logged out (or never logged in), no persisted cart
+      setSelection({ accountEmail: null, excludedIds: [] });
       setLoading(false);
       return;
     }
@@ -200,6 +267,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider
       value={{
         items,
+        selectedItems,
+        selectedSubtotal,
+        setItemSelected,
+        setAllSelected,
         addToCart,
         removeFromCart,
         updateQuantity,
@@ -207,7 +278,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         refreshCart,
         totalItems,
         subtotal,
-        loading,
+        loading: loading || !selectionReady || authLoading,
         stockError,
         clearStockError,
         lastAdded,

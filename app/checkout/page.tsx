@@ -46,7 +46,13 @@ function isPaymentStatus(value: unknown): value is PaymentStatus {
 }
 
 function CheckoutContent() {
-  const { items, subtotal, clearCart, loading: cartLoading } = useCart();
+  const {
+    items: cartItems,
+    selectedItems: items,
+    selectedSubtotal: subtotal,
+    refreshCart,
+    loading: cartLoading,
+  } = useCart();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -581,6 +587,7 @@ function CheckoutContent() {
     let navigating = false;
     try {
       const orderPayload = {
+        selectedProductIds: items.map((item) => item.product.id),
         ...(selectedAddressId !== null
           ? { savedAddressId: selectedAddressId }
           : {
@@ -646,7 +653,7 @@ function CheckoutContent() {
       if (!Number.isSafeInteger(orderId) || orderId <= 0)
         throw new Error("Invalid order response.");
       if (chosenPayment === "cod") {
-        clearCart();
+        await refreshCart();
         sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
         router.push(`/order-confirmation?orderId=${orderId}`);
         return;
@@ -1021,13 +1028,15 @@ function CheckoutContent() {
               {!showSavedOrder && isCartEmpty ? (
                 <div className="text-center py-6">
                   <p className="font-body text-sm text-charcoal/70 mb-6">
-                    Your cart is empty. Add a few teas before checking out.
+                    {cartItems.length > 0
+                      ? "Select at least one product in your cart before checking out."
+                      : "Your cart is empty. Add a few teas before checking out."}
                   </p>
                   <Link
-                    href="/shop"
+                    href={cartItems.length > 0 ? "/cart" : "/shop"}
                     className="inline-block rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
                   >
-                    Browse Tea
+                    {cartItems.length > 0 ? "Select Cart Items" : "Browse Tea"}
                   </Link>
                 </div>
               ) : (

@@ -123,6 +123,33 @@ export async function POST(req: Request) {
     phone,
     fullName,
   } = body;
+  let selectedProductIds: number[] | null = null;
+  if (Object.hasOwn(body, "selectedProductIds")) {
+    const ids = body.selectedProductIds;
+    if (
+      !Array.isArray(ids) ||
+      ids.length === 0 ||
+      !ids.every((id: unknown) => {
+        const numeric =
+          typeof id === "number"
+            ? id
+            : typeof id === "string" && /^[1-9]\d*$/.test(id)
+              ? Number(id)
+              : NaN;
+        return (
+          Number.isSafeInteger(numeric) && numeric > 0 && numeric <= 2147483647
+        );
+      })
+    ) {
+      return NextResponse.json(
+        { error: "Select valid cart items for checkout." },
+        { status: 400 },
+      );
+    }
+    selectedProductIds = [
+      ...new Set<number>(ids.map((id: string | number) => Number(id))),
+    ].sort((a, b) => a - b);
+  }
   let savedAddressId: number | null;
   let addressLabel: string | null | undefined;
   try {
@@ -202,6 +229,7 @@ export async function POST(req: Request) {
         ...(shippingMethod === "standard" ? {} : { shippingMethod }),
         phone: phone || null,
         fullName: fullName || null,
+        ...(selectedProductIds === null ? {} : { selectedProductIds }),
       }),
     )
     .digest("hex");
@@ -285,9 +313,22 @@ export async function POST(req: Request) {
               p.price, p.stock_quantity, p.product_name
       FROM cart c
       JOIN products p ON p.product_id = c.product_id
-      WHERE c.user_id = $1 ORDER BY c.product_id`,
-      [userId],
+      WHERE c.user_id = $1${selectedProductIds === null ? "" : " AND c.product_id = ANY($2::int[])"} ORDER BY c.product_id`,
+      selectedProductIds === null ? [userId] : [userId, selectedProductIds],
     );
+    if (
+      selectedProductIds !== null &&
+      cartResult.rows.length !== selectedProductIds.length
+    ) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        {
+          error:
+            "Some selected products are no longer in your cart. Refresh your cart and select again.",
+        },
+        { status: 409 },
+      );
+    }
     if (cartResult.rows.length === 0) {
       await client.query("ROLLBACK");
       return NextResponse.json(
@@ -446,7 +487,13 @@ export async function POST(req: Request) {
     }
     // Clear the cart
     if (isCod) {
-      await client.query("DELETE FROM cart WHERE user_id = $1", [userId]);
+      await client.query(
+        `DELETE FROM cart AS c USING order_items AS oi
+         WHERE c.user_id = $1 AND oi.order_id = $2
+           AND c.product_id = oi.product_id
+           AND c.checkout_revision = oi.cart_checkout_revision`,
+        [userId, orderId],
+      );
     }
     await client.query("COMMIT");
     // Fire the confirmation email only for COD, where the order is genuinely
