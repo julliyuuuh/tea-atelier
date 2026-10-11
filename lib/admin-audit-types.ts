@@ -25,3 +25,16 @@ export type AuditEvent = {
   after_data: Record<string, unknown> | null;
   created_at: string;
 };
+
+export function auditCustomerName(event: AuditEvent): string | null {
+  if (event.resource_type !== "customer") return null;
+  for (const snapshot of [event.after_data, event.before_data]) {
+    const name = [snapshot?.first_name, snapshot?.last_name]
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .join(" ");
+    if (name) return name;
+  }
+  return null;
+}

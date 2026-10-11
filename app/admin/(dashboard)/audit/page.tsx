@@ -4,7 +4,11 @@ import { ChevronDown, History, RefreshCw, Search } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import AuditDateRange from "@/components/admin/AuditDateRange";
 import { CustomSelect } from "@/components/admin/AdminUI";
-import { AUDIT_RESOURCES, type AuditEvent } from "@/lib/admin-audit-types";
+import {
+  AUDIT_RESOURCES,
+  auditCustomerName,
+  type AuditEvent,
+} from "@/lib/admin-audit-types";
 const label = (value: string) =>
   value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 const display = (value: unknown) =>
@@ -25,6 +29,7 @@ function AuditCard({ event }: { event: AuditEvent }) {
     new Set([...Object.keys(before), ...Object.keys(after)]),
   ).filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
   const orderId = after.order_id ?? before.order_id;
+  const customerName = auditCustomerName(event);
   const resource =
     AUDIT_RESOURCES[event.resource_type as keyof typeof AUDIT_RESOURCES] ||
     event.resource_type;
@@ -42,8 +47,8 @@ function AuditCard({ event }: { event: AuditEvent }) {
             <span className="rounded-full bg-sage/10 px-2.5 py-1 font-body text-xs text-sage">
               {label(event.action)}
             </span>
-            <span className="font-body text-xs text-charcoal/50">
-              {resource} ·{" "}
+            <span className="break-words font-body text-xs text-charcoal/50">
+              {resource} · {customerName && <>{customerName} · </>}
               {orderId ? `Order #TA-${orderId}` : `#${event.resource_id}`}
             </span>
           </div>
