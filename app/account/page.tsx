@@ -6,18 +6,13 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/lib/auth-context";
-import ConfirmDialog from "@/components/account/ConfirmDialog";
 import Badge from "@/components/account/Badge";
 import FormField from "@/components/account/FormField";
 import { getStatusLabel } from "@/lib/order-status";
-import MarketingPreference from "@/components/account/MarketingPreference";
+import SettingsTab from "@/components/account/SettingsTab";
 import SavedAddresses from "@/components/account/SavedAddresses";
-import {
-  OrderSkeleton,
-  SecurityPanelSkeleton,
-} from "@/components/account/Skeletons";
+import { OrderSkeleton } from "@/components/account/Skeletons";
 import { Package, User, Loader2, Pencil } from "lucide-react";
-import { useTheme } from "@/lib/theme-context";
 
 type TabKey = "profile" | "orders" | "settings" | "messages";
 
@@ -100,12 +95,14 @@ function AccountPageInner() {
     <main className="min-h-screen">
       <Navbar />
 
-      <div className="max-w-3xl mx-auto px-8 py-16">
+      <div
+        className={`mx-auto px-4 py-12 sm:px-8 sm:py-16 ${activeTab === "settings" ? "max-w-5xl" : "max-w-3xl"}`}
+      >
         {/* Tabs */}
         <div
           role="tablist"
           aria-label="Account sections"
-          className="flex items-center gap-8 border-b border-charcoal/10 mb-8"
+          className="flex items-center gap-5 overflow-x-auto border-b border-charcoal/10 mb-6 sm:gap-8 sm:mb-8"
         >
           {TABS.map((tab) => {
             const isActive = tab.key === activeTab;
@@ -122,7 +119,7 @@ function AccountPageInner() {
                 tabIndex={isActive ? 0 : -1}
                 onClick={() => setActiveTab(tab.key)}
                 onKeyDown={(e) => handleTabKeyDown(e, tab.key)}
-                className="relative pb-4 font-display text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage focus-visible:ring-offset-2 focus-visible:ring-offset-cream rounded-sm"
+                className="relative shrink-0 pb-4 font-display text-base sm:text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage focus-visible:ring-offset-2 focus-visible:ring-offset-cream rounded-sm"
               >
                 <span
                   className={
@@ -145,7 +142,7 @@ function AccountPageInner() {
           })}
         </div>
 
-        <div className="relative bg-cream border border-charcoal/10 rounded-2xl p-8 min-h-[420px] grid grid-cols-1 overflow-hidden">
+        <div className="relative bg-cream border border-charcoal/10 rounded-2xl p-5 sm:p-8 min-h-[420px] grid grid-cols-1 overflow-hidden">
           <motion.div
             id="account-panel-profile"
             role="tabpanel"
@@ -160,6 +157,7 @@ function AccountPageInner() {
             transition={PANEL_TRANSITION}
             style={{ pointerEvents: activeTab === "profile" ? "auto" : "none" }}
             aria-hidden={activeTab !== "profile"}
+            hidden={activeTab !== "profile"}
             inert={activeTab !== "profile" ? true : undefined}
           >
             <ProfileTab />
@@ -181,6 +179,7 @@ function AccountPageInner() {
                 pointerEvents: activeTab === "orders" ? "auto" : "none",
               }}
               aria-hidden={activeTab !== "orders"}
+              hidden={activeTab !== "orders"}
               inert={activeTab !== "orders" ? true : undefined}
             >
               <OrdersTab />
@@ -203,9 +202,15 @@ function AccountPageInner() {
                 pointerEvents: activeTab === "settings" ? "auto" : "none",
               }}
               aria-hidden={activeTab !== "settings"}
+              hidden={activeTab !== "settings"}
               inert={activeTab !== "settings" ? true : undefined}
             >
-              <SettingsTab />
+              <SettingsTab
+                onEditProfile={() => {
+                  setActiveTab("profile");
+                  tabRefs.current.profile?.focus();
+                }}
+              />
             </motion.div>
           )}
           {visited.has("messages") && (
@@ -225,6 +230,7 @@ function AccountPageInner() {
                 pointerEvents: activeTab === "messages" ? "auto" : "none",
               }}
               aria-hidden={activeTab !== "messages"}
+              hidden={activeTab !== "messages"}
               inert={activeTab !== "messages" ? true : undefined}
             >
               <MessagesTab />
@@ -1319,382 +1325,7 @@ function OrdersTab() {
 // Settings tab
 // ================================================================
 
-function SettingsTab() {
-  const { user, logout } = useAuth();
-  const router = useRouter();
-  const { theme, toggleTheme } = useTheme();
-
-  const [totpEnabled, setTotpEnabled] = useState(false);
-  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
-  const [setupStep, setSetupStep] = useState<
-    "idle" | "scanning" | "confirming"
-  >("idle");
-  const [qrCode, setQrCode] = useState("");
-  const [confirmCode, setConfirmCode] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendMessage, setResendMessage] = useState("");
-  const [showResendConfirm, setShowResendConfirm] = useState(false);
-  const [showDisableConfirm, setShowDisableConfirm] = useState(false);
-
-  const handleUnauthorized = () => {
-    logout();
-    router.push("/login");
-  };
-
-  useEffect(() => {
-    async function loadStatus() {
-      const token = localStorage.getItem("token");
-      try {
-        const res = await fetch("/api/2fa/status", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (res.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-
-        const data = await res.json();
-        if (res.ok) setTotpEnabled(data.enabled);
-      } catch {
-        // fail silently, defaults to false
-      } finally {
-        setIsLoadingStatus(false);
-      }
-    }
-
-    loadStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleResendVerification = async () => {
-    setShowResendConfirm(false);
-    setResendLoading(true);
-    setResendMessage("");
-    const token = localStorage.getItem("token");
-
-    try {
-      const res = await fetch("/api/resend-verification", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to resend email.");
-      setResendMessage("A new verification email has been sent.");
-    } catch (error) {
-      setResendMessage(
-        error instanceof Error ? error.message : "Something went wrong.",
-      );
-    } finally {
-      setResendLoading(false);
-    }
-  };
-
-  const startSetup = async () => {
-    setErrorMessage("");
-    const token = localStorage.getItem("token");
-
-    try {
-      const res = await fetch("/api/2fa/setup", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to start setup.");
-
-      setQrCode(data.qrCode);
-      setSetupStep("scanning");
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Something went wrong.",
-      );
-    }
-  };
-
-  const confirmSetup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage("");
-    setIsSubmitting(true);
-
-    const token = localStorage.getItem("token");
-
-    try {
-      const res = await fetch("/api/2fa/confirm", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ code: confirmCode }),
-      });
-
-      if (res.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Invalid code.");
-
-      setTotpEnabled(true);
-      setSetupStep("idle");
-      setConfirmCode("");
-      setSuccessMessage("Two-factor authentication is now enabled.");
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Something went wrong.",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const disable2FA = async () => {
-    const token = localStorage.getItem("token");
-    setErrorMessage("");
-
-    try {
-      const res = await fetch("/api/2fa/disable", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to disable 2FA.");
-
-      setTotpEnabled(false);
-      setSuccessMessage("Two-factor authentication has been disabled.");
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Something went wrong.",
-      );
-    }
-  };
-
-  const confirmDisable2FA = () => {
-    setShowDisableConfirm(false);
-    disable2FA();
-  };
-
-  return (
-    <div>
-      <h2 className="font-display text-xl text-charcoal mb-6">Security</h2>
-
-      <AnimatePresence>
-        {successMessage && (
-          <motion.p
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.2 }}
-            className="font-body text-sm text-sage mb-6"
-          >
-            {successMessage}
-          </motion.p>
-        )}
-        {errorMessage && (
-          <motion.p
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.2 }}
-            className="font-body text-sm text-red-600 mb-6"
-          >
-            {errorMessage}
-          </motion.p>
-        )}
-      </AnimatePresence>
-
-      {isLoadingStatus ? (
-        <SecurityPanelSkeleton />
-      ) : (
-        <div className="space-y-4">
-          <div className="rounded-2xl p-6 bg-sand/25 border border-charcoal/5">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-display text-lg text-charcoal">
-                Email Verification
-              </h3>
-              {user?.isVerified && <Badge tone="sage">Verified</Badge>}
-            </div>
-
-            {!user?.isVerified && (
-              <>
-                <p className="font-body text-sm text-charcoal/60 mb-4">
-                  Your email address hasn't been verified yet. Check your inbox,
-                  or request a new link below.
-                </p>
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setShowResendConfirm(true)}
-                  disabled={resendLoading}
-                  className="rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors disabled:opacity-50"
-                >
-                  {resendLoading ? "Sending..." : "Resend Verification Email"}
-                </motion.button>
-                <AnimatePresence>
-                  {resendMessage && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2 }}
-                      className="font-body text-sm text-charcoal/70 mt-3"
-                    >
-                      {resendMessage}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </>
-            )}
-          </div>
-
-          {/* Two-Factor Authentication */}
-          <div className="rounded-2xl p-6 bg-sand/25 border border-charcoal/5">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-display text-lg text-charcoal">
-                Two-Factor Authentication
-              </h3>
-              {totpEnabled && <Badge tone="sage">Enabled</Badge>}
-            </div>
-            <p className="font-body text-sm text-charcoal/60 mb-6">
-              Add an extra layer of security using an authenticator app like
-              Google Authenticator.
-            </p>
-
-            {totpEnabled ? (
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setShowDisableConfirm(true)}
-                  className="font-body text-xs uppercase tracking-wide text-red-600 hover:text-red-800 transition-colors"
-                >
-                  Disable
-                </button>
-              </div>
-            ) : setupStep === "idle" ? (
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={startSetup}
-                className="rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors"
-              >
-                Enable 2FA
-              </motion.button>
-            ) : setupStep === "scanning" ? (
-              <div className="space-y-4">
-                <p className="font-body text-sm text-charcoal/70">
-                  Scan this QR code with Google Authenticator (or any compatible
-                  app), then enter the 6-digit code it generates.
-                </p>
-                <motion.img
-                  key={qrCode}
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  src={qrCode}
-                  alt="2FA QR Code"
-                  className="w-48 h-48 mx-auto rounded-xl border border-charcoal/10"
-                />
-
-                <form onSubmit={confirmSetup} className="space-y-4">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    required
-                    value={confirmCode}
-                    onChange={(e) =>
-                      setConfirmCode(e.target.value.replace(/\D/g, ""))
-                    }
-                    placeholder="000000"
-                    className="w-full text-center tracking-[0.3em] rounded-xl border border-charcoal/20 px-4 py-3 font-body text-lg text-charcoal outline-none focus:border-sage transition-colors"
-                  />
-                  <div className="flex gap-3">
-                    <motion.button
-                      whileTap={{ scale: 0.98 }}
-                      type="submit"
-                      disabled={isSubmitting || confirmCode.length !== 6}
-                      className="flex-1 rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-3 hover:bg-sage transition-colors disabled:opacity-50"
-                    >
-                      {isSubmitting ? "Verifying..." : "Confirm"}
-                    </motion.button>
-                    <motion.button
-                      whileTap={{ scale: 0.98 }}
-                      type="button"
-                      onClick={() => {
-                        setSetupStep("idle");
-                        setConfirmCode("");
-                      }}
-                      className="flex-1 rounded-full border border-charcoal/20 text-charcoal font-body text-sm py-3 hover:bg-sand/30 transition-colors"
-                    >
-                      Cancel
-                    </motion.button>
-                  </div>
-                </form>
-              </div>
-            ) : null}
-          </div>
-
-          {user?.role === "customer" && <MarketingPreference />}
-
-          {/* Appearance */}
-          <div className="rounded-2xl p-6 bg-sand/25 border border-charcoal/5">
-            <h3 className="font-display text-lg text-charcoal mb-2">
-              Appearance
-            </h3>
-            <p className="font-body text-sm text-charcoal/60 mb-4">
-              Choose how Tea Atelier looks on your device.
-            </p>
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={toggleTheme}
-              className="rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-6 py-3 hover:bg-sage transition-colors"
-            >
-              {theme === "light"
-                ? "Switch to Dark Mode"
-                : "Switch to Light Mode"}
-            </motion.button>
-          </div>
-        </div>
-      )}
-
-      <ConfirmDialog
-        open={showResendConfirm}
-        title="Send a new verification email?"
-        onConfirm={handleResendVerification}
-        onCancel={() => setShowResendConfirm(false)}
-      />
-
-      <ConfirmDialog
-        open={showDisableConfirm}
-        title="Disable two-factor authentication for your account?"
-        confirmLabel="Disable"
-        destructive
-        onConfirm={confirmDisable2FA}
-        onCancel={() => setShowDisableConfirm(false)}
-      />
-    </div>
-  );
-}
+// Moved to the SettingsTab component above, which handles account information and saved addresses.
 
 // ================================================================
 // Messages Tab
