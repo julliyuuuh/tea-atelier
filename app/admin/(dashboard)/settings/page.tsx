@@ -1,4 +1,5 @@
 "use client";
+import ConfirmDialog from "@/components/account/ConfirmDialog";
 import ValidatedForm from "@/components/ValidatedForm";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -31,6 +32,7 @@ function amount(value: string) {
 export default function StoreSettingsPage() {
   const { user, isLoading } = useAuth();
   const { refresh } = useStoreSettings();
+  const [reloadOpen, setReloadOpen] = useState(false);
   const [saved, setSaved] = useState<SettingsDocument | null>(null);
   const [draft, setDraft] = useState<StoreSettings | null>(null);
   const [fees, setFees] = useState({ standard: "", express: "" });
@@ -139,12 +141,28 @@ export default function StoreSettingsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-5 sm:p-8">
       <header>
-        <p className="font-body text-xs uppercase tracking-widest text-charcoal/50">
-          Super admin
-        </p>
-        <h1 className="mt-2 font-display text-4xl text-charcoal">
-          Settings & configuration
-        </h1>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-body text-xs uppercase tracking-widest text-charcoal/50">
+              Super admin
+            </p>
+            <h1 className="mt-2 font-display text-4xl text-charcoal">
+              Settings & configuration
+            </h1>
+          </div>
+          <button
+            type="button"
+            disabled={loading || saving}
+            onClick={() => {
+              if (draft) setReloadOpen(true);
+              else void load();
+            }}
+            className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-charcoal/15 px-4 py-2.5 font-body text-sm text-sage transition-colors hover:bg-sage/5 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <RefreshCw size={15} />
+            Reload settings
+          </button>
+        </div>
         <p className="mt-3 font-body text-sm text-charcoal/60">
           Manage delivery, payment options, and store details. Existing orders
           keep their recorded fees and payment methods.
@@ -167,25 +185,6 @@ export default function StoreSettingsPage() {
           {notice}
         </p>
       )}
-      <div className="flex justify-end">
-        <button
-          type="button"
-          disabled={loading || saving}
-          onClick={() => {
-            if (
-              !draft ||
-              window.confirm(
-                "Reload settings? Any unsaved edits will be discarded.",
-              )
-            )
-              void load();
-          }}
-          className="flex items-center gap-2 font-body text-sm text-sage disabled:opacity-50"
-        >
-          <RefreshCw size={15} />
-          Reload settings
-        </button>
-      </div>
       {loading ? (
         <p className="font-body text-sm text-charcoal/50">Loading settings…</p>
       ) : (
@@ -420,6 +419,19 @@ export default function StoreSettingsPage() {
           </ValidatedForm>
         )
       )}
+      <ConfirmDialog
+        open={reloadOpen}
+        title="Reload settings?"
+        description="Any unsaved edits will be discarded and the latest saved settings will be loaded."
+        confirmLabel="Reload settings"
+        cancelLabel="Keep editing"
+        onCancel={() => setReloadOpen(false)}
+        onConfirm={() => {
+          if (loading || saving) return;
+          setReloadOpen(false);
+          void load();
+        }}
+      />
     </div>
   );
 }

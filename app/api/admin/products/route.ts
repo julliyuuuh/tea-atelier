@@ -69,6 +69,7 @@ export async function POST(req: Request) {
 // Column allowlist for ORDER BY, never interpolate the sort key directly,
 // since it comes from the query string.
 const SORT_COLUMNS: Record<string, string> = {
+  created: "product_id",
   name: "product_name",
   price: "price",
   stockQuantity: "stock_quantity",

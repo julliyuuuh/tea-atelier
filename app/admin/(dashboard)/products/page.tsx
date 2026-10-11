@@ -24,7 +24,7 @@ import ProductFormModal from "@/components/admin/ProductFormModal";
 
 const PAGE_SIZE = 10;
 
-type SortKey = "name" | "price" | "stockQuantity";
+type SortKey = "name" | "price" | "stockQuantity" | "created";
 
 type Stats = {
   active: number;
@@ -37,7 +37,9 @@ type Stats = {
 // selection. Both resolve down to the same single-id DELETE endpoint below,
 // bulk delete is N sequential calls to the existing endpoint, not a new one.
 type ConfirmTarget =
-  { type: "single"; id: string } | { type: "bulk"; ids: string[] } | null;
+  | { type: "single"; id: string }
+  | { type: "bulk"; ids: string[] }
+  | null;
 
 // Shared column layout so the header, skeleton rows, and data rows always line up.
 // First column is the row-select checkbox.
@@ -112,8 +114,8 @@ export default function AdminProductsPage() {
           search: debouncedSearch,
           category: filterCategory,
           subCategory: filterSubCategory,
-          sortBy: sortConfig?.key,
-          sortDir: sortConfig?.direction,
+          sortBy: sortConfig?.key ?? "created",
+          sortDir: sortConfig?.direction ?? "desc",
         });
         const res = await fetch(`/api/admin/products?${qs}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -179,12 +181,16 @@ export default function AdminProductsPage() {
   };
 
   const hasActiveFilters =
-    search !== "" || filterCategory !== "All" || filterSubCategory !== "All";
+    search !== "" ||
+    filterCategory !== "All" ||
+    filterSubCategory !== "All" ||
+    sortConfig !== null;
 
   const clearFilters = () => {
     setSearch("");
     setFilterCategory("All");
     setFilterSubCategory("All");
+    setSortConfig(null);
   };
 
   const handleSort = (key: SortKey) => {
@@ -398,6 +404,34 @@ export default function AdminProductsPage() {
             triggerClassName="min-w-[170px] bg-white border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
           />
         )}
+
+        <label htmlFor="filter-product-order" className="sr-only">
+          Product order
+        </label>
+        <CustomSelect
+          id="filter-product-order"
+          value={
+            !sortConfig
+              ? "newest"
+              : sortConfig.key === "created"
+                ? sortConfig.direction === "asc"
+                  ? "oldest"
+                  : "newest"
+                : ""
+          }
+          placeholder="Table sorting"
+          onChange={(value) => {
+            setCurrentPage(1);
+            setSortConfig(
+              value === "oldest" ? { key: "created", direction: "asc" } : null,
+            );
+          }}
+          options={[
+            { value: "newest", label: "Newest" },
+            { value: "oldest", label: "Oldest" },
+          ]}
+          triggerClassName="min-w-[140px] bg-white border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
+        />
 
         <>
           {hasActiveFilters && (
