@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import CmsImageField from "@/components/admin/CmsImageField";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 interface PromoData {
@@ -40,6 +41,7 @@ export default function PromoTab({
   const [form, setForm] = useState<PromoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export default function PromoTab({
   }
 
   async function handleSave() {
-    if (!form) return;
+    if (!form || uploading || isSaving) return;
     setIsSaving(true);
     try {
       const res = await fetch("/api/cms/admin/promo", {
@@ -91,8 +93,15 @@ export default function PromoTab({
     <div className="max-w-2xl space-y-5">
       {FIELDS.map(({ key, label, multiline }) => (
         <div key={key}>
-          <label className={labelClass}>{label}</label>
-          {multiline ? (
+          {key !== "image_url" && <label className={labelClass}>{label}</label>}
+          {key === "image_url" ? (
+            <CmsImageField
+              value={form.image_url}
+              onChange={(value) => updateField("image_url", value)}
+              onUploadingChange={setUploading}
+              disabled={isSaving}
+            />
+          ) : multiline ? (
             <textarea
               value={form[key]}
               onChange={(e) => updateField(key, e.target.value)}
@@ -113,7 +122,7 @@ export default function PromoTab({
       <div className="flex items-center gap-3 pt-2">
         <button
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={isSaving || uploading}
           className="bg-sage text-cream text-sm px-5 py-2.5 rounded hover:bg-charcoal transition-colors disabled:opacity-50"
         >
           {isSaving ? "Saving..." : "Save Changes"}

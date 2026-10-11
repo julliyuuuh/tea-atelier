@@ -5,6 +5,7 @@ import { checkCmsSaves } from "@/lib/cms-client";
 
 import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import CmsImageField from "@/components/admin/CmsImageField";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 interface Category {
@@ -35,6 +36,7 @@ export default function CategoriesTab({
 }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadingIds, setUploadingIds] = useState<number[]>([]);
   const [savingId, setSavingId] = useState<number | "new" | null>(null);
 
   async function load() {
@@ -69,6 +71,7 @@ export default function CategoriesTab({
   }
 
   async function handleSave(cat: Category) {
+    if (uploadingIds.includes(cat.id)) return;
     setSavingId(cat.id);
     try {
       const res = await fetch(`/api/cms/admin/categories/${cat.id}`, {
@@ -184,7 +187,7 @@ export default function CategoriesTab({
           <div className="flex flex-col gap-1 pt-1">
             <button
               onClick={() => handleMove(i, -1)}
-              disabled={i === 0}
+              disabled={i === 0 || uploadingIds.length > 0}
               className="text-charcoal/40 hover:text-sage disabled:opacity-20"
               aria-label="Move up"
             >
@@ -192,7 +195,7 @@ export default function CategoriesTab({
             </button>
             <button
               onClick={() => handleMove(i, 1)}
-              disabled={i === categories.length - 1}
+              disabled={i === categories.length - 1 || uploadingIds.length > 0}
               className="text-charcoal/40 hover:text-sage disabled:opacity-20"
               aria-label="Move down"
             >
@@ -212,12 +215,17 @@ export default function CategoriesTab({
                 />
               </div>
               <div>
-                <label className={labelClass}>Image URL</label>
-                <input
-                  type="text"
+                <CmsImageField
                   value={cat.image}
-                  onChange={(e) => updateLocal(cat.id, "image", e.target.value)}
-                  className={inputClass}
+                  onChange={(value) => updateLocal(cat.id, "image", value)}
+                  onUploadingChange={(busy) =>
+                    setUploadingIds((ids) =>
+                      busy
+                        ? [...ids.filter((id) => id !== cat.id), cat.id]
+                        : ids.filter((id) => id !== cat.id),
+                    )
+                  }
+                  disabled={savingId !== null}
                 />
               </div>
             </div>
@@ -247,13 +255,14 @@ export default function CategoriesTab({
           <div className="flex flex-col gap-2 pt-1">
             <button
               onClick={() => handleSave(cat)}
-              disabled={savingId === cat.id}
+              disabled={savingId === cat.id || uploadingIds.includes(cat.id)}
               className="text-xs bg-sage text-cream px-3 py-1.5 rounded hover:bg-charcoal transition-colors disabled:opacity-50"
             >
               {savingId === cat.id ? "..." : "Save"}
             </button>
             <button
               onClick={() => handleDelete(cat.id)}
+              disabled={uploadingIds.includes(cat.id)}
               className="text-charcoal/40 hover:text-red-500 self-center"
               aria-label="Delete"
             >

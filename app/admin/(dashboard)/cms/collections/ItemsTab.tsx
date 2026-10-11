@@ -4,6 +4,7 @@ import { checkCmsSaves } from "@/lib/cms-client";
 
 import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import CmsImageField from "@/components/admin/CmsImageField";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 interface Item {
@@ -35,6 +36,7 @@ export default function ItemsTab({
 }) {
   const [items, setItems] = useState<Item[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadingIds, setUploadingIds] = useState<number[]>([]);
   const [savingId, setSavingId] = useState<number | "new" | null>(null);
 
   async function load() {
@@ -69,6 +71,7 @@ export default function ItemsTab({
   }
 
   async function handleSave(item: Item) {
+    if (uploadingIds.includes(item.id)) return;
     setSavingId(item.id);
     try {
       const res = await fetch(`/api/cms/admin/collections-items/${item.id}`, {
@@ -185,14 +188,14 @@ export default function ItemsTab({
           <div className="flex flex-col gap-1 pt-1">
             <button
               onClick={() => handleMove(i, -1)}
-              disabled={i === 0}
+              disabled={i === 0 || uploadingIds.length > 0}
               className="text-charcoal/40 hover:text-sage disabled:opacity-20"
             >
               <ChevronUp size={16} />
             </button>
             <button
               onClick={() => handleMove(i, 1)}
-              disabled={i === items.length - 1}
+              disabled={i === items.length - 1 || uploadingIds.length > 0}
               className="text-charcoal/40 hover:text-sage disabled:opacity-20"
             >
               <ChevronDown size={16} />
@@ -210,14 +213,17 @@ export default function ItemsTab({
                 />
               </div>
               <div>
-                <label className={labelClass}>Image URL</label>
-                <input
-                  type="text"
+                <CmsImageField
                   value={item.image}
-                  onChange={(e) =>
-                    updateLocal(item.id, "image", e.target.value)
+                  onChange={(value) => updateLocal(item.id, "image", value)}
+                  onUploadingChange={(busy) =>
+                    setUploadingIds((ids) =>
+                      busy
+                        ? [...ids.filter((id) => id !== item.id), item.id]
+                        : ids.filter((id) => id !== item.id),
+                    )
                   }
-                  className={inputClass}
+                  disabled={savingId !== null}
                 />
               </div>
             </div>
@@ -255,13 +261,14 @@ export default function ItemsTab({
           <div className="flex flex-col gap-2 pt-1">
             <button
               onClick={() => handleSave(item)}
-              disabled={savingId === item.id}
+              disabled={savingId === item.id || uploadingIds.includes(item.id)}
               className="text-xs bg-sage text-cream px-3 py-1.5 rounded hover:bg-charcoal transition-colors disabled:opacity-50"
             >
               {savingId === item.id ? "..." : "Save"}
             </button>
             <button
               onClick={() => handleDelete(item.id)}
+              disabled={uploadingIds.includes(item.id)}
               className="text-charcoal/40 hover:text-red-500 self-center"
             >
               <Trash2 size={15} />

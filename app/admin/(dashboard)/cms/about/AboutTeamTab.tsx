@@ -4,6 +4,7 @@ import { checkCmsSaves } from "@/lib/cms-client";
 
 import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import CmsImageField from "@/components/admin/CmsImageField";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 interface Member {
@@ -34,6 +35,7 @@ export default function AboutTeamTab({
 }) {
   const [team, setTeam] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadingIds, setUploadingIds] = useState<number[]>([]);
   const [savingId, setSavingId] = useState<number | "new" | null>(null);
 
   async function load() {
@@ -68,6 +70,7 @@ export default function AboutTeamTab({
   }
 
   async function handleSave(member: Member) {
+    if (uploadingIds.includes(member.id)) return;
     setSavingId(member.id);
     try {
       const res = await fetch(`/api/cms/admin/about-team/${member.id}`, {
@@ -181,14 +184,14 @@ export default function AboutTeamTab({
           <div className="flex flex-col gap-1 pt-1">
             <button
               onClick={() => handleMove(i, -1)}
-              disabled={i === 0}
+              disabled={i === 0 || uploadingIds.length > 0}
               className="text-charcoal/40 hover:text-sage disabled:opacity-20"
             >
               <ChevronUp size={16} />
             </button>
             <button
               onClick={() => handleMove(i, 1)}
-              disabled={i === team.length - 1}
+              disabled={i === team.length - 1 || uploadingIds.length > 0}
               className="text-charcoal/40 hover:text-sage disabled:opacity-20"
             >
               <ChevronDown size={16} />
@@ -220,14 +223,17 @@ export default function AboutTeamTab({
               </div>
             </div>
             <div>
-              <label className={labelClass}>Image URL</label>
-              <input
-                type="text"
+              <CmsImageField
                 value={member.image}
-                onChange={(e) =>
-                  updateLocal(member.id, "image", e.target.value)
+                onChange={(value) => updateLocal(member.id, "image", value)}
+                onUploadingChange={(busy) =>
+                  setUploadingIds((ids) =>
+                    busy
+                      ? [...ids.filter((id) => id !== member.id), member.id]
+                      : ids.filter((id) => id !== member.id),
+                  )
                 }
-                className={inputClass}
+                disabled={savingId !== null}
               />
             </div>
             <label className="flex items-center gap-2 text-xs text-charcoal/60">
@@ -244,13 +250,16 @@ export default function AboutTeamTab({
           <div className="flex flex-col gap-2 pt-1">
             <button
               onClick={() => handleSave(member)}
-              disabled={savingId === member.id}
+              disabled={
+                savingId === member.id || uploadingIds.includes(member.id)
+              }
               className="text-xs bg-sage text-cream px-3 py-1.5 rounded hover:bg-charcoal transition-colors disabled:opacity-50"
             >
               {savingId === member.id ? "..." : "Save"}
             </button>
             <button
               onClick={() => handleDelete(member.id)}
+              disabled={uploadingIds.includes(member.id)}
               className="text-charcoal/40 hover:text-red-500 self-center"
             >
               <Trash2 size={15} />
