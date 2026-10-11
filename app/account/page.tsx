@@ -10,6 +10,7 @@ import ConfirmDialog from "@/components/account/ConfirmDialog";
 import Badge from "@/components/account/Badge";
 import FormField from "@/components/account/FormField";
 import { getStatusLabel } from "@/lib/order-status";
+import MarketingPreference from "@/components/account/MarketingPreference";
 import SavedAddresses from "@/components/account/SavedAddresses";
 import {
   OrderSkeleton,
@@ -1652,6 +1653,8 @@ function SettingsTab() {
               </div>
             ) : null}
           </div>
+
+          {user?.role === "customer" && <MarketingPreference />}
 
           {/* Appearance */}
           <div className="rounded-2xl p-6 bg-sand/25 border border-charcoal/5">

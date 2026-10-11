@@ -20,6 +20,7 @@ import {
   RotateCcw,
   History,
   Settings,
+  Megaphone,
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
   { label: "Returns & Refunds", href: "/admin/returns", icon: RotateCcw },
   { label: "Customers", href: "/admin/customers", icon: Users },
   { label: "Contact Messages", href: "/admin/contact", icon: Mail },
+  { label: "Promotional Emails", href: "/admin/campaigns", icon: Megaphone },
   { label: "Content Management", href: "/admin/cms", icon: FileText },
   {
     label: "Admin Accounts",
