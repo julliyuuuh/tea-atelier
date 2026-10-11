@@ -224,9 +224,6 @@ export default function SettingsTab({
   return (
     <div className="min-w-0">
       <div className="mb-6">
-        <p className="mb-1 font-body text-[10px] uppercase tracking-widest text-sage">
-          Your preference
-        </p>
         <h2 className="font-display text-2xl text-charcoal">
           Account settings
         </h2>
