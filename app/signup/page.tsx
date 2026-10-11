@@ -116,7 +116,7 @@ export default function SignupPage() {
   }
 
   function inputClass(field: SignupField, padding = "px-4") {
-    return `w-full rounded-xl border-[1.5px] bg-transparent ${padding} py-3 font-body text-sm text-charcoal focus:outline-none transition-colors ${fieldErrors[field] ? "border-red-700/60 focus:border-red-700 dark:border-red-300/60" : "border-charcoal/20 focus:border-sage"}`;
+    return `w-full rounded-xl border-[2px] bg-transparent ${padding} py-3 font-body text-sm text-charcoal focus:outline-none transition-colors ${fieldErrors[field] ? "border-red-700/60 focus:border-red-700 dark:border-red-300/60" : "border-charcoal/20 focus:border-sage"}`;
   }
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -313,7 +313,7 @@ export default function SignupPage() {
                 value={phoneNumber}
                 onChange={handlePhoneChange}
                 maxLength={11}
-                className="w-full rounded-xl border-[1.5px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                className="w-full rounded-xl border-[2px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
               />
             </div>
 

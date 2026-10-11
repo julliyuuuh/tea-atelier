@@ -238,7 +238,7 @@ function LoginForm() {
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
                     onPaste={i === 0 ? handleOtpPaste : undefined}
-                    className="w-12 h-14 rounded-xl text-center border-[1.5px] border-charcoal/20 bg-transparent font-body text-xl text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    className="w-12 h-14 rounded-xl text-center border-[2px] border-charcoal/20 bg-transparent font-body text-xl text-charcoal focus:outline-none focus:border-sage transition-colors"
                   />
                 ))}
               </div>
@@ -274,7 +274,7 @@ function LoginForm() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border-[1.5px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    className="w-full rounded-xl border-[2px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                   />
                 </div>
 
@@ -287,7 +287,7 @@ function LoginForm() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border-[1.5px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    className="w-full rounded-xl border-[2px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                   />
                 </div>
 
