@@ -1,4 +1,5 @@
 // app/api/cms/admin/faq/route.ts
+import { adminQuery } from "@/lib/admin-audit";
 import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 import { NextRequest, NextResponse } from "next/server";
@@ -14,12 +15,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { question, answer, sort_order } = await req.json();
 
-  const result = await pool.query(
+  const result = await adminQuery(
+    decoded!.userId,
     `INSERT INTO faq_items (question, answer, sort_order)
      VALUES ($1, $2, COALESCE($3, 0))
      RETURNING *`,

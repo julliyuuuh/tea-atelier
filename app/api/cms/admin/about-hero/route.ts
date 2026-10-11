@@ -1,15 +1,16 @@
 // app/api/cms/admin/about-hero/route.ts
-import { pool } from "@/lib/db";
+import { adminQuery } from "@/lib/admin-audit";
 import { requireAdmin } from "@/lib/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(req: NextRequest) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { heading, subheading } = await req.json();
 
-  const result = await pool.query(
+  const result = await adminQuery(
+    decoded!.userId,
     `UPDATE about_hero
      SET heading = $1, subheading = $2
      WHERE id = (SELECT id FROM about_hero LIMIT 1)

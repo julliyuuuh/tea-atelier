@@ -1,6 +1,6 @@
+import { adminQuery } from "@/lib/admin-audit";
 // app/api/admin/contact/[id]/route.ts
 import { NextResponse } from "next/server";
-import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 import { sendContactReplyEmail } from "@/lib/email";
 
@@ -8,14 +8,15 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { id } = await params;
   const body = await req.json();
 
   if (body.action === "read") {
-    const result = await pool.query(
+    const result = await adminQuery(
+      decoded!.userId,
       `UPDATE contact_messages
        SET status = 'read'
        WHERE message_id = $1 AND status = 'new'
@@ -52,7 +53,8 @@ export async function PATCH(
       );
     }
 
-    const result = await pool.query(
+    const result = await adminQuery(
+      decoded!.userId,
       `UPDATE contact_messages
        SET admin_reply = $1, status = 'replied', replied_at = NOW()
        WHERE message_id = $2

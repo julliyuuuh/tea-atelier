@@ -1,3 +1,4 @@
+import { adminQuery } from "@/lib/admin-audit";
 import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 import { NextRequest, NextResponse } from "next/server";
@@ -13,12 +14,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { title, copy, sort_order } = await req.json();
 
-  const result = await pool.query(
+  const result = await adminQuery(
+    decoded!.userId,
     `INSERT INTO homepage_why_choose_us (title, copy, sort_order)
      VALUES ($1, $2, COALESCE($3, 0))
      RETURNING *`,

@@ -1,3 +1,4 @@
+import { adminQuery } from "@/lib/admin-audit";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import { pool } from "@/lib/db";
@@ -72,7 +73,8 @@ export async function PATCH(
       if (!/^\S+@\S+\.\S+$/.test(email)) {
         return NextResponse.json({ error: "Invalid email." }, { status: 400 });
       }
-      const dup = await pool.query(
+      const dup = await adminQuery(
+        auth.decoded!.userId,
         "SELECT 1 FROM users WHERE LOWER(email) = $1 AND user_id <> $2",
         [email, id],
       );
@@ -102,7 +104,8 @@ export async function PATCH(
     }
 
     values.push(id);
-    const { rows } = await pool.query(
+    const { rows } = await adminQuery(
+      auth.decoded!.userId,
       `UPDATE users SET ${fields.join(", ")} WHERE user_id = $${values.length}
        RETURNING user_id, first_name, last_name, email, role, date_created AS created_at`,
       values,
@@ -135,7 +138,11 @@ export async function DELETE(
     const check = await getManageableAdmin(id);
     if (check.error) return check.error;
 
-    await pool.query("DELETE FROM users WHERE user_id = $1", [id]);
+    await adminQuery(
+      auth.decoded!.userId,
+      "DELETE FROM users WHERE user_id = $1",
+      [id],
+    );
     return NextResponse.json({ success: true });
   } catch (err) {
     if (isPgError(err, "23503")) {

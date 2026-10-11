@@ -1,3 +1,4 @@
+import { adminQuery } from "@/lib/admin-audit";
 import { deliverOrderNotificationEmails } from "@/lib/notification-emails";
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
@@ -7,7 +8,7 @@ import { MANUAL_PAYMENT_STATUSES, isCod } from "@/lib/payment-status";
 
 const VALID_STATUSES: string[] = ORDER_STATUSES.map((s) => s.value);
 
-const pick = (obj: Record<string, any> | null, keys: string[]) => {
+const pick = (obj: Record<string, unknown> | null, keys: string[]) => {
   for (const k of keys) {
     if (obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== "")
       return obj[k];
@@ -43,8 +44,9 @@ export async function GET(
   if (orderRes.rows.length === 0) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
-  const o: Record<string, any> = orderRes.rows[0].o;
-  const u: Record<string, any> = orderRes.rows[0].u;
+  const o: Record<string, unknown> & { payment_method: string | null } =
+    orderRes.rows[0].o;
+  const u: Record<string, unknown> = orderRes.rows[0].u;
 
   const itemsRes = await pool.query(
     `SELECT to_jsonb(oi) AS oi, to_jsonb(p) AS p
@@ -111,7 +113,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { id } = await params;
@@ -136,7 +138,8 @@ export async function PATCH(
     );
   }
 
-  const current = await pool.query(
+  const current = await adminQuery(
+    decoded!.userId,
     "SELECT order_status, payment_method, payment_status, to_jsonb(orders)->>'payment_fulfillment_issue' AS fulfillment_issue FROM orders WHERE order_id = $1",
     [id],
   );
@@ -218,7 +221,7 @@ export async function PATCH(
   }
 
   const sets: string[] = [];
-  const vals: any[] = [];
+  const vals: unknown[] = [];
   if (status !== undefined) {
     vals.push(status);
     sets.push(`order_status = $${vals.length}`);
@@ -238,7 +241,8 @@ export async function PATCH(
   );
   // Check the values used for validation again inside the update. A concurrent
   // cancellation or payment update must not be overwritten by a stale request.
-  const updated = await pool.query(
+  const updated = await adminQuery(
+    decoded!.userId,
     `UPDATE orders SET ${sets.join(", ")} WHERE order_id = $${idPosition}
       AND order_status IS NOT DISTINCT FROM $${idPosition + 1}
       AND payment_status IS NOT DISTINCT FROM $${idPosition + 2}

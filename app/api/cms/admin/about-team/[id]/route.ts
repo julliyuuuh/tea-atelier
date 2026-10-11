@@ -1,5 +1,5 @@
 // app/api/cms/admin/about-team/[id]/route.ts
-import { pool } from "@/lib/db";
+import { adminQuery } from "@/lib/admin-audit";
 import { requireAdmin } from "@/lib/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -7,13 +7,14 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { id } = await params;
   const { name, role, image, sort_order, is_active } = await req.json();
 
-  const result = await pool.query(
+  const result = await adminQuery(
+    decoded!.userId,
     `UPDATE about_team
      SET name = $1, role = $2, image = $3, sort_order = $4, is_active = $5
      WHERE id = $6
@@ -35,11 +36,13 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { id } = await params;
-  await pool.query("DELETE FROM about_team WHERE id = $1", [id]);
+  await adminQuery(decoded!.userId, "DELETE FROM about_team WHERE id = $1", [
+    id,
+  ]);
 
   return NextResponse.json({ success: true });
 }

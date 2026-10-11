@@ -1,12 +1,12 @@
+import { adminQuery } from "@/lib/admin-audit";
 import { NextResponse } from "next/server";
-import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { id } = await params;
@@ -22,7 +22,8 @@ export async function PUT(
   } = await req.json();
   const status = stockQuantity > 0 ? "IN STOCK" : "NO STOCK";
 
-  const result = await pool.query(
+  const result = await adminQuery(
+    decoded!.userId,
     `UPDATE products
      SET product_name = $1, product_desc = $2, product_image = $3, category = $4, sub_category = $5, type = $6, price = $7, status = $8, stock_quantity = $9
      WHERE product_id = $10
@@ -66,12 +67,13 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { id } = await params;
 
-  const result = await pool.query(
+  const result = await adminQuery(
+    decoded!.userId,
     "UPDATE products SET is_archived = false WHERE product_id = $1 RETURNING product_id",
     [id],
   );
@@ -87,13 +89,14 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { id } = await params;
 
   try {
-    const result = await pool.query(
+    const result = await adminQuery(
+      decoded!.userId,
       "UPDATE products SET is_archived = true WHERE product_id = $1 RETURNING product_id",
       [id],
     );

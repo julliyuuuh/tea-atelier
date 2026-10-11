@@ -1,3 +1,4 @@
+import { setAuditActor } from "@/lib/admin-audit";
 import type { PoolClient } from "pg";
 import { pool } from "@/lib/db";
 import {
@@ -37,11 +38,15 @@ type Attempt = {
   payment_id: string | null;
   provider_refund_id: string | null;
 };
-async function transaction<T>(work: (client: PoolClient) => Promise<T>) {
+async function transaction<T>(
+  actorId: number | undefined,
+  work: (client: PoolClient) => Promise<T>,
+) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     await client.query("SET LOCAL lock_timeout = '5s'");
+    if (actorId !== undefined) await setAuditActor(client, actorId);
     const result = await work(client);
     await client.query("COMMIT");
     return result;
@@ -136,7 +141,7 @@ export async function createReturn(
   )
     throw new ReturnError("Choose a valid reason.");
   const details = textField(body.details, "Details", 10);
-  return transaction(async (client) => {
+  return transaction(undefined, async (client) => {
     const order = (
       await client.query<Order>(
         "SELECT order_id,user_id,order_status,payment_status FROM orders WHERE order_id=$1 AND user_id=$2 FOR UPDATE",
@@ -244,7 +249,7 @@ export async function reviewReturn(
     "Customer message",
     action === "approve" || action === "reject" ? 5 : 0,
   );
-  return transaction(async (client) => {
+  return transaction(actorId, async (client) => {
     const { order, request } = await lockCase(client, id);
     if (body.version !== request.version)
       throw new ReturnError(
@@ -316,7 +321,7 @@ export async function linkPayment(
   ).rows[0];
   if (!found) throw new ReturnError("Request not found.", 404);
   validatePayment(await getPayment(paymentId), found);
-  return transaction(async (client) => {
+  return transaction(actorId, async (client) => {
     const { order, request } = await lockCase(client, id);
     if (isCod(order.payment_method) || order.payment_status !== "paid")
       throw new ReturnError("Only paid online orders can be linked.", 409);
@@ -355,7 +360,7 @@ async function finishAttempt(
   providerId: string | null,
   error = "",
 ) {
-  return transaction(async (client) => {
+  return transaction(undefined, async (client) => {
     const { request } = await lockCase(client, attempt.return_id);
     const current = (
       await client.query<Attempt>(
@@ -395,7 +400,7 @@ export async function issueRefund(
   actorId: number,
   body: Record<string, unknown>,
 ) {
-  const claimed = await transaction(async (client) => {
+  const claimed = await transaction(actorId, async (client) => {
     const { order, request } = await lockCase(client, id);
     if (body.version !== request.version)
       throw new ReturnError(
@@ -542,7 +547,7 @@ export async function issueRefund(
   }
 }
 export async function reconcileRefund(id: string, actorId: number) {
-  const result = await transaction(async (client) => {
+  const result = await transaction(actorId, async (client) => {
     const { order, request } = await lockCase(client, id);
     const attempt = (
       await client.query<Attempt>(

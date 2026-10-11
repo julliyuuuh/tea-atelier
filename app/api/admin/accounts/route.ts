@@ -1,3 +1,4 @@
+import { adminQuery } from "@/lib/admin-audit";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import { pool } from "@/lib/db";
@@ -58,7 +59,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const existing = await pool.query(
+    const existing = await adminQuery(
+      auth.decoded!.userId,
       "SELECT 1 FROM users WHERE LOWER(email) = $1",
       [email],
     );
@@ -70,7 +72,8 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const { rows } = await pool.query(
+    const { rows } = await adminQuery(
+      auth.decoded!.userId,
       `INSERT INTO users (first_name, last_name, email, password_hash, role, is_verified)
        VALUES ($1, $2, $3, $4, 'admin', true)
        RETURNING user_id, first_name, last_name, email, role, date_created AS created_at`,

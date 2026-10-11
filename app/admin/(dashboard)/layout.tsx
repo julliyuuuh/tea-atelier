@@ -18,6 +18,7 @@ import {
   Sun,
   ShieldCheck,
   RotateCcw,
+  History,
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
@@ -44,6 +45,12 @@ const navItems: NavItem[] = [
     icon: ShieldCheck,
     superAdminOnly: true,
   },
+  {
+    label: "Audit Trail",
+    href: "/admin/audit",
+    icon: History,
+    superAdminOnly: true,
+  },
 ];
 
 export default function AdminLayout({
@@ -55,6 +62,11 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [previousPathname, setPreviousPathname] = useState(pathname);
+  if (previousPathname !== pathname) {
+    setPreviousPathname(pathname);
+    setMobileNavOpen(false);
+  }
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -71,10 +83,6 @@ export default function AdminLayout({
       router.push("/");
     }
   }, [user, isLoading, router]);
-
-  useEffect(() => {
-    setMobileNavOpen(false);
-  }, [pathname]);
 
   if (
     isLoading ||

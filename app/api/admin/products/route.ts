@@ -1,9 +1,10 @@
+import { adminQuery } from "@/lib/admin-audit";
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST(req: Request) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const {
@@ -19,7 +20,8 @@ export async function POST(req: Request) {
 
   const status = stockQuantity > 0 ? "IN STOCK" : "NO STOCK";
 
-  const result = await pool.query(
+  const result = await adminQuery(
+    decoded!.userId,
     `INSERT INTO products (product_name, product_desc, product_image, category, sub_category, type, price, status, stock_quantity)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING product_id, product_name, product_desc, product_image, category, sub_category, type, price, status, stock_quantity`,
@@ -84,7 +86,7 @@ export async function GET(req: Request) {
   const sortColumn = SORT_COLUMNS[sortByParam] || "product_id";
 
   const conditions: string[] = ["is_archived = $1"];
-  const values: any[] = [archived];
+  const values: unknown[] = [archived];
   let i = 2;
 
   if (search) {

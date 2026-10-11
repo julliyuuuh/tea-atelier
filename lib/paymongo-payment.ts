@@ -1,3 +1,4 @@
+import { adminQuery, setAuditActor } from "@/lib/admin-audit";
 import { pool } from "@/lib/db";
 
 export type PaymentResource = {
@@ -62,11 +63,17 @@ export async function fetchPayment(id: string): Promise<PaymentResource> {
 export async function finalizePayment(
   order: PaymentOrder,
   payment: PaymentResource,
+  auditActorId?: number,
 ) {
   if (!matchesPayment(payment, order) || payment.attributes.status !== "paid")
     throw new Error("Payment does not match order");
   const sourceId = order.paymongo_source_id;
-  const saved = await pool.query(
+  const saved = await (
+    auditActorId === undefined
+      ? pool.query.bind(pool)
+      : (sql: string, values: unknown[]) =>
+          adminQuery(auditActorId, sql, values)
+  )(
     `UPDATE orders SET paymongo_payment_id = $3
     WHERE order_id = $1 AND paymongo_source_id = $2
       AND (paymongo_payment_id IS NULL OR paymongo_payment_id = $3) RETURNING order_id`,
@@ -81,6 +88,7 @@ export async function finalizePayment(
   try {
     await client.query("BEGIN");
     await client.query("SET LOCAL lock_timeout = '5s'");
+    if (auditActorId !== undefined) await setAuditActor(client, auditActorId);
 
     const upd = await client.query(
       `UPDATE orders SET payment_status = 'paid', paymongo_payment_id = $3

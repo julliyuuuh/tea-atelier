@@ -1,3 +1,4 @@
+import { adminQuery } from "@/lib/admin-audit";
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
@@ -78,7 +79,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ customerId: string }> },
 ) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { customerId } = await params;
@@ -91,7 +92,8 @@ export async function PATCH(
     );
   }
 
-  const result = await pool.query(
+  const result = await adminQuery(
+    decoded!.userId,
     `UPDATE users
      SET is_suspended = $1
      WHERE user_id = $2 AND role = 'customer'

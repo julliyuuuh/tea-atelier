@@ -1,4 +1,5 @@
 // app/api/cms/admin/about-team/route.ts
+import { adminQuery } from "@/lib/admin-audit";
 import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 import { NextRequest, NextResponse } from "next/server";
@@ -14,12 +15,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { name, role, image, sort_order } = await req.json();
 
-  const result = await pool.query(
+  const result = await adminQuery(
+    decoded!.userId,
     `INSERT INTO about_team (name, role, image, sort_order)
      VALUES ($1, $2, $3, COALESCE($4, 0))
      RETURNING *`,

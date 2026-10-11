@@ -1,9 +1,9 @@
-import { pool } from "@/lib/db";
+import { adminQuery } from "@/lib/admin-audit";
 import { requireAdmin } from "@/lib/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(req: NextRequest) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const body = await req.json();
@@ -18,7 +18,8 @@ export async function PATCH(req: NextRequest) {
     image_caption,
   } = body;
 
-  const result = await pool.query(
+  const result = await adminQuery(
+    decoded!.userId,
     `UPDATE homepage_hero
      SET volume_label = $1, eyebrow = $2, heading = $3, subheading = $4,
          cta_text = $5, cta_link = $6, image_url = $7, image_caption = $8

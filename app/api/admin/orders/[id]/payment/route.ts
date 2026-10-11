@@ -56,7 +56,7 @@ export async function POST(
         { status: 409 },
       );
     }
-    await finalizePayment(order, payment);
+    await finalizePayment(order, payment, admin.decoded!.userId);
     return Response.json(
       { paymentStatus: "paid" },
       { headers: { "Cache-Control": "private, no-store" } },

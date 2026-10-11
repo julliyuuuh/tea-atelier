@@ -1,4 +1,4 @@
-import { pool } from "@/lib/db";
+import { adminQuery } from "@/lib/admin-audit";
 import { requireAdmin } from "@/lib/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -6,13 +6,14 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { id } = await params; // Next.js 16 async params, per your existing convention
   const { name, image, description, sort_order, is_active } = await req.json();
 
-  const result = await pool.query(
+  const result = await adminQuery(
+    decoded!.userId,
     `UPDATE homepage_categories
      SET name = $1, image = $2, description = $3, sort_order = $4, is_active = $5
      WHERE id = $6
@@ -31,11 +32,15 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = await requireAdmin(req);
+  const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
   const { id } = await params;
-  await pool.query("DELETE FROM homepage_categories WHERE id = $1", [id]);
+  await adminQuery(
+    decoded!.userId,
+    "DELETE FROM homepage_categories WHERE id = $1",
+    [id],
+  );
 
   return NextResponse.json({ success: true });
 }
