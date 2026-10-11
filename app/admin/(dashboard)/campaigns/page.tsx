@@ -329,6 +329,7 @@ export default function CampaignsPage() {
         </div>
         <CustomSelect
           id="campaign-status"
+          triggerClassName="w-full min-w-[170px] cursor-pointer rounded-full border border-charcoal/20 bg-white px-4 py-3 font-body text-sm text-charcoal outline-none focus-visible:border-sage focus-visible:ring-2 focus-visible:ring-sage/20 sm:w-44"
           value={status}
           onChange={(value) => {
             setStatus(value);
@@ -374,7 +375,7 @@ export default function CampaignsPage() {
             <h2 className="font-display text-xl text-charcoal">Campaigns</h2>
             <button
               type="button"
-              className="flex items-center gap-1.5 font-body text-sm text-sage"
+              className="flex cursor-pointer items-center gap-1.5 font-body text-sm text-sage disabled:cursor-not-allowed"
               disabled={!!busy || loading}
               onClick={() => {
                 setLoading(true);
