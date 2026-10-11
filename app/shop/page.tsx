@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import DisplayPrice from "@/components/DisplayPrice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { CustomSelect } from "@/components/admin/AdminUI";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import type { Product } from "@/lib/products";
@@ -273,24 +274,20 @@ export default function ShopPage() {
           >
             Clear filters
           </button>
-          <div className="relative ml-auto">
+          <div className="ml-auto">
             <label htmlFor="shop-sort" className="sr-only">
               Sort products
             </label>
-            <select
+            <CustomSelect
               id="shop-sort"
               value={sortBy}
-              onChange={(event) => setSortBy(event.target.value as SortOption)}
-              className="min-w-[190px] cursor-pointer appearance-none rounded-full border border-charcoal/20 bg-cream py-3 pl-4 pr-10 font-body text-xs text-charcoal outline-none focus:border-sage focus:ring-2 focus:ring-sage/20"
-            >
-              <option>Newest</option>
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-            </select>
-            <ChevronDown
-              size={16}
-              aria-hidden="true"
-              className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-charcoal/50"
+              onChange={(value) => setSortBy(value as SortOption)}
+              options={[
+                { value: "Newest", label: "Newest" },
+                { value: "Price: Low to High", label: "Price: Low to High" },
+                { value: "Price: High to Low", label: "Price: High to Low" },
+              ]}
+              triggerClassName="w-56 cursor-pointer rounded-full border border-charcoal/20 bg-cream px-4 py-3 font-body text-xs text-charcoal outline-none focus:border-sage focus:ring-2 focus:ring-sage/20"
             />
           </div>
         </div>
