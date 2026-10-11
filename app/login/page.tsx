@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
@@ -221,7 +222,7 @@ function LoginForm() {
           )}
 
           {needsTotp ? (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <ValidatedForm onSubmit={handleSubmit} className="space-y-5">
               <div className="flex justify-center gap-2">
                 {otpDigits.map((digit, i) => (
                   <input
@@ -237,7 +238,7 @@ function LoginForm() {
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
                     onPaste={i === 0 ? handleOtpPaste : undefined}
-                    className="w-12 h-14 rounded-xl text-center border-[2px] border-charcoal/20 bg-transparent font-body text-xl text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    className="w-12 h-14 rounded-xl text-center border-[1.5px] border-charcoal/20 bg-transparent font-body text-xl text-charcoal focus:outline-none focus:border-sage transition-colors"
                   />
                 ))}
               </div>
@@ -260,10 +261,10 @@ function LoginForm() {
               >
                 Back
               </button>
-            </form>
+            </ValidatedForm>
           ) : (
             <>
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <ValidatedForm onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
                     Email
@@ -273,7 +274,7 @@ function LoginForm() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border-[2px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    className="w-full rounded-xl border-[1.5px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                   />
                 </div>
 
@@ -286,7 +287,7 @@ function LoginForm() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border-[2px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    className="w-full rounded-xl border-[1.5px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                   />
                 </div>
 
@@ -306,7 +307,7 @@ function LoginForm() {
                 >
                   {isLoading ? "Logging in..." : "Log In"}
                 </button>
-              </form>
+              </ValidatedForm>
 
               <div className="relative my-6 text-center">
                 <span className="relative bg-cream px-3 font-body text-xs text-charcoal/40 uppercase tracking-wide z-10">

@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
@@ -121,7 +122,7 @@ export default function AdminLoginPage() {
           </p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <ValidatedForm onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label
               className={`font-body text-xs tracking-wide uppercase block mb-2 ${
@@ -175,7 +176,7 @@ export default function AdminLoginPage() {
           >
             {isLoading ? "Signing in..." : "Sign In"}
           </button>
-        </form>
+        </ValidatedForm>
 
         <p
           className={`font-body text-xs text-center mt-6 ${

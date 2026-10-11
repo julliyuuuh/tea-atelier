@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -103,7 +104,7 @@ export default function ForgotPasswordPage() {
               </Link>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <ValidatedForm onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
                   Email
@@ -125,7 +126,7 @@ export default function ForgotPasswordPage() {
               >
                 {isLoading ? "Sending..." : "Send Reset Link"}
               </button>
-            </form>
+            </ValidatedForm>
           )}
         </motion.div>
       </div>

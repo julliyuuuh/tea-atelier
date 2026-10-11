@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import {
   AdminPage,
   AdminPageHeader,
@@ -106,7 +107,7 @@ function AccountModal({
           className="fixed inset-0 z-[60] flex items-center justify-center bg-charcoal/40 p-4"
           onClick={onClose}
         >
-          <form
+          <ValidatedForm
             onSubmit={handleSubmit}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-md bg-white rounded-2xl p-6 "
@@ -181,7 +182,7 @@ function AccountModal({
                 {saving ? "Saving..." : editing ? "Save changes" : "Add admin"}
               </button>
             </div>
-          </form>
+          </ValidatedForm>
         </div>
       )}
     </>

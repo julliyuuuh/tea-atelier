@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -106,7 +107,7 @@ export default function ContactPage() {
             </p>
           </motion.div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <ValidatedForm onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <p className="font-body text-sm text-red-600 text-center">
                 {error}
@@ -148,7 +149,7 @@ export default function ContactPage() {
             >
               {loading ? "Sending..." : "Send Message"}
             </button>
-          </form>
+          </ValidatedForm>
         )}
 
         <div className="mt-16 text-center font-body text-sm text-charcoal/60">

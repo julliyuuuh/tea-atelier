@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import Link from "next/link";
 import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -842,7 +843,7 @@ function CheckoutContent() {
           </div>
         )}
         <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-10">
-          <form
+          <ValidatedForm
             id="checkout-form"
             onSubmit={handleFormSubmit}
             className="space-y-8"
@@ -1038,7 +1039,7 @@ function CheckoutContent() {
                 )}
               </div>
             </fieldset>
-          </form>
+          </ValidatedForm>
           <aside className="space-y-8">
             <div className="bg-sand/40 border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">

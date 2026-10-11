@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import React, { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, UploadCloud, X, ImageIcon } from "lucide-react";
@@ -291,7 +292,7 @@ export default function ProductFormModal({
             <div className="px-8 py-6">
               <ErrorBanner message={saveError} />
 
-              <form onSubmit={handleSave} className="space-y-6">
+              <ValidatedForm onSubmit={handleSave} className="space-y-6">
                 <div className="space-y-4">
                   <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/40 font-semibold">
                     Basic Info
@@ -654,7 +655,7 @@ export default function ProductFormModal({
                     Cancel
                   </button>
                 </div>
-              </form>
+              </ValidatedForm>
             </div>
           </motion.div>
         </motion.div>

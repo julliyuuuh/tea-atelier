@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -224,6 +225,15 @@ export default function SettingsTab({
   return (
     <div className="min-w-0">
       <div className="mb-6">
+        <p className="mb-1 font-body text-[10px] uppercase tracking-widest text-sage">
+          Your preferences
+        </p>
+        <h2 className="font-display text-2xl text-charcoal">
+          Account settings
+        </h2>
+        <p className="mt-2 font-body text-sm leading-relaxed text-charcoal/60">
+          Manage your account, security and the way you shop.
+        </p>
       </div>
       <div className="grid items-start gap-5 md:grid-cols-[170px_minmax(0,1fr)]">
         <nav
@@ -417,7 +427,10 @@ export default function SettingsTab({
                       alt="QR code for authenticator setup"
                       className="mx-auto rounded-lg"
                     />
-                    <form onSubmit={confirmSetup} className="mt-4 space-y-3">
+                    <ValidatedForm
+                      onSubmit={confirmSetup}
+                      className="mt-4 space-y-3"
+                    >
                       <label
                         className="block font-body text-xs text-charcoal/60"
                         htmlFor="settings-authenticator-code"
@@ -463,7 +476,7 @@ export default function SettingsTab({
                           Cancel
                         </button>
                       </div>
-                    </form>
+                    </ValidatedForm>
                   </div>
                 ))
               )}

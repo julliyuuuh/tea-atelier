@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, RotateCcw, Send, MessageSquare } from "lucide-react";
 import { CustomSelect } from "@/components/admin/AdminUI";
@@ -161,7 +162,7 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
           )}
         </div>
       ) : data && (data.canReturn || data.canRefund) ? (
-        <form onSubmit={submit} className="space-y-4">
+        <ValidatedForm onSubmit={submit} className="space-y-4">
           <p className="font-body text-sm text-charcoal/60">
             Submit one request for this order. Our team will review the items
             and refund amount before approval. Please describe the affected
@@ -221,7 +222,7 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
             <Send size={15} aria-hidden="true" />
             {busy ? "Submitting…" : "Submit request"}
           </button>
-        </form>
+        </ValidatedForm>
       ) : (
         data && (
           <p className="font-body text-sm text-charcoal/60">

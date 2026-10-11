@@ -1,4 +1,5 @@
 "use client";
+import ValidatedForm from "@/components/ValidatedForm";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -548,7 +549,7 @@ export default function CampaignsPage() {
               to create another email.
             </p>
           )}
-          <form
+          <ValidatedForm
             onSubmit={(event) => {
               event.preventDefault();
               void save();
@@ -834,7 +835,7 @@ export default function CampaignsPage() {
                 </button>
               )}
             </div>
-          </form>
+          </ValidatedForm>
           <p className="mt-3 font-body text-xs leading-relaxed text-charcoal/50">
             Save changes before testing or sending. Test emails go only to your
             own admin email address.

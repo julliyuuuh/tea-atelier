@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import { useEffect, useState } from "react";
 import { MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -354,7 +355,7 @@ export default function SavedAddresses() {
         </div>
       )}
       {(adding || editing) && (
-        <form
+        <ValidatedForm
           onSubmit={save}
           className="space-y-5 rounded-xl border border-charcoal/15 p-5"
         >
@@ -494,7 +495,7 @@ export default function SavedAddresses() {
               Cancel
             </button>
           </div>
-        </form>
+        </ValidatedForm>
       )}
       <ConfirmDialog
         open={!!deleting}

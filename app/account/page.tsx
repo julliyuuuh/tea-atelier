@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
@@ -443,7 +444,7 @@ function ProfileTab() {
           Account Information
         </h2>
 
-        <form onSubmit={handleSaveProfile} className="space-y-5">
+        <ValidatedForm onSubmit={handleSaveProfile} className="space-y-5">
           <div className="flex gap-6 items-start">
             <div className="flex flex-col items-center gap-2 shrink-0">
               <button
@@ -605,7 +606,7 @@ function ProfileTab() {
               )}
             </AnimatePresence>
           </div>
-        </form>
+        </ValidatedForm>
       </div>
 
       <SavedAddresses />
@@ -1320,12 +1321,6 @@ function OrdersTab() {
     </div>
   );
 }
-
-// ================================================================
-// Settings tab
-// ================================================================
-
-// Moved to the SettingsTab component above, which handles account information and saved addresses.
 
 // ================================================================
 // Messages Tab

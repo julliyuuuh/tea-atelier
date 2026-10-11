@@ -1,4 +1,5 @@
 "use client";
+import ValidatedForm from "@/components/ValidatedForm";
 import { useCallback, useEffect, useState } from "react";
 import {
   Check,
@@ -166,11 +167,33 @@ export default function StoreSettingsPage() {
           {notice}
         </p>
       )}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          disabled={loading || saving}
+          onClick={() => {
+            if (
+              !draft ||
+              window.confirm(
+                "Reload settings? Any unsaved edits will be discarded.",
+              )
+            )
+              void load();
+          }}
+          className="flex items-center gap-2 font-body text-sm text-sage disabled:opacity-50"
+        >
+          <RefreshCw size={15} />
+          Reload settings
+        </button>
+      </div>
       {loading ? (
         <p className="font-body text-sm text-charcoal/50">Loading settings…</p>
       ) : (
         draft && (
-          <form onSubmit={save} className="space-y-6 font-body text-charcoal">
+          <ValidatedForm
+            onSubmit={save}
+            className="space-y-6 font-body text-charcoal"
+          >
             <fieldset
               disabled={saving}
               className="space-y-6 disabled:opacity-70"
@@ -394,7 +417,7 @@ export default function StoreSettingsPage() {
                 {saving ? "Saving…" : "Save settings"}
               </button>
             </div>
-          </form>
+          </ValidatedForm>
         )
       )}
     </div>

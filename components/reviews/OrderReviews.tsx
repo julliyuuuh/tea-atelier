@@ -1,4 +1,5 @@
 "use client";
+import ValidatedForm from "@/components/ValidatedForm";
 import { useEffect, useState } from "react";
 import { Check, Pencil, Star } from "lucide-react";
 import {
@@ -91,7 +92,7 @@ function ReviewEditor({
       )}
       <div id={`review-editor-${item.productId}`} hidden={!open}>
         {open && (
-          <form
+          <ValidatedForm
             onSubmit={submit}
             className="space-y-4 border-t border-charcoal/10 pt-4"
           >
@@ -130,7 +131,7 @@ function ReviewEditor({
             >
               {busy ? "Saving…" : "Save review"}
             </button>
-          </form>
+          </ValidatedForm>
         )}
       </div>
     </article>

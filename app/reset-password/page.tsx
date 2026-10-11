@@ -1,5 +1,6 @@
 "use client";
 
+import ValidatedForm from "@/components/ValidatedForm";
 import { useState, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -119,7 +120,7 @@ function ResetPasswordForm() {
               Password updated. Redirecting you to login...
             </p>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <ValidatedForm onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
                   New Password
@@ -162,7 +163,7 @@ function ResetPasswordForm() {
               >
                 {isLoading ? "Updating..." : "Reset Password"}
               </button>
-            </form>
+            </ValidatedForm>
           )}
         </motion.div>
       </div>
