@@ -154,7 +154,7 @@ export default function MessageDetailsPage({
               </>
             ) : (
               <p className="font-body text-sm text-charcoal/50">
-                We haven&apos;t replied yet — we&apos;ll get back to you soon.
+                We haven&apos;t replied yet, we&apos;ll get back to you soon.
               </p>
             )}
           </div>

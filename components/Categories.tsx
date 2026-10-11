@@ -68,7 +68,7 @@ export default function Categories() {
                 role="button"
                 tabIndex={0}
                 aria-pressed={isFlipped}
-                aria-label={`${cat.name} — show details`}
+                aria-label={`${cat.name}, show details`}
                 onClick={() => setFlippedIndex(isFlipped ? null : i)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {

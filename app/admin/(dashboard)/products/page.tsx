@@ -34,7 +34,7 @@ type Stats = {
 };
 
 // What we're confirming in the shared ConfirmDialog: one product, or a bulk
-// selection. Both resolve down to the same single-id DELETE endpoint below —
+// selection. Both resolve down to the same single-id DELETE endpoint below,
 // bulk delete is N sequential calls to the existing endpoint, not a new one.
 type ConfirmTarget =
   | { type: "single"; id: string }
@@ -58,7 +58,7 @@ function buildQuery(
 }
 
 export default function AdminProductsPage() {
-  // Current page's rows only — the full catalog never lives in the browser.
+  // Current page's rows only, the full catalog never lives in the browser.
   const [products, setProducts] = useState<Product[]>([]);
   const [stats, setStats] = useState<Stats>({
     active: 0,
@@ -146,7 +146,7 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     loadProducts(currentPage);
-    // Selection is scoped to whatever's currently on screen — clear it
+    // Selection is scoped to whatever's currently on screen, clear it
     // whenever the page or query changes under it.
     setSelectedIds(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -219,7 +219,7 @@ export default function AdminProductsPage() {
 
   // Shared by both the single-row delete button and the bulk action bar.
   // Bulk delete is implemented as N calls to the existing single-id DELETE
-  // endpoint (archives each in turn) — the endpoint contract is unchanged.
+  // endpoint (archives each in turn), the endpoint contract is unchanged.
   // Since the full catalog is no longer held client-side, a successful
   // delete just re-fetches the current page instead of patching local state.
   const performDelete = async (ids: string[]) => {
@@ -246,12 +246,12 @@ export default function AdminProductsPage() {
       setActionError(
         ids.length === 1
           ? "Unable to remove product."
-          : `Removed ${succeededCount} of ${ids.length} products — ${failedCount} failed.`,
+          : `Removed ${succeededCount} of ${ids.length} products, ${failedCount} failed.`,
       );
     }
     if (succeededCount > 0) {
       setSelectedIds(new Set());
-      setArchivedLoaded(false); // stale now — reload next time it's opened
+      setArchivedLoaded(false); // stale now, reload next time it's opened
       await loadProducts(currentPage);
     }
   };
@@ -333,7 +333,7 @@ export default function AdminProductsPage() {
         />
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Stat chips — always reflect the whole catalog, not just this page */}
+          {/* Stat chips, always reflect the whole catalog, not just this page */}
           <div className="flex flex-wrap items-center gap-2">
             <StatChip label="Active Products" value={stats.active} />
             <StatChip label="Low Stock" value={stats.lowStock} tone="warning" />
@@ -677,7 +677,7 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* Archived products toggle + list — fetched lazily, only when opened */}
+      {/* Archived products toggle + list, fetched lazily, only when opened */}
       {stats.archived > 0 && (
         <div className="mt-6">
           <button

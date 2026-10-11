@@ -114,7 +114,7 @@ export function renderOrderDocument(
   });
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tea Atelier — ${title} TA-${escape(order.order_id)}</title>
+<title>Tea Atelier, ${title} TA-${escape(order.order_id)}</title>
 <style>
 @page { size: A4; margin: 16mm; }
 * { box-sizing: border-box; }
