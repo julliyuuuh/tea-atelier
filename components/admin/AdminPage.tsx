@@ -22,10 +22,10 @@ export function AdminPageHeader({
       <p className="font-body text-xs uppercase tracking-widest text-charcoal/50">
         {eyebrow}
       </p>
-      <h1 className="mt-2 font-display text-3xl leading-tight text-charcoal sm:text-4xl">
+      <h1 className="mt-1 font-display text-3xl leading-tight text-charcoal sm:text-4xl">
         {title}
       </h1>
-      <p className="mt-3 font-body text-sm leading-relaxed text-charcoal/60">
+      <p className="mt-2 font-body text-sm leading-relaxed text-charcoal/60">
         {description}
       </p>
     </header>
@@ -44,7 +44,7 @@ export function AdminSearch({
   label?: string;
 }) {
   return (
-    <div className="relative min-w-0 flex-1 basis-64">
+    <div className="relative w-full min-w-0 shrink-0 sm:w-96">
       <Search
         size={16}
         aria-hidden="true"

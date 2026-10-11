@@ -207,7 +207,7 @@ export default function AdminContactPage() {
 
   return (
     <AdminPage>
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
         <AdminPageHeader
           title="Contact messages"
           eyebrow="Customer support"
@@ -227,7 +227,7 @@ export default function AdminContactPage() {
         onRetry={() => loadMessages(currentPage)}
       />
 
-      <div className="flex flex-wrap items-center gap-3 mb-6 rounded-2xl border border-charcoal/10 bg-white p-5">
+      <div className="flex flex-wrap items-center gap-3 mb-4 rounded-2xl border border-charcoal/10 bg-white p-4">
         <AdminSearch
           value={search}
           onChange={setSearch}

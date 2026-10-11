@@ -375,7 +375,7 @@ export default function AdminOrdersPage() {
 
   return (
     <AdminPage>
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
         <AdminPageHeader
           title="Orders"
           eyebrow="Order management"
@@ -400,24 +400,8 @@ export default function AdminOrdersPage() {
         onRetry={() => loadOrders(currentPage)}
       />
       <ErrorBanner message={actionError} />
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          disabled={retryingEmails}
-          onClick={() => void retryOrderEmails()}
-          className="rounded-lg border border-charcoal/20 px-4 py-2 font-body text-sm text-charcoal hover:bg-sand/30 disabled:opacity-50"
-        >
-          {retryingEmails ? "Retrying…" : "Retry order emails"}
-        </button>
-        {emailNotice && (
-          <p role="status" className="font-body text-sm text-charcoal/70">
-            {emailNotice}
-          </p>
-        )}
-      </div>
-
       {/* Filter toolbar */}
-      <div className="flex flex-wrap items-center gap-3 mb-6 rounded-2xl border border-charcoal/10 bg-white p-5">
+      <div className="flex flex-wrap items-center gap-3 mb-4 rounded-2xl border border-charcoal/10 bg-white p-4">
         <AdminSearch
           value={search}
           onChange={setSearch}
@@ -451,6 +435,22 @@ export default function AdminOrdersPage() {
             </button>
           )}
         </>
+        <button
+          type="button"
+          disabled={retryingEmails}
+          onClick={() => void retryOrderEmails()}
+          className="rounded-full border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal hover:bg-sand/30 disabled:opacity-50"
+        >
+          {retryingEmails ? "Retrying…" : "Retry order emails"}
+        </button>
+        {emailNotice && (
+          <p
+            role="status"
+            className="w-full font-body text-sm text-charcoal/70"
+          >
+            {emailNotice}
+          </p>
+        )}
       </div>
 
       <AdminTable label="Orders" minWidth={1080}>
