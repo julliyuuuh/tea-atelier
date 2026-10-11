@@ -18,5 +18,10 @@ export async function PATCH(req: NextRequest) {
     [label, heading, image_url, cta_text, cta_link],
   );
 
+  if (!result.rows.length)
+    return NextResponse.json(
+      { error: "This content record no longer exists. Refresh and try again." },
+      { status: 404 },
+    );
   return NextResponse.json({ promo: result.rows[0] });
 }

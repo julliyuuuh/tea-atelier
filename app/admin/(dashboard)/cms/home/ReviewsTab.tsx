@@ -1,7 +1,9 @@
 // app/admin/(dashboard)/cms/home/ReviewsTab.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { checkCmsSaves } from "@/lib/cms-client";
+
+import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
 
@@ -126,7 +128,10 @@ export default function ReviewsTab({
     }
   }
 
+  const movePending = useRef(false);
+
   async function handleMove(index: number, direction: -1 | 1) {
+    if (movePending.current) return;
     const target = index + direction;
     if (target < 0 || target >= reviews.length) return;
 
@@ -138,21 +143,33 @@ export default function ReviewsTab({
     const withOrders = reordered.map((r, i) => ({ ...r, sort_order: i }));
     setReviews(withOrders);
 
-    await Promise.all(
-      [withOrders[index], withOrders[target]].map((r) =>
-        fetch(`/api/cms/admin/reviews/${r.id}`, {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({
-            quote: r.quote,
-            name: r.name,
-            rating: r.rating,
-            sort_order: r.sort_order,
-            is_active: r.is_active,
+    movePending.current = true;
+    try {
+      await checkCmsSaves(
+        [withOrders[index], withOrders[target]].map((r) =>
+          fetch(`/api/cms/admin/reviews/${r.id}`, {
+            method: "PATCH",
+            headers: authHeaders(),
+            body: JSON.stringify({
+              quote: r.quote,
+              name: r.name,
+              rating: r.rating,
+              sort_order: r.sort_order,
+              is_active: r.is_active,
+            }),
           }),
-        }),
-      ),
-    );
+        ),
+      );
+    } catch (error) {
+      onError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the content order.",
+      );
+      await load();
+    } finally {
+      movePending.current = false;
+    }
   }
 
   if (isLoading) return <SkeletonBlock className="h-64" />;

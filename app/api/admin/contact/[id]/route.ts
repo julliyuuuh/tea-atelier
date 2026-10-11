@@ -1,5 +1,5 @@
-import { adminQuery } from "@/lib/admin-audit";
 // app/api/admin/contact/[id]/route.ts
+import { adminQuery } from "@/lib/admin-audit";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
 import { sendContactReplyEmail } from "@/lib/email";
@@ -73,15 +73,25 @@ export async function PATCH(
 
     const updated = result.rows[0];
 
-    await sendContactReplyEmail(
-      updated.user_email,
-      updated.user_first_name,
-      updated.subject,
-      updated.message,
-      updated.admin_reply,
-    );
+    let emailAccepted = false;
+    try {
+      await sendContactReplyEmail(
+        updated.user_email,
+        updated.user_first_name,
+        updated.subject,
+        updated.message,
+        updated.admin_reply,
+      );
+      emailAccepted = true;
+    } catch {
+      console.error("Contact reply saved, but its email could not be sent.");
+    }
 
     return NextResponse.json({
+      emailAccepted,
+      warning: emailAccepted
+        ? null
+        : "Reply saved in the customer's account, but the email could not be sent.",
       id: updated.message_id,
       subject: updated.subject,
       message: updated.message,

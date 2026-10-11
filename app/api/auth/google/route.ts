@@ -75,7 +75,7 @@ export async function POST(req: Request) {
       const result = await pool.query(
         `INSERT INTO users (first_name, last_name, email, password_hash, role, google_id, is_verified)
          VALUES ($1, $2, $3, NULL, 'customer', $4, true)
-         RETURNING user_id, first_name, last_name, email, role`,
+         RETURNING user_id, first_name, last_name, email, role, phone_number, is_verified, avatar_url`,
         [given_name || "Google", family_name || "User", email, googleId],
       );
       user = result.rows[0];
@@ -110,6 +110,8 @@ export async function POST(req: Request) {
         email: user.email,
         phone: user.phone_number || null,
         role: user.role,
+        isVerified: !!user.is_verified,
+        avatarUrl: user.avatar_url || null,
       },
     });
   } catch (error) {

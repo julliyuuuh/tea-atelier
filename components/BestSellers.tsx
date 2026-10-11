@@ -4,7 +4,7 @@ import DisplayPrice from "@/components/DisplayPrice";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
-import type { Product } from "@/lib/products";
+import { isProductAvailable, type Product } from "@/lib/products";
 
 const offsets = [
   "md:mt-0",
@@ -87,9 +87,10 @@ export default function BestSellers() {
               </div>
               <button
                 onClick={() => addToCart(product)}
-                className="font-body text-xs tracking-wide uppercase border-b border-charcoal/40 pb-0.5 text-charcoal/80 hover:border-sage hover:text-sage transition-colors px-1"
+                disabled={!isProductAvailable(product)}
+                className="font-body text-xs tracking-wide uppercase border-b border-charcoal/40 pb-0.5 text-charcoal/80 hover:border-sage hover:text-sage transition-colors px-1 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Add to Cart
+                {isProductAvailable(product) ? "Add to Cart" : "Out of Stock"}
               </button>
             </div>
           </motion.div>

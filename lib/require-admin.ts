@@ -34,7 +34,7 @@ async function authorize(
   try {
     // The JWT's role can be stale, so trust the database instead.
     const { rows } = await pool.query(
-      "SELECT role FROM users WHERE user_id = $1",
+      "SELECT role, is_suspended FROM users WHERE user_id = $1",
       [decoded.userId],
     );
 
@@ -48,6 +48,14 @@ async function authorize(
     }
 
     const currentRole: string = rows[0].role;
+    if (rows[0].is_suspended) {
+      return {
+        error: NextResponse.json(
+          { error: "Your account has been suspended. Please contact support." },
+          { status: 403 },
+        ),
+      };
+    }
     if (!allowedRoles.includes(currentRole)) {
       return {
         error: NextResponse.json({ error: deniedMessage }, { status: 403 }),

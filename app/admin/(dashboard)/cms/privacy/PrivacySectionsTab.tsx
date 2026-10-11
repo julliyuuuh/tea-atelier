@@ -1,7 +1,9 @@
 // app/admin/(dashboard)/cms/privacy/PrivacySectionsTab.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { checkCmsSaves } from "@/lib/cms-client";
+
+import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
 
@@ -123,7 +125,10 @@ export default function PrivacySectionsTab({
     }
   }
 
+  const movePending = useRef(false);
+
   async function handleMove(index: number, direction: -1 | 1) {
+    if (movePending.current) return;
     const target = index + direction;
     if (target < 0 || target >= sections.length) return;
     const reordered = [...sections];
@@ -133,20 +138,32 @@ export default function PrivacySectionsTab({
     ];
     const withOrders = reordered.map((s, i) => ({ ...s, sort_order: i }));
     setSections(withOrders);
-    await Promise.all(
-      [withOrders[index], withOrders[target]].map((s) =>
-        fetch(`/api/cms/admin/privacy-sections/${s.id}`, {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({
-            heading: s.heading,
-            body: s.body,
-            sort_order: s.sort_order,
-            is_active: s.is_active,
+    movePending.current = true;
+    try {
+      await checkCmsSaves(
+        [withOrders[index], withOrders[target]].map((s) =>
+          fetch(`/api/cms/admin/privacy-sections/${s.id}`, {
+            method: "PATCH",
+            headers: authHeaders(),
+            body: JSON.stringify({
+              heading: s.heading,
+              body: s.body,
+              sort_order: s.sort_order,
+              is_active: s.is_active,
+            }),
           }),
-        }),
-      ),
-    );
+        ),
+      );
+    } catch (error) {
+      onError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the content order.",
+      );
+      await load();
+    } finally {
+      movePending.current = false;
+    }
   }
 
   if (isLoading) return <SkeletonBlock className="h-64" />;

@@ -1,3 +1,4 @@
+import { productInputError } from "@/lib/product-input";
 import { adminQuery } from "@/lib/admin-audit";
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
@@ -7,6 +8,10 @@ export async function POST(req: Request) {
   const { error, decoded } = await requireAdmin(req);
   if (error) return error;
 
+  const body = await req.json().catch(() => null);
+  const inputError = productInputError(body);
+  if (inputError)
+    return NextResponse.json({ error: inputError }, { status: 400 });
   const {
     name,
     category,
@@ -16,7 +21,7 @@ export async function POST(req: Request) {
     image,
     description,
     stockQuantity,
-  } = await req.json();
+  } = body;
 
   const status = stockQuantity > 0 ? "IN STOCK" : "NO STOCK";
 
@@ -49,7 +54,10 @@ export async function POST(req: Request) {
       subCategory: row.sub_category,
       type: row.type,
       price: parseFloat(row.price),
-      availability: row.status === "NO STOCK" ? "Out of Stock" : "In Stock",
+      availability:
+        row.status === "IN STOCK" && row.stock_quantity > 0
+          ? "In Stock"
+          : "Out of Stock",
       stockQuantity: row.stock_quantity,
     },
   });
@@ -141,7 +149,10 @@ export async function GET(req: Request) {
     subCategory: row.sub_category,
     type: row.type,
     price: parseFloat(row.price),
-    availability: row.status === "NO STOCK" ? "Out of Stock" : "In Stock",
+    availability:
+      row.status === "IN STOCK" && row.stock_quantity > 0
+        ? "In Stock"
+        : "Out of Stock",
     stockQuantity: row.stock_quantity,
     isArchived: row.is_archived,
   }));

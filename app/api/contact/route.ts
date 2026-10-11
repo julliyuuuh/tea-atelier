@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getUserId } from "@/lib/api-auth";
+import { requireUser } from "@/lib/require-user";
 
 const SUBJECT_MAX_LENGTH = 255;
 const MESSAGE_MAX_LENGTH = 5000;
 
 export async function GET(req: Request) {
-  const userId = getUserId(req);
-  if (!userId)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId, error } = await requireUser(req);
+  if (error) return error;
 
   const url = new URL(req.url);
   const page = parseInt(url.searchParams.get("page") || "1", 10);
@@ -46,9 +45,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const userId = getUserId(req);
-  if (!userId)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId, error } = await requireUser(req);
+  if (error) return error;
 
   try {
     const { subject, message } = await req.json();

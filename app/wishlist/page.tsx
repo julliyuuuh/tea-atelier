@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useWishlist } from "@/lib/wishlist-context";
 import { useCart } from "@/lib/cart-context";
+import { isProductAvailable } from "@/lib/products";
 import { Heart } from "lucide-react";
 
 export default function WishlistPage() {
@@ -62,9 +63,12 @@ export default function WishlistPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => addToCart(product)}
-                    className="flex-1 rounded-full bg-charcoal text-cream font-body text-xs tracking-wide uppercase py-2.5 hover:bg-sage transition-colors"
+                    disabled={!isProductAvailable(product)}
+                    className="flex-1 rounded-full bg-charcoal text-cream font-body text-xs tracking-wide uppercase py-2.5 hover:bg-sage transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/15 disabled:text-charcoal/40"
                   >
-                    Add to Cart
+                    {isProductAvailable(product)
+                      ? "Add to Cart"
+                      : "Out of Stock"}
                   </button>
                   <button
                     onClick={() => removeFromWishlist(product.id)}

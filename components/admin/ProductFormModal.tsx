@@ -149,10 +149,24 @@ export default function ProductFormModal({
   const validate = (): boolean => {
     const errors: FieldErrors = {};
     if (!form.name.trim()) errors.name = "Name is required.";
-    if (!form.price || parseFloat(form.price) <= 0)
-      errors.price = "Enter a valid price.";
-    if (form.stockQuantity === "" || parseInt(form.stockQuantity, 10) < 0)
-      errors.stockQuantity = "Enter a valid stock quantity.";
+    const price = Number(form.price);
+    if (
+      !form.price ||
+      !Number.isFinite(price) ||
+      price <= 0 ||
+      price > 9999999999.99 ||
+      Math.abs(price * 100 - Math.round(price * 100)) > 0.0001
+    )
+      errors.price = "Enter a positive price with at most two decimal places.";
+    const stock = Number(form.stockQuantity);
+    if (
+      form.stockQuantity === "" ||
+      !Number.isSafeInteger(stock) ||
+      stock < 0 ||
+      stock > 2147483647
+    )
+      errors.stockQuantity =
+        "Stock quantity must be a non-negative whole number.";
     if (!form.description.trim())
       errors.description = "Description is required.";
     if (categoryTree[form.category as MainCategory] && !form.subCategory)

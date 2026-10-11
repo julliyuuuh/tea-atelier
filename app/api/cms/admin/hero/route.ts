@@ -37,5 +37,10 @@ export async function PATCH(req: NextRequest) {
     ],
   );
 
+  if (!result.rows.length)
+    return NextResponse.json(
+      { error: "This content record no longer exists. Refresh and try again." },
+      { status: 404 },
+    );
   return NextResponse.json({ hero: result.rows[0] });
 }

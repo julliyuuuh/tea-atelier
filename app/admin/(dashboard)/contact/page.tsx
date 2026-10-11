@@ -167,6 +167,7 @@ export default function AdminContactPage() {
     if (!adminReply) return;
 
     setSubmittingId(id);
+    setErrorMessage("");
     const token = localStorage.getItem("token");
 
     try {
@@ -196,6 +197,7 @@ export default function AdminContactPage() {
       );
       setStats((prev) => ({ ...prev, replied: prev.replied + 1 }));
       setReplyDrafts((prev) => ({ ...prev, [id]: "" }));
+      if (data.warning) setErrorMessage(data.warning);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Something went wrong.",

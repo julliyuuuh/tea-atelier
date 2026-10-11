@@ -246,6 +246,11 @@ export default function AdminOverviewPage() {
         })}
       </div>
 
+      <p className="mt-3 font-body text-xs text-charcoal/50">
+        Revenue and product performance include paid, non-cancelled orders
+        before refunds. Revenue includes delivery fees; product revenue excludes
+        them. Product count includes active products.
+      </p>
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[65%_1fr] gap-4">
         <div className="bg-white border border-charcoal/10 rounded-2xl p-6 transition-all duration-200   hover:border-sage/30">
           <h2 className="font-body text-sm font-medium text-charcoal mb-6">

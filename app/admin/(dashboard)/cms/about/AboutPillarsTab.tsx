@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { checkCmsSaves } from "@/lib/cms-client";
+
+import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
 
@@ -116,7 +118,10 @@ export default function AboutPillarsTab({
     }
   }
 
+  const movePending = useRef(false);
+
   async function handleMove(index: number, direction: -1 | 1) {
+    if (movePending.current) return;
     const target = index + direction;
     if (target < 0 || target >= pillars.length) return;
     const reordered = [...pillars];
@@ -126,19 +131,31 @@ export default function AboutPillarsTab({
     ];
     const withOrders = reordered.map((p, i) => ({ ...p, sort_order: i }));
     setPillars(withOrders);
-    await Promise.all(
-      [withOrders[index], withOrders[target]].map((p) =>
-        fetch(`/api/cms/admin/about-pillars/${p.id}`, {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({
-            title: p.title,
-            copy: p.copy,
-            sort_order: p.sort_order,
+    movePending.current = true;
+    try {
+      await checkCmsSaves(
+        [withOrders[index], withOrders[target]].map((p) =>
+          fetch(`/api/cms/admin/about-pillars/${p.id}`, {
+            method: "PATCH",
+            headers: authHeaders(),
+            body: JSON.stringify({
+              title: p.title,
+              copy: p.copy,
+              sort_order: p.sort_order,
+            }),
           }),
-        }),
-      ),
-    );
+        ),
+      );
+    } catch (error) {
+      onError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the content order.",
+      );
+      await load();
+    } finally {
+      movePending.current = false;
+    }
   }
 
   if (isLoading) return <SkeletonBlock className="h-64" />;

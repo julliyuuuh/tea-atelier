@@ -74,8 +74,13 @@ export async function POST(req: Request) {
     token,
     user: {
       name: `${user.first_name} ${user.last_name}`,
+      firstName: user.first_name,
+      lastName: user.last_name,
       email: user.email,
       role: user.role,
+      phone: user.phone_number || null,
+      isVerified: !!user.is_verified,
+      avatarUrl: user.avatar_url || null,
     },
   });
 }

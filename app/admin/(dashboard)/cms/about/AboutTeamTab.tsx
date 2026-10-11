@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { checkCmsSaves } from "@/lib/cms-client";
+
+import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
 
@@ -125,7 +127,10 @@ export default function AboutTeamTab({
     }
   }
 
+  const movePending = useRef(false);
+
   async function handleMove(index: number, direction: -1 | 1) {
+    if (movePending.current) return;
     const target = index + direction;
     if (target < 0 || target >= team.length) return;
     const reordered = [...team];
@@ -135,21 +140,33 @@ export default function AboutTeamTab({
     ];
     const withOrders = reordered.map((m, i) => ({ ...m, sort_order: i }));
     setTeam(withOrders);
-    await Promise.all(
-      [withOrders[index], withOrders[target]].map((m) =>
-        fetch(`/api/cms/admin/about-team/${m.id}`, {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({
-            name: m.name,
-            role: m.role,
-            image: m.image,
-            sort_order: m.sort_order,
-            is_active: m.is_active,
+    movePending.current = true;
+    try {
+      await checkCmsSaves(
+        [withOrders[index], withOrders[target]].map((m) =>
+          fetch(`/api/cms/admin/about-team/${m.id}`, {
+            method: "PATCH",
+            headers: authHeaders(),
+            body: JSON.stringify({
+              name: m.name,
+              role: m.role,
+              image: m.image,
+              sort_order: m.sort_order,
+              is_active: m.is_active,
+            }),
           }),
-        }),
-      ),
-    );
+        ),
+      );
+    } catch (error) {
+      onError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the content order.",
+      );
+      await load();
+    } finally {
+      movePending.current = false;
+    }
   }
 
   if (isLoading) return <SkeletonBlock className="h-64" />;

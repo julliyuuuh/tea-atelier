@@ -1,3 +1,4 @@
+import { productInputError } from "@/lib/product-input";
 import { adminQuery } from "@/lib/admin-audit";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
@@ -10,6 +11,10 @@ export async function PUT(
   if (error) return error;
 
   const { id } = await params;
+  const body = await req.json().catch(() => null);
+  const inputError = productInputError(body);
+  if (inputError)
+    return NextResponse.json({ error: inputError }, { status: 400 });
   const {
     name,
     category,
@@ -19,7 +24,7 @@ export async function PUT(
     image,
     description,
     stockQuantity,
-  } = await req.json();
+  } = body;
   const status = stockQuantity > 0 ? "IN STOCK" : "NO STOCK";
 
   const result = await adminQuery(
@@ -57,7 +62,10 @@ export async function PUT(
       subCategory: row.sub_category,
       type: row.type,
       price: parseFloat(row.price),
-      availability: row.status === "NO STOCK" ? "Out of Stock" : "In Stock",
+      availability:
+        row.status === "IN STOCK" && row.stock_quantity > 0
+          ? "In Stock"
+          : "Out of Stock",
       stockQuantity: row.stock_quantity,
     },
   });

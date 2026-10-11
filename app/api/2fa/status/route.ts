@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getUserId } from "@/lib/api-auth";
+import { requireUser } from "@/lib/require-user";
 
 export async function GET(req: Request) {
-  const userId = getUserId(req);
-  if (!userId)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId, error } = await requireUser(req);
+  if (error) return error;
 
   const result = await pool.query(
     "SELECT totp_enabled FROM users WHERE user_id = $1",
@@ -13,5 +12,10 @@ export async function GET(req: Request) {
   );
   const user = result.rows[0];
 
-  return NextResponse.json({ enabled: user?.totp_enabled || false });
+  if (!user)
+    return NextResponse.json(
+      { error: "Account no longer exists." },
+      { status: 404 },
+    );
+  return NextResponse.json({ enabled: !!user.totp_enabled });
 }

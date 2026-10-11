@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getUserId } from "@/lib/api-auth";
+import { requireUser } from "@/lib/require-user";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { parseAddressLabel } from "@/lib/profile-address";
 import {
@@ -32,10 +33,23 @@ function isValidText(
   );
 }
 
+function orderSummaryItem(item: {
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  price: string | number;
+}) {
+  return {
+    productId: String(item.product_id),
+    name: item.product_name,
+    quantity: item.quantity,
+    price: Number(item.price),
+  };
+}
+
 export async function GET(req: Request) {
-  const userId = getUserId(req);
-  if (!userId)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId, error } = await requireUser(req);
+  if (error) return error;
   const url = new URL(req.url);
   const requestedPage = Math.max(
     1,
@@ -274,10 +288,17 @@ export async function POST(req: Request) {
           { status: 409 },
         );
       }
+      const savedItems = await client.query(
+        `SELECT oi.product_id, oi.quantity, oi.price, p.product_name
+         FROM order_items oi JOIN products p ON p.product_id = oi.product_id
+         WHERE oi.order_id = $1 ORDER BY oi.product_id`,
+        [existing.order_id],
+      );
       await client.query("COMMIT");
       const total = Number(existing.total_amount);
       const deliveryFee = Number(existing.shipping_cost);
       return NextResponse.json({
+        items: savedItems.rows.map(orderSummaryItem),
         orderId: existing.order_id,
         paymentStatus: existing.payment_status,
         subtotal: (total - deliveryFee).toFixed(2),
@@ -310,7 +331,7 @@ export async function POST(req: Request) {
     // Get the user's current cart, with live prices/stock based from products table
     const cartResult = await client.query(
       `SELECT c.product_id, c.quantity, c.checkout_revision,
-              p.price, p.stock_quantity, p.product_name
+              p.price, p.stock_quantity, p.product_name, p.is_archived, p.status
       FROM cart c
       JOIN products p ON p.product_id = c.product_id
       WHERE c.user_id = $1${selectedProductIds === null ? "" : " AND c.product_id = ANY($2::int[])"} ORDER BY c.product_id`,
@@ -343,6 +364,13 @@ export async function POST(req: Request) {
         return NextResponse.json(
           { error: "Invalid cart quantity." },
           { status: 400 },
+        );
+      }
+      if (item.is_archived || item.status !== "IN STOCK") {
+        await client.query("ROLLBACK");
+        return NextResponse.json(
+          { error: `${item.product_name} is no longer available.` },
+          { status: 409 },
         );
       }
       if (item.quantity > item.stock_quantity) {
@@ -473,7 +501,8 @@ export async function POST(req: Request) {
         // exact moment, so two buyers can't both take the last item.
         const upd = await client.query(
           `UPDATE products SET stock_quantity = stock_quantity - $1
-           WHERE product_id = $2 AND stock_quantity >= $1`,
+           WHERE product_id = $2 AND stock_quantity >= $1
+             AND is_archived = false AND status = 'IN STOCK'`,
           [item.quantity, item.product_id],
         );
         if (upd.rowCount === 0) {
@@ -520,6 +549,7 @@ export async function POST(req: Request) {
       }
     }
     return NextResponse.json({
+      items: cartResult.rows.map(orderSummaryItem),
       orderId,
       paymentStatus,
       subtotal: subtotal.toFixed(2),

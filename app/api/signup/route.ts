@@ -89,6 +89,8 @@ export async function POST(req: Request) {
         email: user.email,
         phone: user.phone_number,
         role: user.role,
+        isVerified: false,
+        avatarUrl: null,
       },
     });
   } catch (error) {

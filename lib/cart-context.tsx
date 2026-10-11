@@ -10,7 +10,7 @@ import {
   useRef,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Product } from "./products";
+import { isProductAvailable, type Product } from "./products";
 import { useAuth } from "./auth-context";
 
 type CartItem = { product: Product; quantity: number };
@@ -115,10 +115,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const myId = ++loadId.current;
     try {
       const res = await fetch("/api/cart", { headers: authHeaders() });
-      const rows: CartItem[] = res.ok ? await res.json() : [];
-      if (myId === loadId.current) setItems(rows);
-    } catch {
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(
+          data.error || "Unable to load your cart. Please try again.",
+        );
+      if (myId === loadId.current) setItems(data);
+    } catch (error) {
       // network failure: keep whatever is on screen
+      if (myId === loadId.current)
+        setStockError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load your cart. Please try again.",
+        );
     } finally {
       if (myId === loadId.current) {
         setSelection((previous) =>
@@ -145,17 +155,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refreshCart().finally(() => setLoading(false));
   }, [user, authLoading, refreshCart]);
 
-  const clearCart = useCallback(() => {
-    loadId.current++; // invalidate any request still in flight
-    setItems([]);
-    fetch("/api/cart", { method: "DELETE", headers: authHeaders() }).catch(
-      () => {},
-    );
+  const clearCart = useCallback(async () => {
+    try {
+      const res = await fetch("/api/cart", {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to clear your cart.");
+      loadId.current++; // invalidate any request still in flight
+      setItems([]);
+    } catch (error) {
+      setStockError(
+        error instanceof Error
+          ? error.message
+          : "Unable to clear your cart. Please try again.",
+      );
+    }
   }, []);
 
   const addToCart = async (product: Product, quantity: number = 1) => {
     if (!user) {
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    if (
+      !isProductAvailable(product) ||
+      !Number.isSafeInteger(quantity) ||
+      quantity < 1
+    ) {
+      setStockError("This product is unavailable or its quantity is invalid.");
       return;
     }
 
@@ -167,57 +196,53 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setItems((prev) => {
-      if (existing) {
-        return prev.map((i) =>
-          i.product.id === product.id
-            ? { ...i, quantity: i.quantity + quantity }
-            : i,
-        );
-      }
-      return [...prev, { product, quantity }];
-    });
-
     try {
       const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ productId: product.id, quantity }),
       });
-      if (!res.ok) {
-        setItems((prev) =>
-          existing
-            ? prev.map((i) =>
-                i.product.id === product.id
-                  ? { ...i, quantity: i.quantity - quantity }
-                  : i,
-              )
-            : prev.filter((i) => i.product.id !== product.id),
-        );
-        const data = await res.json();
-        alert(data.error || "Unable to add to cart.");
-      } else {
-        setLastAdded(product);
-      }
-    } catch {
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "Unable to add to cart.");
+      await refreshCart();
+      setLastAdded(product);
+    } catch (error) {
       // network failure
+      setStockError(
+        error instanceof Error
+          ? error.message
+          : "Unable to add to cart. Check your connection.",
+      );
     }
   };
 
-  const removeFromCart = (productId: string) => {
-    setItems((prev) => prev.filter((i) => i.product.id !== productId));
-    fetch(`/api/cart/${productId}`, {
-      method: "DELETE",
-      headers: authHeaders(),
-    }).catch(() => {});
+  const removeFromCart = async (productId: string) => {
+    try {
+      const res = await fetch(`/api/cart/${productId}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok)
+        throw new Error(data?.error || "Unable to remove from cart.");
+      loadId.current++;
+      setItems((prev) => prev.filter((item) => item.product.id !== productId));
+      setItemSelected(productId, true);
+    } catch (error) {
+      setStockError(
+        error instanceof Error
+          ? error.message
+          : "Unable to remove from cart. Check your connection.",
+      );
+    }
   };
 
   const updateQuantity = async (productId: string, quantity: number) => {
-    if (quantity < 1) return;
+    if (!Number.isSafeInteger(quantity) || quantity < 1) return;
 
     const item = items.find((i) => i.product.id === productId);
     if (item && quantity > item.product.stockQuantity) {
-      alert(`Exceeds stock.`);
+      setStockError("Exceeds stock.");
       return;
     }
 
@@ -242,9 +267,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ),
         );
         const data = await res.json();
-        alert(data.error || "Unable to update quantity.");
+        setStockError(data.error || "Unable to update quantity.");
       }
     } catch {
+      setStockError(
+        "Unable to update quantity. Check your connection and try again.",
+      );
       if (previousQuantity !== undefined) {
         setItems((prev) =>
           prev.map((i) =>

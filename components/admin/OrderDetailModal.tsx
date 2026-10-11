@@ -303,14 +303,19 @@ export default function OrderDetailModal({
     );
     const statusOptions = cancelled
       ? STATUS_OPTIONS.filter((o) => o.value === "CANCELLED")
-      : unpaidOnline
+      : order.fulfillmentIssue
         ? STATUS_OPTIONS.filter(
-            (o) =>
-              o.value === order.status ||
-              o.value === "PLACED" ||
-              o.value === "CANCELLED",
+            (o) => o.value === "PLACED" || o.value === "CANCELLED",
           )
-        : STATUS_OPTIONS;
+        : unpaidOnline
+          ? STATUS_OPTIONS.filter(
+              (o) =>
+                o.value === order.status ||
+                o.value === "PLACED" ||
+                (o.value === "CANCELLED" &&
+                  order.paymentStatus !== "processing"),
+            )
+          : STATUS_OPTIONS;
 
     return (
       <>

@@ -8,7 +8,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductReviews from "@/components/reviews/ProductReviews";
 import { useCart } from "@/lib/cart-context";
-import type { Product } from "@/lib/products";
+import { isProductAvailable, type Product } from "@/lib/products";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { useStoreSettings } from "@/lib/store-settings-context";
@@ -115,7 +115,7 @@ export default function ProductDetailsPage() {
           </p>
 
           <span className="font-body text-xs uppercase tracking-wide mb-8">
-            {product.stockQuantity === 0 ? (
+            {!isProductAvailable(product) ? (
               <span className="text-charcoal/40">Out of Stock</span>
             ) : product.stockQuantity <= 10 ? (
               <span className="text-amber-600">Low Stock</span>
@@ -127,6 +127,7 @@ export default function ProductDetailsPage() {
           <div className="flex items-center gap-4">
             <div className="flex items-center rounded-full border border-charcoal/20 overflow-hidden">
               <button
+                disabled={quantity <= 1 || !isProductAvailable(product)}
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 className="px-4 py-3 font-body text-charcoal hover:bg-sand transition-colors"
               >
@@ -136,7 +137,13 @@ export default function ProductDetailsPage() {
                 {quantity}
               </span>
               <button
-                onClick={() => setQuantity((q) => q + 1)}
+                disabled={
+                  !isProductAvailable(product) ||
+                  quantity >= product.stockQuantity
+                }
+                onClick={() =>
+                  setQuantity((q) => Math.min(product.stockQuantity, q + 1))
+                }
                 className="px-4 py-3 font-body text-charcoal hover:bg-sand transition-colors"
               >
                 +
@@ -144,9 +151,12 @@ export default function ProductDetailsPage() {
             </div>
             <button
               onClick={() => addToCart(product, quantity)}
-              className="flex-1 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
+              disabled={
+                !isProductAvailable(product) || quantity > product.stockQuantity
+              }
+              className="flex-1 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/15 disabled:text-charcoal/40"
             >
-              Add to Cart
+              {isProductAvailable(product) ? "Add to Cart" : "Out of Stock"}
             </button>
             <button
               onClick={() => toggleWishlist(product)}

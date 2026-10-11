@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function sendVerificationEmail(to: string, token: string) {
   const verifyUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/verify-email?token=${token}`;
 
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from: `Tea Atelier <${process.env.EMAIL_FROM}>`,
     to,
     subject: "Verify your Tea Atelier account",
@@ -22,12 +22,13 @@ export async function sendVerificationEmail(to: string, token: string) {
       </div>
     `,
   });
+  if (result.error) throw new Error("The email could not be sent.");
 }
 
 export async function sendPasswordResetEmail(to: string, token: string) {
   const resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/reset-password?token=${token}`;
 
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from: `Tea Atelier <${process.env.EMAIL_FROM}>`,
     to,
     subject: "Reset your Tea Atelier password",
@@ -44,16 +45,17 @@ export async function sendPasswordResetEmail(to: string, token: string) {
       </div>
     `,
   });
+  if (result.error) throw new Error("The email could not be sent.");
 }
 
 export async function sendWelcomeEmail(to: string, firstName: string) {
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from: `Tea Atelier <${process.env.EMAIL_FROM}>`,
     to,
     subject: "Welcome to Tea Atelier!",
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-        <h2>Welcome to Tea Atelier, ${firstName}!</h2>
+        <h2>Welcome to Tea Atelier, ${escapeEmailText(firstName)}!</h2>
         <p>Your account is all set up and ready to go. Explore our seasonal blends and start your tea journey with us.</p>
         <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="display: inline-block; background: #8a9a7e; color: #fff; padding: 12px 24px; text-decoration: none; margin-top: 16px;">
           Visit the Shop
@@ -61,6 +63,17 @@ export async function sendWelcomeEmail(to: string, firstName: string) {
       </div>
     `,
   });
+  if (result.error) throw new Error("The email could not be sent.");
+}
+
+function escapeEmailText(value: string) {
+  return value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        character
+      ]!,
+  );
 }
 
 export async function sendContactReplyEmail(
@@ -70,18 +83,18 @@ export async function sendContactReplyEmail(
   originalMessage: string,
   reply: string,
 ) {
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from: `Tea Atelier <${process.env.EMAIL_FROM}>`,
     to,
     subject: `Re: ${subject}`,
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-        <h2>Hi ${firstName},</h2>
+        <h2>Hi ${escapeEmailText(firstName)},</h2>
         <p>Thanks for reaching out! Here's our reply to your message:</p>
         <blockquote style="border-left: 3px solid #8a9a7e; margin: 16px 0; padding: 8px 16px; color: #555;">
-          ${originalMessage}
+          ${escapeEmailText(originalMessage)}
         </blockquote>
-        <p style="white-space: pre-wrap;">${reply}</p>
+        <p style="white-space: pre-wrap;">${escapeEmailText(reply)}</p>
         <a href="${process.env.NEXT_PUBLIC_SITE_URL}/account" style="display: inline-block; background: #8a9a7e; color: #fff; padding: 12px 24px; text-decoration: none; margin-top: 16px;">
           View in Your Account
         </a>
@@ -91,6 +104,7 @@ export async function sendContactReplyEmail(
       </div>
     `,
   });
+  if (result.error) throw new Error("The reply email could not be sent.");
 }
 
 type OrderConfirmationItem = {

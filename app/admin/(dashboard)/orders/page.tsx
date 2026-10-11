@@ -64,6 +64,11 @@ function rowStatusOptions(order: Order) {
   if (order.status === "CANCELLED") {
     return ROW_STATUS_OPTIONS.filter((o) => o.value === "CANCELLED");
   }
+  if (order.fulfillmentIssue) {
+    return ROW_STATUS_OPTIONS.filter(
+      (o) => o.value === "PLACED" || o.value === "CANCELLED",
+    );
+  }
   if (!isUnpaidOnline(order.paymentMethod, order.paymentStatus)) {
     return ROW_STATUS_OPTIONS;
   }
@@ -71,7 +76,7 @@ function rowStatusOptions(order: Order) {
     (o) =>
       o.value === order.status ||
       o.value === "PLACED" ||
-      o.value === "CANCELLED",
+      (o.value === "CANCELLED" && order.paymentStatus !== "processing"),
   );
 }
 

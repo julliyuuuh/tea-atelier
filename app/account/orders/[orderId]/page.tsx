@@ -342,128 +342,135 @@ export default function OrderDetailsPage({
               </header>
 
               <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:gap-8">
-                <section
-                  className="min-w-0 overflow-hidden rounded-2xl border border-charcoal/10 bg-white"
-                  aria-labelledby="order-items-heading"
-                >
-                  <div className="flex items-center justify-between gap-3 border-b border-charcoal/10 px-5 py-5 sm:px-6">
-                    <h2
-                      id="order-items-heading"
-                      className="font-display text-xl text-charcoal"
-                    >
-                      Your tea selection
-                    </h2>
-                    <span className="rounded-full bg-sand/30 px-3 py-1 font-body text-xs text-charcoal/60">
-                      {itemCount} {itemCount === 1 ? "item" : "items"}
-                    </span>
-                  </div>
-                  <ul className="divide-y divide-charcoal/10 px-5 sm:px-6">
-                    {order.items.map((item, index) => (
-                      <li
-                        key={`${item.productId}:${index}`}
-                        className="flex items-center gap-3 py-5 sm:gap-4"
+                <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-8">
+                  <section
+                    className="order-1 min-w-0 overflow-hidden rounded-2xl border border-charcoal/10 bg-white lg:order-none"
+                    aria-labelledby="order-items-heading"
+                  >
+                    <div className="flex items-center justify-between gap-3 border-b border-charcoal/10 px-5 py-5 sm:px-6">
+                      <h2
+                        id="order-items-heading"
+                        className="font-display text-xl text-charcoal"
                       >
-                        <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-sand/30 sm:size-20">
-                          {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <Package
-                              size={24}
-                              className="text-sage"
-                              aria-hidden="true"
-                            />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="break-words font-body text-sm font-medium text-charcoal sm:text-base">
-                            {item.name}
-                          </p>
-                          <p className="mt-1 font-body text-xs text-charcoal/50">
-                            ₱{item.price.toFixed(2)} each
-                          </p>
-                          <span className="mt-2 inline-flex rounded-full border border-charcoal/10 px-2.5 py-0.5 font-body text-xs text-charcoal/60">
-                            Qty {item.quantity}
-                          </span>
-                        </div>
-                        <p className="shrink-0 font-body text-sm font-medium text-charcoal">
-                          ₱{(item.price * item.quantity).toFixed(2)}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="space-y-4 border-t border-charcoal/10 bg-sand/20 px-5 py-5 sm:px-6">
-                    <dl className="space-y-3 font-body text-sm text-charcoal/70">
-                      <div className="flex justify-between gap-3">
-                        <dt>Subtotal</dt>
-                        <dd>₱{order.subtotal.toFixed(2)}</dd>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <dt>{order.shippingLabel || "Delivery"} fee</dt>
-                        <dd>₱{order.deliveryFee.toFixed(2)}</dd>
-                      </div>
-                      <div className="flex items-start justify-between gap-4">
-                        <dt>Payment</dt>
-                        <dd className="text-right">
-                          <span className="block text-charcoal">
-                            {formatPaymentMethod(order.paymentMethod)}
-                          </span>
-                          <span className="mt-0.5 block text-xs capitalize text-charcoal/50">
-                            {order.paymentStatus}
-                          </span>
-                        </dd>
-                      </div>
-                    </dl>
-                    <div className="flex items-center justify-between gap-3 border-t border-charcoal/10 pt-4">
-                      <span className="font-body text-sm text-charcoal">
-                        {paymentFailed || paymentPending
-                          ? "Total Due"
-                          : order.paymentStatus === "paid"
-                            ? "Total paid"
-                            : "Order total"}
-                      </span>
-                      <span className="font-display text-2xl text-charcoal">
-                        ₱{order.total.toFixed(2)}
+                        Your tea selection
+                      </h2>
+                      <span className="rounded-full bg-sand/30 px-3 py-1 font-body text-xs text-charcoal/60">
+                        {itemCount} {itemCount === 1 ? "item" : "items"}
                       </span>
                     </div>
-                  </div>
-                </section>
+                    <ul className="divide-y divide-charcoal/10 px-5 sm:px-6">
+                      {order.items.map((item, index) => (
+                        <li
+                          key={`${item.productId}:${index}`}
+                          className="flex items-center gap-3 py-5 sm:gap-4"
+                        >
+                          <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-sand/30 sm:size-20">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <Package
+                                size={24}
+                                className="text-sage"
+                                aria-hidden="true"
+                              />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="break-words font-body text-sm font-medium text-charcoal sm:text-base">
+                              {item.name}
+                            </p>
+                            <p className="mt-1 font-body text-xs text-charcoal/50">
+                              ₱{item.price.toFixed(2)} each
+                            </p>
+                            <span className="mt-2 inline-flex rounded-full border border-charcoal/10 px-2.5 py-0.5 font-body text-xs text-charcoal/60">
+                              Qty {item.quantity}
+                            </span>
+                          </div>
+                          <p className="shrink-0 font-body text-sm font-medium text-charcoal">
+                            ₱{(item.price * item.quantity).toFixed(2)}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="space-y-4 border-t border-charcoal/10 bg-sand/20 px-5 py-5 sm:px-6">
+                      <dl className="space-y-3 font-body text-sm text-charcoal/70">
+                        <div className="flex justify-between gap-3">
+                          <dt>Subtotal</dt>
+                          <dd>₱{order.subtotal.toFixed(2)}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt>{order.shippingLabel || "Delivery"} fee</dt>
+                          <dd>₱{order.deliveryFee.toFixed(2)}</dd>
+                        </div>
+                        <div className="flex items-start justify-between gap-4">
+                          <dt>Payment</dt>
+                          <dd className="text-right">
+                            <span className="block text-charcoal">
+                              {formatPaymentMethod(order.paymentMethod)}
+                            </span>
+                            <span className="mt-0.5 block text-xs capitalize text-charcoal/50">
+                              {order.paymentStatus}
+                            </span>
+                          </dd>
+                        </div>
+                      </dl>
+                      <div className="flex items-center justify-between gap-3 border-t border-charcoal/10 pt-4">
+                        <span className="font-body text-sm text-charcoal">
+                          {paymentFailed || paymentPending
+                            ? "Total Due"
+                            : order.paymentStatus === "paid"
+                              ? "Total paid"
+                              : "Order total"}
+                        </span>
+                        <span className="font-display text-2xl text-charcoal">
+                          ₱{order.total.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </section>
 
-                <section
-                  className="min-w-0 rounded-2xl border border-charcoal/10 bg-sand/30 p-5 sm:p-6"
-                  aria-labelledby="order-progress-heading"
-                >
-                  <div className="mb-6">
-                    <h2
-                      id="order-progress-heading"
-                      className="font-display text-xl text-charcoal"
-                    >
-                      Order progress
-                    </h2>
-                    <p className="mt-2 font-body text-xs text-charcoal/50">
-                      Follow your order from placement to delivery.
-                    </p>
-                  </div>
-                  <OrderTracker
-                    status={order.orderStatus}
-                    paymentFailed={paymentFailed}
-                    paymentPending={paymentPending}
-                  />
-                </section>
+                  {order.orderStatus === "DELIVERED" && (
+                    <div className="order-3 min-w-0 lg:order-none">
+                      <OrderReviews
+                        key={order.orderId}
+                        orderId={order.orderId}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-8">
+                  <section
+                    className="order-2 min-w-0 rounded-2xl border border-charcoal/10 bg-sand/30 p-5 sm:p-6 lg:order-none"
+                    aria-labelledby="order-progress-heading"
+                  >
+                    <div className="mb-6">
+                      <h2
+                        id="order-progress-heading"
+                        className="font-display text-xl text-charcoal"
+                      >
+                        Order progress
+                      </h2>
+                      <p className="mt-2 font-body text-xs text-charcoal/50">
+                        Follow your order from placement to delivery.
+                      </p>
+                    </div>
+                    <OrderTracker
+                      status={order.orderStatus}
+                      paymentFailed={paymentFailed}
+                      paymentPending={paymentPending}
+                    />
+                  </section>
 
-                {order.orderStatus === "DELIVERED" && (
-                  <div className="min-w-0 lg:col-start-1">
-                    <OrderReviews key={order.orderId} orderId={order.orderId} />
+                  <div className="order-4 min-w-0 lg:order-none">
+                    <OrderReturnPanel
+                      key={order.orderId}
+                      orderId={order.orderId}
+                    />
                   </div>
-                )}
-                <div className="min-w-0 lg:col-start-2">
-                  <OrderReturnPanel
-                    key={order.orderId}
-                    orderId={order.orderId}
-                  />
                 </div>
               </div>
             </motion.div>

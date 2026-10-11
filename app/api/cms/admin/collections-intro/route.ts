@@ -18,5 +18,10 @@ export async function PATCH(req: NextRequest) {
     [eyebrow, heading, subheading],
   );
 
+  if (!result.rows.length)
+    return NextResponse.json(
+      { error: "This content record no longer exists. Refresh and try again." },
+      { status: 404 },
+    );
   return NextResponse.json({ intro: result.rows[0] });
 }

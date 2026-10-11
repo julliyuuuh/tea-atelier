@@ -1,15 +1,14 @@
 // app/api/contact/[id]/route.ts
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getUserId } from "@/lib/api-auth";
+import { requireUser } from "@/lib/require-user";
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const userId = getUserId(req);
-  if (!userId)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId, error } = await requireUser(req);
+  if (error) return error;
 
   const { id } = await params;
 

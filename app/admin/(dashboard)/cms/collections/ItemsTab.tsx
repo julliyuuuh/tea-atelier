@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { checkCmsSaves } from "@/lib/cms-client";
+
+import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
 
@@ -128,7 +130,10 @@ export default function ItemsTab({
     }
   }
 
+  const movePending = useRef(false);
+
   async function handleMove(index: number, direction: -1 | 1) {
+    if (movePending.current) return;
     const target = index + direction;
     if (target < 0 || target >= items.length) return;
     const reordered = [...items];
@@ -138,22 +143,34 @@ export default function ItemsTab({
     ];
     const withOrders = reordered.map((it, i) => ({ ...it, sort_order: i }));
     setItems(withOrders);
-    await Promise.all(
-      [withOrders[index], withOrders[target]].map((it) =>
-        fetch(`/api/cms/admin/collections-items/${it.id}`, {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({
-            name: it.name,
-            description: it.description,
-            image: it.image,
-            href: it.href,
-            sort_order: it.sort_order,
-            is_active: it.is_active,
+    movePending.current = true;
+    try {
+      await checkCmsSaves(
+        [withOrders[index], withOrders[target]].map((it) =>
+          fetch(`/api/cms/admin/collections-items/${it.id}`, {
+            method: "PATCH",
+            headers: authHeaders(),
+            body: JSON.stringify({
+              name: it.name,
+              description: it.description,
+              image: it.image,
+              href: it.href,
+              sort_order: it.sort_order,
+              is_active: it.is_active,
+            }),
           }),
-        }),
-      ),
-    );
+        ),
+      );
+    } catch (error) {
+      onError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the content order.",
+      );
+      await load();
+    } finally {
+      movePending.current = false;
+    }
   }
 
   if (isLoading) return <SkeletonBlock className="h-64" />;

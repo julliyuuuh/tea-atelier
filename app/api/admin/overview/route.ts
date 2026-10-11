@@ -18,8 +18,8 @@ export async function GET(req: Request) {
   const statsResult = await pool.query(`
     SELECT
       (SELECT COUNT(*) FROM orders) AS total_orders,
-      (SELECT COALESCE(SUM(total_amount), 0) FROM orders) AS revenue,
-      (SELECT COUNT(*) FROM products) AS total_products,
+      (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE payment_status = 'paid' AND order_status <> 'CANCELLED') AS revenue,
+      (SELECT COUNT(*) FROM products WHERE is_archived = false) AS total_products,
       (SELECT COUNT(*) FROM users WHERE role = 'customer') AS total_customers
   `);
 
@@ -32,6 +32,8 @@ export async function GET(req: Request) {
       SUM(oi.quantity * oi.price) AS revenue
     FROM order_items oi
     JOIN products p ON p.product_id = oi.product_id
+    JOIN orders o ON o.order_id = oi.order_id
+    WHERE o.payment_status = 'paid' AND o.order_status <> 'CANCELLED'
     GROUP BY p.product_id, p.product_name
     ORDER BY revenue DESC
     LIMIT 5

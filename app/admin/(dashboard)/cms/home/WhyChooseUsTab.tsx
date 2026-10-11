@@ -1,7 +1,9 @@
 // app/admin/(dashboard)/cms/home/WhyChooseUsTab.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { checkCmsSaves } from "@/lib/cms-client";
+
+import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
 
@@ -117,7 +119,10 @@ export default function WhyChooseUsTab({
     }
   }
 
+  const movePending = useRef(false);
+
   async function handleMove(index: number, direction: -1 | 1) {
+    if (movePending.current) return;
     const target = index + direction;
     if (target < 0 || target >= reasons.length) return;
 
@@ -129,19 +134,31 @@ export default function WhyChooseUsTab({
     const withOrders = reordered.map((r, i) => ({ ...r, sort_order: i }));
     setReasons(withOrders);
 
-    await Promise.all(
-      [withOrders[index], withOrders[target]].map((r) =>
-        fetch(`/api/cms/admin/why-choose-us/${r.id}`, {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({
-            title: r.title,
-            copy: r.copy,
-            sort_order: r.sort_order,
+    movePending.current = true;
+    try {
+      await checkCmsSaves(
+        [withOrders[index], withOrders[target]].map((r) =>
+          fetch(`/api/cms/admin/why-choose-us/${r.id}`, {
+            method: "PATCH",
+            headers: authHeaders(),
+            body: JSON.stringify({
+              title: r.title,
+              copy: r.copy,
+              sort_order: r.sort_order,
+            }),
           }),
-        }),
-      ),
-    );
+        ),
+      );
+    } catch (error) {
+      onError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the content order.",
+      );
+      await load();
+    } finally {
+      movePending.current = false;
+    }
   }
 
   if (isLoading) return <SkeletonBlock className="h-64" />;

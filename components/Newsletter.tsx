@@ -1,16 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
+import MarketingPreference from "@/components/account/MarketingPreference";
 
 export default function Newsletter() {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) setSubmitted(true);
-  };
+  const { user, isLoading } = useAuth();
 
   return (
     <section className="bg-sand/40 border-t border-charcoal/10">
@@ -29,30 +25,27 @@ export default function Newsletter() {
           to your inbox.
         </p>
 
-        {submitted ? (
-          <p className="font-body text-sm text-sage">
-            Thank you! you're on the list.
+        {isLoading ? (
+          <p role="status" className="font-body text-sm text-charcoal/60">
+            Loading email preferences...
           </p>
+        ) : user?.role === "customer" ? (
+          <div className="text-left">
+            <MarketingPreference verified={user.isVerified} />
+          </div>
         ) : (
-          <form
-            onSubmit={handleSubmit}
-            className="flex items-center justify-center gap-4 border-b border-charcoal/30 pb-2 max-w-sm mx-auto"
-          >
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Your email address"
-              className="flex-1 bg-transparent font-body text-sm text-charcoal placeholder:text-charcoal/40 focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="font-body text-sm text-charcoal hover:text-sage transition-colors"
+          <div className="space-y-4 font-body text-sm text-charcoal/70">
+            <p>
+              Promotional emails are optional. Sign in to a verified customer
+              account to choose your email preferences.
+            </p>
+            <Link
+              href="/login?redirect=%2Faccount"
+              className="inline-block cursor-pointer rounded-full border border-charcoal/20 px-6 py-3 text-charcoal hover:bg-sand/30"
             >
-              →
-            </button>
-          </form>
+              Manage email preferences
+            </Link>
+          </div>
         )}
       </motion.div>
     </section>

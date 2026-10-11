@@ -66,7 +66,7 @@ export async function GET(req: Request) {
        u.user_id, u.first_name, u.last_name, u.email, u.phone_number,
        u.is_verified, u.is_suspended, u.date_created,
        COUNT(o.order_id) AS order_count,
-       COALESCE(SUM(o.total_amount), 0) AS total_spent
+       COALESCE(SUM(o.total_amount) FILTER (WHERE o.payment_status = 'paid' AND o.order_status <> 'CANCELLED'), 0) AS total_spent
      FROM users u
      LEFT JOIN orders o ON o.user_id = u.user_id
      ${whereClause}

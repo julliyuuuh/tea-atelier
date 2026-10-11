@@ -1,7 +1,9 @@
 export type Product = {
   id: string;
   name: string;
-  category: "Leaf Tea" | "Matcha" | "Accessories";
+  category: "Leaf Tea" | "Matcha" | "Accessories" | "Tea Accessories";
+  subCategory?: string | null;
+  type?: string | null;
   price: number;
   image: string;
   description: string;
@@ -9,3 +11,11 @@ export type Product = {
   stockQuantity: number;
   isArchived: boolean;
 };
+
+export function isProductAvailable(product: Product) {
+  return (
+    !product.isArchived &&
+    product.stockQuantity > 0 &&
+    product.availability === "In Stock"
+  );
+}

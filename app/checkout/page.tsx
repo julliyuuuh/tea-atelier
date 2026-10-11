@@ -12,6 +12,7 @@ import PhAddressFields, {
   EMPTY_PH_ADDRESS,
 } from "@/components/checkout/PhAddressFields";
 import { useCart } from "@/lib/cart-context";
+import { isProductAvailable } from "@/lib/products";
 import { useAuth } from "@/lib/auth-context";
 import { useStoreSettings } from "@/lib/store-settings-context";
 import {
@@ -447,6 +448,11 @@ function CheckoutContent() {
     : newDeliveryFee;
   const summaryItems = showSavedOrder ? activeOrder.items : currentSummary;
   const isCartEmpty = items.length === 0;
+  const unavailableSelection = items.some(
+    (item) =>
+      !isProductAvailable(item.product) ||
+      item.quantity > item.product.stockQuantity,
+  );
 
   const startNewCheckout = async () => {
     const order = activeOrderRef.current;
@@ -554,6 +560,7 @@ function CheckoutContent() {
       activeOrderRef.current ||
       submittingRef.current ||
       isCartEmpty ||
+      unavailableSelection ||
       (selectedAddressId === null && !isAddressComplete(address))
     )
       return;
@@ -579,6 +586,7 @@ function CheckoutContent() {
     }
     if (
       isCartEmpty ||
+      unavailableSelection ||
       (selectedAddressId === null && !isAddressComplete(address))
     )
       return;
@@ -666,12 +674,22 @@ function CheckoutContent() {
         subtotal: Number(data.subtotal),
         deliveryFee: Number(data.deliveryFee),
         total: Number(data.total),
-        items: items.map((item) => ({
-          name: item.product.name,
+        items: data.items.map((item: SummaryItem) => ({
+          name: item.name,
           quantity: item.quantity,
-          price: item.product.price,
+          price: Number(item.price),
         })),
-        cartFingerprint,
+        cartFingerprint: JSON.stringify(
+          data.items
+            .map((item: SummaryItem & { productId: string }) => ({
+              productId: String(item.productId),
+              quantity: item.quantity,
+              price: Number(item.price),
+            }))
+            .sort((a: { productId: string }, b: { productId: string }) =>
+              a.productId.localeCompare(b.productId),
+            ),
+        ),
       };
       // Remember the order BEFORE source creation, including when that fails.
       rememberOrder(order);
@@ -1038,6 +1056,18 @@ function CheckoutContent() {
                     : " Check the saved order's status before starting a new checkout."}
                 </p>
               )}
+              {!showSavedOrder && unavailableSelection && (
+                <p
+                  role="status"
+                  className="mb-6 font-body text-sm text-charcoal/70"
+                >
+                  Some selected items are unavailable or exceed current stock.{" "}
+                  <Link href="/cart" className="text-sage underline">
+                    Update your cart selection
+                  </Link>{" "}
+                  to continue.
+                </p>
+              )}
               {!showSavedOrder && isCartEmpty ? (
                 <div className="text-center py-6">
                   <p className="font-body text-sm text-charcoal/70 mb-6">
@@ -1191,6 +1221,7 @@ function CheckoutContent() {
                     cartLoading ||
                     authLoading ||
                     isCartEmpty ||
+                    unavailableSelection ||
                     isSubmitting
                   }
                   className="w-full mt-8 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"

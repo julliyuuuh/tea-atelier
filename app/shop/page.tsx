@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 import { CustomSelect } from "@/components/admin/AdminUI";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
-import type { Product } from "@/lib/products";
+import { isProductAvailable, type Product } from "@/lib/products";
 import { categoryTree, type MainCategory } from "@/lib/categories";
 import {
   Heart,
@@ -35,6 +35,7 @@ function matchesSubcategory(
   category: MainCategory,
   subcategory: string,
 ) {
+  if (product.subCategory) return product.subCategory === subcategory;
   const names =
     (categoryTree[category] as Record<string, readonly string[]>)[
       subcategory
@@ -44,7 +45,7 @@ function matchesSubcategory(
   return names.some((name) => normalize(name) === normalize(product.name));
 }
 function inStock(product: Product) {
-  return product.stockQuantity > 0 && product.availability !== "Out of Stock";
+  return isProductAvailable(product);
 }
 
 const collectionsTeaser = [

@@ -1,44 +1,39 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getUserId } from "@/lib/api-auth";
+import { requireUser } from "@/lib/require-user";
+import {
+  CartError,
+  cartProductId,
+  cartQuantity,
+  changeCartItem,
+} from "@/lib/cart-api";
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ productId: string }> },
 ) {
-  const userId = getUserId(req);
-  if (!userId)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId, error } = await requireUser(req);
+  if (error) return error;
 
   const { productId } = await params;
-  const { quantity } = await req.json();
-  if (!quantity || quantity < 1) {
+  try {
+    const body = await req.json().catch(() => null);
+    await changeCartItem(
+      userId!,
+      cartProductId(productId),
+      cartQuantity(body?.quantity),
+      false,
+    );
+  } catch (error) {
     return NextResponse.json(
-      { error: "quantity must be at least 1" },
-      { status: 400 },
+      {
+        error:
+          error instanceof CartError ? error.message : "Unable to update cart.",
+      },
+      { status: error instanceof CartError ? error.status : 500 },
     );
   }
 
-  const productResult = await pool.query(
-    "SELECT stock_quantity FROM products WHERE product_id = $1",
-    [productId],
-  );
-  const product = productResult.rows[0];
-  if (!product) {
-    return NextResponse.json({ error: "Product not found." }, { status: 404 });
-  }
-
-  if (quantity > product.stock_quantity) {
-    return NextResponse.json(
-      { error: `Only ${product.stock_quantity} in stock.` },
-      { status: 400 },
-    );
-  }
-
-  await pool.query(
-    "UPDATE cart SET quantity = $1 WHERE user_id = $2 AND product_id = $3",
-    [quantity, userId, productId],
-  );
   return NextResponse.json({ success: true });
 }
 
@@ -46,12 +41,19 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ productId: string }> },
 ) {
-  const userId = getUserId(req);
-  if (!userId)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId, error } = await requireUser(req);
+  if (error) return error;
 
   const { productId } = await params;
 
+  try {
+    cartProductId(productId);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Invalid product." },
+      { status: 400 },
+    );
+  }
   await pool.query("DELETE FROM cart WHERE user_id = $1 AND product_id = $2", [
     userId,
     productId,
