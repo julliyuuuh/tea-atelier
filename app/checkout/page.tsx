@@ -13,7 +13,15 @@ import PhAddressFields, {
 } from "@/components/checkout/PhAddressFields";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
-import { DELIVERY_FEE } from "@/lib/shipping";
+import { useStoreSettings } from "@/lib/store-settings-context";
+import {
+  PAYMENT_OPTIONS,
+  SHIPPING_OPTIONS,
+  shippingFeeCents,
+  usdEstimate,
+  type PaymentOption,
+  type ShippingOption,
+} from "@/lib/store-settings";
 
 const CHECKOUT_ATTEMPT_STORAGE = "tea-atelier.checkout-attempt.v1";
 const CHECKOUT_ORDER_STORAGE = "tea-atelier.checkout-order.v1";
@@ -45,6 +53,31 @@ function CheckoutContent() {
   const returnOrderId = searchParams.get("orderId");
   const accountEmail = user?.email;
   const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [shippingMethod, setShippingMethod] =
+    useState<ShippingOption>("standard");
+  const {
+    settings,
+    ready: settingsReady,
+    error: settingsError,
+    refresh: refreshSettings,
+    currency,
+  } = useStoreSettings();
+  const enabledPayments = (
+    Object.keys(PAYMENT_OPTIONS) as PaymentOption[]
+  ).filter((key) => settings.payments[key]);
+  const enabledShipping = (
+    Object.keys(SHIPPING_OPTIONS) as ShippingOption[]
+  ).filter((key) => settings.shipping[key].enabled);
+  const chosenShipping = enabledShipping.includes(shippingMethod)
+    ? shippingMethod
+    : enabledShipping[0];
+  const chosenPayment = enabledPayments.includes(paymentMethod as PaymentOption)
+    ? paymentMethod
+    : enabledPayments[0];
+  const newDeliveryFee =
+    shippingFeeCents(settings, chosenShipping, Math.round(subtotal * 100)) /
+    100;
+
   const [showConfirm, setShowConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,10 +166,6 @@ function CheckoutContent() {
       if (sequence === statusSequenceRef.current) setChecking(false);
     }
   }, []);
-
-  useEffect(() => {
-    if (user) setFormData((prev) => ({ ...prev, email: user.email }));
-  }, [user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -401,14 +430,14 @@ function CheckoutContent() {
   );
   const showSavedOrder = !!activeOrder && !cartChanged;
   const total = showSavedOrder
-    ? (activeOrder.total ?? subtotal + DELIVERY_FEE)
-    : subtotal + DELIVERY_FEE;
+    ? (activeOrder.total ?? subtotal + newDeliveryFee)
+    : subtotal + newDeliveryFee;
   const displaySubtotal = showSavedOrder
     ? (activeOrder.subtotal ?? subtotal)
     : subtotal;
   const displayDeliveryFee = showSavedOrder
-    ? (activeOrder.deliveryFee ?? DELIVERY_FEE)
-    : DELIVERY_FEE;
+    ? (activeOrder.deliveryFee ?? newDeliveryFee)
+    : newDeliveryFee;
   const summaryItems = showSavedOrder ? activeOrder.items : currentSummary;
   const isCartEmpty = items.length === 0;
 
@@ -509,6 +538,8 @@ function CheckoutContent() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (
+      !settingsReady ||
+      !!settingsError ||
       !addressesReady ||
       !restored ||
       cartLoading ||
@@ -524,6 +555,8 @@ function CheckoutContent() {
 
   const confirmOrder = async () => {
     if (
+      !settingsReady ||
+      !!settingsError ||
       !addressesReady ||
       !restored ||
       cartLoading ||
@@ -562,7 +595,8 @@ function CheckoutContent() {
                   : address.province?.name,
               ...(saveAddress ? { addressLabel } : {}),
             }),
-        paymentMethod,
+        paymentMethod: chosenPayment,
+        shippingMethod: chosenShipping,
         phone: formData.phone,
         fullName: formData.fullName,
       };
@@ -611,7 +645,7 @@ function CheckoutContent() {
       const orderId = Number(data.orderId);
       if (!Number.isSafeInteger(orderId) || orderId <= 0)
         throw new Error("Invalid order response.");
-      if (paymentMethod === "cod") {
+      if (chosenPayment === "cod") {
         clearCart();
         sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
         router.push(`/order-confirmation?orderId=${orderId}`);
@@ -620,7 +654,7 @@ function CheckoutContent() {
       const order: SavedOrder = {
         accountEmail: user.email,
         orderId,
-        paymentMethod: paymentMethod === "grabpay" ? "grabpay" : "gcash",
+        paymentMethod: chosenPayment === "grabpay" ? "grabpay" : "gcash",
         subtotal: Number(data.subtotal),
         deliveryFee: Number(data.deliveryFee),
         total: Number(data.total),
@@ -824,7 +858,7 @@ function CheckoutContent() {
                     <input
                       type="email"
                       name="email"
-                      value={formData.email}
+                      value={user?.email || ""}
                       readOnly
                       aria-describedby="checkout-email-note"
                       required
@@ -899,46 +933,83 @@ function CheckoutContent() {
                   Payment Method
                 </h2>
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="cod"
-                      checked={paymentMethod === "cod"}
-                      onChange={() => setPaymentMethod("cod")}
-                      className="accent-sage"
-                    />
-                    <span className="font-body text-sm text-charcoal">
-                      Cash on Delivery
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="gcash"
-                      checked={paymentMethod === "gcash"}
-                      onChange={() => setPaymentMethod("gcash")}
-                      className="accent-sage"
-                    />
-                    <span className="font-body text-sm text-charcoal">
-                      GCash
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="grabpay"
-                      checked={paymentMethod === "grabpay"}
-                      onChange={() => setPaymentMethod("grabpay")}
-                      className="accent-sage"
-                    />
-                    <span className="font-body text-sm text-charcoal">
-                      GrabPay
-                    </span>
-                  </label>
+                  {enabledPayments.map((key) => (
+                    <label
+                      key={key}
+                      className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="payment"
+                        value={key}
+                        checked={chosenPayment === key}
+                        onChange={() => setPaymentMethod(key)}
+                        className="accent-sage"
+                      />
+                      <span className="font-body text-sm text-charcoal">
+                        {PAYMENT_OPTIONS[key]}
+                      </span>
+                    </label>
+                  ))}
                 </div>
+                <h2 className="mt-8 mb-4 font-display text-2xl text-charcoal">
+                  Delivery option
+                </h2>
+                <div className="space-y-3">
+                  {enabledShipping.map((key) => (
+                    <label
+                      key={key}
+                      className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="shipping"
+                        checked={chosenShipping === key}
+                        onChange={() => setShippingMethod(key)}
+                        className="accent-sage"
+                      />
+                      <span className="flex-1 font-body text-sm text-charcoal">
+                        {SHIPPING_OPTIONS[key]}
+                        <span className="mt-1 block text-xs text-charcoal/50">
+                          {settings.shipping[key].estimate}
+                        </span>
+                      </span>
+                      <span className="font-body text-sm">
+                        ₱
+                        {(
+                          shippingFeeCents(
+                            settings,
+                            key,
+                            Math.round(subtotal * 100),
+                          ) / 100
+                        ).toFixed(2)}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {settings.freeShippingThresholdCents !== null && (
+                  <p className="mt-3 font-body text-xs text-charcoal/50">
+                    Free delivery on product subtotals of at least ₱
+                    {(settings.freeShippingThresholdCents / 100).toFixed(2)}.
+                  </p>
+                )}
+                {(!settingsReady || settingsError) && (
+                  <p
+                    role="status"
+                    className="mt-4 font-body text-sm text-charcoal/60"
+                  >
+                    {settingsError || "Loading checkout options…"}{" "}
+                    {settingsError && (
+                      <button
+                        type="button"
+                        onClick={() => void refreshSettings()}
+                        className="text-sage underline"
+                      >
+                        Retry
+                      </button>
+                    )}
+                  </p>
+                )}
               </div>
             </fieldset>
           </form>
@@ -1007,6 +1078,16 @@ function CheckoutContent() {
                   </span>
                 </div>
               </div>
+              <p className="mt-4 font-body text-xs text-charcoal/60">
+                Charged in PHP.
+                {currency === "USD" && (
+                  <span className="ml-1">
+                    Estimated total: ≈{" "}
+                    {usdEstimate(total, settings.usd.phpPerUsd)} USD. Your bank
+                    may use a different rate.
+                  </span>
+                )}
+              </p>
               {activeOrder ? (
                 <div className="mt-8 space-y-3">
                   <button
@@ -1082,6 +1163,8 @@ function CheckoutContent() {
                   type="submit"
                   form="checkout-form"
                   disabled={
+                    !settingsReady ||
+                    !!settingsError ||
                     !restored ||
                     cartLoading ||
                     authLoading ||
@@ -1165,7 +1248,7 @@ function CheckoutContent() {
               id="cancel-order-description"
               className="font-body text-sm text-charcoal/70 mb-6"
             >
-              We'll check whether order #TA-{activeOrder.orderId} can be
+              We&apos;ll check whether order #TA-{activeOrder.orderId} can be
               cancelled. Your current cart will stay. An active or authorized
               payment may prevent cancellation.
             </p>

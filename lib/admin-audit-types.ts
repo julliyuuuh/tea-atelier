@@ -7,6 +7,7 @@ export const AUDIT_RESOURCES = {
   refund: "Refunds",
   contact: "Contact messages",
   cms: "Content management",
+  settings: "Store settings",
 } as const;
 export type AuditEvent = {
   event_id: string;

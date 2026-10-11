@@ -7,6 +7,7 @@ import StockErrorModal from "@/components/StockErrorModal";
 import AddedToCartModal from "@/components/AddedToCartModal";
 import Script from "next/script";
 import { WishlistProvider } from "@/lib/wishlist-context";
+import { StoreSettingsProvider } from "@/lib/store-settings-context";
 import { ThemeProvider } from "@/lib/theme-context";
 
 const fraunces = Fraunces({
@@ -26,8 +27,8 @@ export const metadata: Metadata = {
   title: "Tea Atelier",
   description: "Where every leaf tells a story",
   icons: {
-    icon: { url: "/images/mainfavicon.png", type: "image/png" },
-    apple: "/images/mainfavicon.png",
+    icon: { url: "/images/logo.png", type: "image/png" },
+    apple: "/images/logo.png",
   },
 };
 
@@ -43,17 +44,19 @@ export default function RootLayout({
           src="https://accounts.google.com/gsi/client"
           strategy="afterInteractive"
         />
-        <ThemeProvider>
-          <AuthProvider>
-            <CartProvider>
-              <WishlistProvider>
-                {children}
-                <StockErrorModal />
-                <AddedToCartModal />
-              </WishlistProvider>
-            </CartProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <StoreSettingsProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <CartProvider>
+                <WishlistProvider>
+                  {children}
+                  <StockErrorModal />
+                  <AddedToCartModal />
+                </WishlistProvider>
+              </CartProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </StoreSettingsProvider>
       </body>
     </html>
   );

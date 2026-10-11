@@ -38,6 +38,7 @@ type OrderDetails = {
   createdAt: string;
   subtotal: number;
   deliveryFee: number;
+  shippingLabel?: string;
   total: number;
   items: OrderItem[];
 };
@@ -288,6 +289,9 @@ export default function OrderDetailsPage({
             >
               <header className="flex flex-col gap-5 border-b border-charcoal/10 pb-6 sm:flex-row sm:items-end sm:justify-between lg:pb-8">
                 <div className="min-w-0 space-y-3">
+                  <p className="font-body text-xs uppercase tracking-[0.2em] text-sage">
+                    Order details
+                  </p>
                   <div className="flex flex-wrap items-center gap-3">
                     <h1 className="font-display text-3xl text-charcoal sm:text-4xl">
                       Order #TA-{order.orderId}
@@ -398,7 +402,7 @@ export default function OrderDetailsPage({
                         <dd>₱{order.subtotal.toFixed(2)}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt>Delivery fee</dt>
+                        <dt>{order.shippingLabel || "Delivery"} fee</dt>
                         <dd>₱{order.deliveryFee.toFixed(2)}</dd>
                       </div>
                       <div className="flex items-start justify-between gap-4">

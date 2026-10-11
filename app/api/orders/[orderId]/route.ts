@@ -18,6 +18,7 @@ export async function GET(
   const orderResult = await pool.query(
     `SELECT order_id, user_id, shipping_cost, total_amount, order_status, payment_status,
             created_at, payment_method, contact_phone, recipient_name,
+            to_jsonb(orders)->>'shipping_label' AS shipping_label,
             to_jsonb(orders)->>'payment_fulfillment_issue' AS fulfillment_issue
     FROM orders
     WHERE order_id = $1`,
@@ -54,6 +55,7 @@ export async function GET(
     paymentMethod: order.payment_method,
     createdAt: order.created_at,
     subtotal,
+    shippingLabel: order.shipping_label || "Standard delivery",
     deliveryFee: parseFloat(order.shipping_cost),
     total: parseFloat(order.total_amount),
     items: itemsResult.rows.map((row) => ({

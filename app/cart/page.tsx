@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import DisplayPrice from "@/components/DisplayPrice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
@@ -53,7 +54,7 @@ export default function CartPage() {
                         {item.product.name}
                       </h3>
                       <span className="font-body text-sm text-charcoal/60">
-                        ₱{item.product.price}
+                        <DisplayPrice pesos={Number(item.product.price)} />
                       </span>
                     </div>
 
@@ -98,7 +99,9 @@ export default function CartPage() {
               </h2>
               <div className="flex justify-between font-body text-sm text-charcoal/70 mb-3">
                 <span>Subtotal</span>
-                <span>₱{subtotal.toFixed(2)}</span>
+                <span>
+                  <DisplayPrice pesos={subtotal} />
+                </span>
               </div>
               <div className="flex justify-between font-body text-sm text-charcoal/70 mb-6">
                 <span>Shipping</span>
@@ -106,7 +109,9 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between font-display text-lg text-charcoal border-t border-charcoal/10 pt-4 mb-8">
                 <span>Total</span>
-                <span>₱{subtotal.toFixed(2)}</span>
+                <span>
+                  <DisplayPrice pesos={subtotal} />
+                </span>
               </div>
 
               <Link

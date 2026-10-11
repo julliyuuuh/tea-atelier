@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   RotateCcw,
   History,
+  Settings,
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
@@ -49,6 +50,12 @@ const navItems: NavItem[] = [
     label: "Audit Trail",
     href: "/admin/audit",
     icon: History,
+    superAdminOnly: true,
+  },
+  {
+    label: "Settings",
+    href: "/admin/settings",
+    icon: Settings,
     superAdminOnly: true,
   },
 ];

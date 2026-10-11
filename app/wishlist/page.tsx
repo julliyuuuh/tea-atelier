@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import DisplayPrice from "@/components/DisplayPrice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useWishlist } from "@/lib/wishlist-context";
@@ -55,7 +56,7 @@ export default function WishlistPage() {
                     {product.name}
                   </h3>
                   <p className="font-display text-base text-charcoal mb-3">
-                    ₱{product.price}
+                    <DisplayPrice pesos={Number(product.price)} />
                   </p>
                 </Link>
                 <div className="flex gap-2">

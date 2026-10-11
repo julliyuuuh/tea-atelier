@@ -101,7 +101,15 @@ export async function GET(
       phone: pick(u, ["phone", "phone_number", "contact_number"]),
       joinedAt: u.date_created ?? null,
     },
-    delivery,
+    delivery: [
+      {
+        label: "Delivery method",
+        value: String(o.shipping_label || "Standard delivery"),
+      },
+      ...delivery.filter(
+        (item) => !["Shipping method", "Shipping label"].includes(item.label),
+      ),
+    ],
     items,
     subtotal,
     deliveryFee: Math.max(0, total - subtotal),

@@ -9,7 +9,14 @@ import {
   getSavedDeliveryAddress,
   parseSavedAddressId,
 } from "@/lib/checkout-address";
-import { getShippingFee } from "@/lib/shipping";
+import { readSettings } from "@/lib/store-settings-server";
+import {
+  shippingFeeCents,
+  SettingsError,
+  SHIPPING_OPTIONS,
+  type ShippingOption,
+  type PaymentOption,
+} from "@/lib/store-settings";
 const ALLOWED_PAYMENT_METHODS = ["cod", "gcash", "grabpay"];
 // Optional fields may be empty; required fields must be non-empty strings.
 function isValidText(
@@ -168,6 +175,16 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+  const shippingMethod = body.shippingMethod ?? "standard";
+  if (
+    typeof shippingMethod !== "string" ||
+    !Object.hasOwn(SHIPPING_OPTIONS, shippingMethod)
+  ) {
+    return NextResponse.json(
+      { error: "Invalid delivery option." },
+      { status: 400 },
+    );
+  }
   const requestHash = createHash("sha256")
     .update(
       JSON.stringify({
@@ -182,6 +199,7 @@ export async function POST(req: Request) {
               ...(saveAddress === true && addressLabel ? { addressLabel } : {}),
             }),
         paymentMethod: method,
+        ...(shippingMethod === "standard" ? {} : { shippingMethod }),
         phone: phone || null,
         fullName: fullName || null,
       }),
@@ -239,6 +257,14 @@ export async function POST(req: Request) {
         total: total.toFixed(2),
       });
     }
+    // Read current options only for a NEW order. Idempotent retries above retain the saved totals.
+    const { config } = await readSettings(client, true);
+    if (!config.payments[method as PaymentOption])
+      throw new SettingsError(
+        "This payment method is unavailable. Choose another option.",
+        409,
+      );
+    shippingFeeCents(config, shippingMethod, 0);
     const savedDelivery =
       savedAddressId !== null
         ? await getSavedDeliveryAddress(client, userId, savedAddressId)
@@ -357,16 +383,18 @@ export async function POST(req: Request) {
     }
     // Calculate totals from real DB prices and the server-side shipping fee,
     // never from client-supplied numbers
-    const subtotal = cartResult.rows.reduce(
-      (sum, item) => sum + parseFloat(item.price) * item.quantity,
+    const subtotalCents = cartResult.rows.reduce(
+      (sum, item) => sum + Math.round(Number(item.price) * 100) * item.quantity,
       0,
     );
-    const shippingCost = getShippingFee();
-    const totalAmount = subtotal + shippingCost;
+    const subtotal = subtotalCents / 100;
+    const shippingCost =
+      shippingFeeCents(config, shippingMethod, subtotalCents) / 100;
+    const totalAmount = subtotalCents / 100 + shippingCost;
     // Create the order
     const orderResult = await client.query(
-      `INSERT INTO orders (user_id, address_id, shipping_cost, total_amount, order_status, payment_method, contact_phone, recipient_name, checkout_request_key, checkout_request_hash)
-      VALUES ($1, $2, $3, $4, 'PLACED', $5, $6, $7, $8, $9)
+      `INSERT INTO orders (user_id, address_id, shipping_cost, total_amount, order_status, payment_method, contact_phone, recipient_name, checkout_request_key, checkout_request_hash, shipping_method, shipping_label)
+      VALUES ($1, $2, $3, $4, 'PLACED', $5, $6, $7, $8, $9, $10, $11)
       RETURNING order_id, payment_status`,
       [
         userId,
@@ -378,6 +406,8 @@ export async function POST(req: Request) {
         fullName || null,
         requestKey.toLowerCase(),
         requestHash,
+        shippingMethod,
+        SHIPPING_OPTIONS[shippingMethod as ShippingOption],
       ],
     );
     const orderId = orderResult.rows[0].order_id;
@@ -451,6 +481,11 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     await client.query("ROLLBACK");
+    if (error instanceof SettingsError)
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
     console.error("Order placement failed:", error);
     return NextResponse.json(
       { error: "Unable to place order." },

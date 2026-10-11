@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams } from "next/navigation";
+import DisplayPrice from "@/components/DisplayPrice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductReviews from "@/components/reviews/ProductReviews";
@@ -10,10 +11,13 @@ import { useCart } from "@/lib/cart-context";
 import type { Product } from "@/lib/products";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { useStoreSettings } from "@/lib/store-settings-context";
+import { SHIPPING_OPTIONS, type ShippingOption } from "@/lib/store-settings";
 import { useWishlist } from "@/lib/wishlist-context";
 
 export default function ProductDetailsPage() {
   const { id } = useParams();
+  const { settings } = useStoreSettings();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -104,7 +108,7 @@ export default function ProductDetailsPage() {
             {product.name}
           </h1>
           <span className="font-body text-2xl text-charcoal/80 mb-6">
-            ₱{product.price}
+            <DisplayPrice pesos={Number(product.price)} />
           </span>
           <p className="font-body text-sm text-charcoal/70 leading-relaxed mb-8">
             {product.description}
@@ -168,9 +172,22 @@ export default function ProductDetailsPage() {
           {/* Accordion */}
           <div className="border-t border-charcoal/10">
             <AccordionRow title="Shipping Information">
-              Orders are processed within 1-2 business days and typically arrive
-              within 3-5 business days via standard delivery. Free shipping on
-              orders over ₱1,500.
+              {(Object.keys(SHIPPING_OPTIONS) as ShippingOption[])
+                .filter((key) => settings.shipping[key].enabled)
+                .map((key) => (
+                  <p key={key} className="mb-2">
+                    {SHIPPING_OPTIONS[key]}:{" "}
+                    {settings.shipping[key].estimate ||
+                      "Delivery estimate shown at checkout"}
+                    .
+                  </p>
+                ))}
+              {settings.freeShippingThresholdCents !== null && (
+                <p>
+                  Free delivery on product subtotals of at least ₱
+                  {(settings.freeShippingThresholdCents / 100).toFixed(2)}.
+                </p>
+              )}
             </AccordionRow>
             <AccordionRow title="Materials & Care">
               Store in a cool, dry place away from direct sunlight. Reseal

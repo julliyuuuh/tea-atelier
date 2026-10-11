@@ -1,5 +1,6 @@
 "use client";
 
+import DisplayPrice from "@/components/DisplayPrice";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
@@ -81,7 +82,7 @@ export default function BestSellers() {
                   {product.name}
                 </h3>
                 <span className="font-body text-sm text-charcoal/70">
-                  ₱{product.price}
+                  <DisplayPrice pesos={Number(product.price)} />
                 </span>
               </div>
               <button

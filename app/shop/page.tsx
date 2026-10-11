@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import DisplayPrice from "@/components/DisplayPrice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
@@ -113,7 +114,7 @@ export default function ShopPage() {
               Welcome back, {user.name || "there"}
             </h1>
             <p className="font-body text-sm text-charcoal/60">
-              Here's what's fresh in the atelier today.
+              Here&apos;s what&apos;s fresh in the atelier today.
             </p>
           </motion.div>
         </div>
@@ -337,7 +338,7 @@ export default function ShopPage() {
                     </h3>
                     <div className="flex items-center justify-between mb-3">
                       <span className="font-display text-base text-charcoal">
-                        ₱{product.price}
+                        <DisplayPrice pesos={Number(product.price)} />
                       </span>
                       <span className="font-body text-[10px]">
                         {product.stockQuantity === 0 ? (

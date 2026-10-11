@@ -1,20 +1,28 @@
+"use client";
+import DisplayCurrencyPicker from "@/components/DisplayCurrencyPicker";
+import { useStoreSettings } from "@/lib/store-settings-context";
 import Link from "next/link";
 
 export default function Footer() {
+  const { settings } = useStoreSettings();
   return (
     <footer className="bg-charcoal text-cream">
       <div className="max-w-7xl mx-auto px-8 py-16 grid grid-cols-1 md:grid-cols-4 gap-12">
         {/* Contact */}
         <div>
-          <h3 className="font-display text-xl mb-4">Tea Atelier</h3>
+          <h3 className="font-display text-xl mb-4">{settings.store.name}</h3>
           <p className="font-body text-sm text-cream/70 leading-relaxed">
-            123 Leaf Street
-            <br />
-            Quezon City, PH
+            {settings.store.address}
           </p>
           <p className="font-body text-sm text-cream/70 mt-3">
-            hello@teaatelier.com
+            {settings.store.email}
           </p>
+          {settings.store.phone && (
+            <p className="mt-2 font-body text-sm text-cream/70">
+              {settings.store.phone}
+            </p>
+          )}
+          <DisplayCurrencyPicker />
         </div>
 
         {/* Quick Links */}
@@ -123,7 +131,8 @@ export default function Footer() {
 
       <div className="border-t border-cream/10 px-8 py-6 text-center space-y-2">
         <p className="font-body text-xs text-cream/50">
-          © {new Date().getFullYear()} Tea Atelier. All rights reserved.
+          © {new Date().getFullYear()} {settings.store.name}. All rights
+          reserved.
         </p>
         <p className="font-body text-xs text-cream/50">
           Address data: Philippine Standard Geographic Code (PSGC), Philippine
