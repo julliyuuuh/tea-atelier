@@ -1,3 +1,5 @@
+export const MAX_GALLERY_IMAGES = 5;
+
 export function productInputError(body: unknown): string | null {
   if (!body || typeof body !== "object" || Array.isArray(body))
     return "Invalid product details.";
@@ -23,5 +25,23 @@ export function productInputError(body: unknown): string | null {
     stockQuantity > 2147483647
   )
     return "Stock quantity must be a non-negative whole number.";
+  const gallery = (body as Record<string, unknown>).galleryImages;
+  if (gallery !== undefined) {
+    if (!Array.isArray(gallery) || gallery.length > MAX_GALLERY_IMAGES)
+      return `Add at most ${MAX_GALLERY_IMAGES} extra images.`;
+    for (const image of gallery) {
+      if (typeof image !== "string" || image.length > 2048)
+        return "Gallery images must use valid HTTPS URLs.";
+      try {
+        const url = new URL(image);
+        if (url.protocol !== "https:" || url.username || url.password)
+          return "Gallery images must use valid HTTPS URLs.";
+      } catch {
+        return "Gallery images must use valid HTTPS URLs.";
+      }
+    }
+    if (new Set(gallery).size !== gallery.length)
+      return "Remove duplicate gallery images.";
+  }
   return null;
 }

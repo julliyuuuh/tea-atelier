@@ -22,6 +22,7 @@ export async function PUT(
     type,
     price,
     image,
+    galleryImages,
     description,
     stockQuantity,
   } = body;
@@ -30,9 +31,9 @@ export async function PUT(
   const result = await adminQuery(
     decoded!.userId,
     `UPDATE products
-     SET product_name = $1, product_desc = $2, product_image = $3, category = $4, sub_category = $5, type = $6, price = $7, status = $8, stock_quantity = $9
+     SET product_name = $1, product_desc = $2, product_image = $3, category = $4, sub_category = $5, type = $6, price = $7, status = $8, stock_quantity = $9, gallery_images = COALESCE($11::jsonb, gallery_images)
      WHERE product_id = $10
-     RETURNING product_id, product_name, product_desc, product_image, category, sub_category, type, price, status, stock_quantity`,
+     RETURNING product_id, product_name, product_desc, product_image, category, sub_category, type, price, status, stock_quantity, gallery_images`,
     [
       name,
       description,
@@ -44,6 +45,7 @@ export async function PUT(
       status,
       stockQuantity,
       id,
+      galleryImages === undefined ? null : JSON.stringify(galleryImages),
     ],
   );
 
@@ -58,6 +60,7 @@ export async function PUT(
       name: row.product_name,
       description: row.product_desc,
       image: row.product_image,
+      galleryImages: row.gallery_images || [],
       category: row.category,
       subCategory: row.sub_category,
       type: row.type,

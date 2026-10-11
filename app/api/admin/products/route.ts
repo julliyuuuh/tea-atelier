@@ -19,6 +19,7 @@ export async function POST(req: Request) {
     type,
     price,
     image,
+    galleryImages,
     description,
     stockQuantity,
   } = body;
@@ -27,9 +28,9 @@ export async function POST(req: Request) {
 
   const result = await adminQuery(
     decoded!.userId,
-    `INSERT INTO products (product_name, product_desc, product_image, category, sub_category, type, price, status, stock_quantity)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     RETURNING product_id, product_name, product_desc, product_image, category, sub_category, type, price, status, stock_quantity`,
+    `INSERT INTO products (product_name, product_desc, product_image, category, sub_category, type, price, status, stock_quantity, gallery_images)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)
+     RETURNING product_id, product_name, product_desc, product_image, category, sub_category, type, price, status, stock_quantity, gallery_images`,
     [
       name,
       description,
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
       price,
       status,
       stockQuantity,
+      JSON.stringify(galleryImages ?? []),
     ],
   );
 
@@ -50,6 +52,7 @@ export async function POST(req: Request) {
       name: row.product_name,
       description: row.product_desc,
       image: row.product_image,
+      galleryImages: row.gallery_images || [],
       category: row.category,
       subCategory: row.sub_category,
       type: row.type,
@@ -132,7 +135,7 @@ export async function GET(req: Request) {
 
   const offset = (page - 1) * limit;
   const dataResult = await pool.query(
-    `SELECT product_id, product_name, product_desc, product_image, category, sub_category, type, price, status, stock_quantity, is_archived
+    `SELECT product_id, product_name, product_desc, product_image, category, sub_category, type, price, status, stock_quantity, is_archived, gallery_images
      FROM products
      ${whereClause}
      ORDER BY ${sortColumn} ${sortDir}, product_id DESC
@@ -145,6 +148,7 @@ export async function GET(req: Request) {
     name: row.product_name,
     description: row.product_desc,
     image: row.product_image,
+    galleryImages: row.gallery_images || [],
     category: row.category,
     subCategory: row.sub_category,
     type: row.type,

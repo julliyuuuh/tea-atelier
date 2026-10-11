@@ -7,6 +7,7 @@ export type Product = {
   price: number;
   unitsSold?: number;
   image: string;
+  galleryImages?: string[];
   description: string;
   availability: "In Stock" | "Out of Stock";
   stockQuantity: number;

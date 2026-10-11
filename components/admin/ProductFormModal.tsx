@@ -1,5 +1,6 @@
 "use client";
 
+import ProductGalleryFields from "@/components/admin/ProductGalleryFields";
 import ValidatedForm from "@/components/ValidatedForm";
 import React, { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -15,6 +16,7 @@ const emptyForm = {
   type: "",
   price: "",
   image: "",
+  galleryImages: [] as string[],
   description: "",
   stockQuantity: "",
 };
@@ -48,6 +50,7 @@ export default function ProductFormModal({
   const editingId = editingProduct?.id ?? null;
 
   const [form, setForm] = useState(emptyForm);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [isDraggingImage, setIsDraggingImage] = useState(false);
@@ -67,6 +70,7 @@ export default function ProductFormModal({
         type: (editingProduct as any).type || "",
         price: editingProduct.price.toString(),
         image: editingProduct.image,
+        galleryImages: editingProduct.galleryImages || [],
         description: editingProduct.description,
         stockQuantity: editingProduct.stockQuantity.toString(),
       });
@@ -74,6 +78,7 @@ export default function ProductFormModal({
       setForm(emptyForm);
     }
     setImageFile(null);
+    setGalleryFiles([]);
     setFieldErrors({});
     setSaveError("");
   }, [open, editingProduct]);
@@ -181,6 +186,7 @@ export default function ProductFormModal({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     setSaveError("");
     if (!validate()) return;
 
@@ -203,6 +209,29 @@ export default function ProductFormModal({
         imageUrl = uploadResult.url;
       }
 
+      const galleryImages = [...form.galleryImages];
+      for (const file of galleryFiles) {
+        const uploadData = new FormData();
+        uploadData.append("file", file);
+        const response = await fetch("/api/admin/upload", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: uploadData,
+        });
+        const uploaded = await response.json();
+        if (!response.ok || typeof uploaded.url !== "string")
+          throw new Error(uploaded.error || "Extra image upload failed.");
+        if (!galleryImages.includes(uploaded.url))
+          galleryImages.push(uploaded.url);
+        setForm((previous) => ({
+          ...previous,
+          galleryImages: [...galleryImages],
+        }));
+        setGalleryFiles((previous) =>
+          previous.filter((pending) => pending !== file),
+        );
+      }
+
       const payload = {
         name: form.name,
         category: form.category,
@@ -210,6 +239,7 @@ export default function ProductFormModal({
         type: form.type,
         price: parseFloat(form.price),
         image: imageUrl,
+        galleryImages,
         description: form.description,
         stockQuantity: parseInt(form.stockQuantity, 10) || 0,
       };
@@ -583,6 +613,15 @@ export default function ProductFormModal({
                       className="hidden"
                     />
                   </div>
+                  <ProductGalleryFields
+                    images={form.galleryImages}
+                    files={galleryFiles}
+                    onImagesChange={(galleryImages) =>
+                      setForm((previous) => ({ ...previous, galleryImages }))
+                    }
+                    onFilesChange={setGalleryFiles}
+                    disabled={isSaving}
+                  />
                   {fieldErrors.image && (
                     <p className="font-body text-xs text-red-600">
                       {fieldErrors.image}

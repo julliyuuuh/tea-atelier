@@ -14,6 +14,7 @@ CREATE TABLE products (
   product_name VARCHAR(150) NOT NULL,
   product_desc TEXT NOT NULL,
   product_image VARCHAR(255) DEFAULT NULL,
+  gallery_images JSONB NOT NULL DEFAULT '[]'::JSONB,
   category VARCHAR(150) NOT NULL,
   price DECIMAL(10,2) NOT NULL,
   status VARCHAR(20) DEFAULT 'NO STOCK'

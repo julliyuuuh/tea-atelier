@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams } from "next/navigation";
+import ProductGallery from "@/components/ProductGallery";
 import DisplayPrice from "@/components/DisplayPrice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -86,12 +87,13 @@ export default function ProductDetailsPage() {
           initial={{ opacity: 0, scale: 1.03 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-sand"
+          className="self-start"
         >
-          <img
-            src={product.image}
-            alt={product.name}
-            className="w-full h-full object-cover"
+          <ProductGallery
+            key={product.id}
+            image={product.image}
+            galleryImages={product.galleryImages}
+            name={product.name}
           />
         </motion.div>
 

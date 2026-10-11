@@ -9,7 +9,7 @@ export async function GET(
     const { id } = await params;
 
     const result = await pool.query(
-      `SELECT product_id, product_name, product_desc, product_image, category, sub_category, type, price, status, stock_quantity
+      `SELECT product_id, product_name, product_desc, product_image, gallery_images, category, sub_category, type, price, status, stock_quantity
        FROM products WHERE product_id = $1 AND is_archived = false`,
       [id],
     );
@@ -27,6 +27,7 @@ export async function GET(
       name: row.product_name,
       description: row.product_desc,
       image: row.product_image,
+      galleryImages: row.gallery_images || [],
       category: row.category,
       subCategory: row.sub_category,
       type: row.type,
