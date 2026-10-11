@@ -430,9 +430,11 @@ export default function AdminCustomersPage() {
       )}
 
       <CustomerDetailPanel
+        key={viewingId}
         open={panelOpen}
         customerId={viewingId}
         onClose={closeView}
+        onUpdated={() => void loadCustomers(currentPage)}
       />
 
       <ConfirmDialog

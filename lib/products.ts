@@ -5,6 +5,7 @@ export type Product = {
   subCategory?: string | null;
   type?: string | null;
   price: number;
+  unitsSold?: number;
   image: string;
   description: string;
   availability: "In Stock" | "Out of Stock";

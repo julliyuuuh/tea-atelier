@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, ShoppingBag } from "lucide-react";
+import { X, ShoppingBag, Pencil } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { ORDER_STATUSES } from "@/lib/order-status";
+
+import ValidatedForm from "@/components/ValidatedForm";
 
 const ORDERS_PER_PAGE = 5;
 
 type CustomerDetail = {
   id: number;
   name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string | null;
   avatarUrl: string | null;
@@ -85,14 +89,137 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+function CustomerProfileEditor({
+  customer,
+  onSave,
+  onCancel,
+}: {
+  customer: CustomerDetail;
+  onSave: (customer: CustomerDetail) => void;
+  onCancel: () => void;
+}) {
+  const [firstName, setFirstName] = useState(customer.firstName);
+  const [lastName, setLastName] = useState(customer.lastName);
+  const [phoneNumber, setPhoneNumber] = useState(customer.phone || "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function save(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/admin/customers/${customer.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ firstName, lastName, phoneNumber }),
+      });
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error || "Unable to save customer.");
+      onSave(data.customer);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Unable to save customer.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  const input =
+    "mt-1 w-full rounded-lg border border-charcoal/20 bg-transparent px-3 py-2 font-body text-sm text-charcoal outline-none focus:border-sage";
+  return (
+    <ValidatedForm
+      onSubmit={save}
+      className="space-y-3"
+      validateField={(field) =>
+        ["firstName", "lastName"].includes(field.name) && !field.value.trim()
+          ? "Enter a name."
+          : null
+      }
+    >
+      {error && (
+        <p role="alert" className="font-body text-xs text-red-700">
+          {error}
+        </p>
+      )}
+      <fieldset disabled={busy} className="space-y-3 disabled:opacity-60">
+        <label className="block font-body text-xs text-charcoal/60">
+          First name
+          <input
+            name="firstName"
+            required
+            maxLength={50}
+            value={firstName}
+            onChange={(event) => setFirstName(event.target.value)}
+            className={input}
+          />
+        </label>
+        <label className="block font-body text-xs text-charcoal/60">
+          Last name
+          <input
+            name="lastName"
+            required
+            maxLength={50}
+            value={lastName}
+            onChange={(event) => setLastName(event.target.value)}
+            className={input}
+          />
+        </label>
+        <label className="block font-body text-xs text-charcoal/60">
+          Phone (optional)
+          <input
+            name="phoneNumber"
+            type="tel"
+            inputMode="numeric"
+            pattern="09[0-9]{9}"
+            title="Enter an 11-digit mobile number starting with 09."
+            maxLength={11}
+            value={phoneNumber}
+            onChange={(event) =>
+              setPhoneNumber(
+                event.target.value.replace(/[^0-9]/g, "").slice(0, 11),
+              )
+            }
+            className={input}
+          />
+        </label>
+        <p className="font-body text-xs leading-relaxed text-charcoal/50">
+          The login email stays unchanged.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            className="cursor-pointer rounded-full bg-sage px-4 py-2 font-body text-xs text-white"
+          >
+            {busy ? "Saving..." : "Save changes"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="cursor-pointer rounded-full border border-charcoal/20 px-4 py-2 font-body text-xs text-charcoal"
+          >
+            Cancel
+          </button>
+        </div>
+      </fieldset>
+    </ValidatedForm>
+  );
+}
+
 export default function CustomerDetailPanel({
   open,
   customerId,
   onClose,
+  onUpdated,
 }: {
   open: boolean;
   customerId: number | null;
   onClose: () => void;
+  onUpdated?: () => void;
 }) {
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
@@ -104,12 +231,16 @@ export default function CustomerDetailPanel({
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [savedMessage, setSavedMessage] = useState("");
 
   // Loads the customer plus one page of orders. Runs when the modal opens,
   // when a different customer is chosen, and when the page changes.
   useEffect(() => {
     if (!open || customerId == null) {
       setPage(1); // start from page 1 next time it opens
+      setEditing(false);
+      setSavedMessage("");
       return;
     }
 
@@ -257,40 +388,78 @@ export default function CustomerDetailPanel({
                   {/* Left: profile */}
                   <div className="md:col-span-2">
                     <Section title="Profile">
-                      <div className="flex items-center gap-3 mb-3">
-                        {current.avatarUrl ? (
-                          <img
-                            src={current.avatarUrl}
-                            alt={current.name}
-                            className="w-14 h-14 rounded-full object-cover shrink-0 bg-sand"
-                          />
-                        ) : (
-                          <div className="w-14 h-14 rounded-full bg-sage/20 text-sage flex items-center justify-center font-body text-lg font-medium shrink-0">
-                            {current.name.charAt(0).toUpperCase()}
+                      {editing ? (
+                        <CustomerProfileEditor
+                          key={current.id}
+                          customer={current}
+                          onCancel={() => setEditing(false)}
+                          onSave={(updated) => {
+                            setCustomer(updated);
+                            setEditing(false);
+                            setSavedMessage("Customer details saved.");
+                            onUpdated?.();
+                          }}
+                        />
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-3 mb-3">
+                            {current.avatarUrl ? (
+                              <img
+                                src={current.avatarUrl}
+                                alt={current.name}
+                                className="w-14 h-14 rounded-full object-cover shrink-0 bg-sand"
+                              />
+                            ) : (
+                              <div className="w-14 h-14 rounded-full bg-sage/20 text-sage flex items-center justify-center font-body text-lg font-medium shrink-0">
+                                {current.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-body text-sm text-charcoal truncate">
+                                {current.name}
+                              </p>
+                              <p className="font-body text-xs text-charcoal/50 truncate">
+                                {current.email}
+                              </p>
+                            </div>
                           </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="font-body text-sm text-charcoal truncate">
-                            {current.name}
-                          </p>
-                          <p className="font-body text-xs text-charcoal/50 truncate">
-                            {current.email}
-                          </p>
-                        </div>
-                      </div>
-                      <Row label="Phone" value={current.phone} />
-                      <Row
-                        label="Joined"
-                        value={formatDate(current.joinedAt, true)}
-                      />
-                      <Row
-                        label="Email"
-                        value={current.isVerified ? "Verified" : "Unverified"}
-                      />
-                      <Row
-                        label="Account"
-                        value={current.isSuspended ? "Suspended" : "Active"}
-                      />
+                          <Row label="Phone" value={current.phone} />
+                          <Row
+                            label="Joined"
+                            value={formatDate(current.joinedAt, true)}
+                          />
+                          <Row
+                            label="Email"
+                            value={
+                              current.isVerified ? "Verified" : "Unverified"
+                            }
+                          />
+                          <Row
+                            label="Account"
+                            value={current.isSuspended ? "Suspended" : "Active"}
+                          />
+                          {savedMessage && (
+                            <p
+                              role="status"
+                              className="mt-3 font-body text-xs text-sage"
+                            >
+                              {savedMessage}
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            disabled={isLoading}
+                            onClick={() => {
+                              setSavedMessage("");
+                              setEditing(true);
+                            }}
+                            className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-full border border-charcoal/20 px-3 py-2 font-body text-xs text-charcoal hover:bg-sand/30"
+                          >
+                            <Pencil size={13} aria-hidden="true" />
+                            Edit customer
+                          </button>
+                        </>
+                      )}
                     </Section>
                   </div>
 
@@ -352,7 +521,11 @@ export default function CustomerDetailPanel({
                                   onClick={() =>
                                     setPage((p) => Math.max(1, p - 1))
                                   }
-                                  disabled={isLoading || ordersMeta.page === 1}
+                                  disabled={
+                                    isLoading ||
+                                    editing ||
+                                    ordersMeta.page === 1
+                                  }
                                   className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"
                                 >
                                   Back
@@ -366,6 +539,7 @@ export default function CustomerDetailPanel({
                                   }
                                   disabled={
                                     isLoading ||
+                                    editing ||
                                     ordersMeta.page === ordersMeta.totalPages
                                   }
                                   className="font-body text-xs px-3 py-1.5 rounded-full border border-charcoal/20 text-charcoal disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sand/30 transition-colors"

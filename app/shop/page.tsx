@@ -22,7 +22,13 @@ import {
 } from "lucide-react";
 import { useWishlist } from "@/lib/wishlist-context";
 
-type SortOption = "Newest" | "Price: Low to High" | "Price: High to Low";
+type SortOption =
+  | "Newest"
+  | "Price: Low to High"
+  | "Price: High to Low"
+  | "Name: A to Z"
+  | "Name: Z to A"
+  | "Most popular";
 
 function matchesCategory(product: Product, category: MainCategory) {
   return category === "Tea Accessories"
@@ -76,6 +82,9 @@ export default function ShopPage() {
   );
   const [sortBy, setSortBy] = useState<SortOption>("Newest");
   const [search, setSearch] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [selectedType, setSelectedType] = useState("");
   const [stockOnly, setStockOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -106,6 +115,38 @@ export default function ShopPage() {
     return () => controller.abort();
   }, []);
 
+  const parsePrice = (value: string) =>
+    value.trim() === "" ? null : Number(value);
+  const minimum = parsePrice(minPrice);
+  const maximum = parsePrice(maxPrice);
+  const invalidRange =
+    (minimum !== null && (!Number.isFinite(minimum) || minimum < 0)) ||
+    (maximum !== null && (!Number.isFinite(maximum) || maximum < 0)) ||
+    (minimum !== null && maximum !== null && minimum > maximum);
+  const typeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          products
+            .filter(
+              (product) =>
+                (!expandedCategory ||
+                  matchesCategory(product, expandedCategory)) &&
+                (!expandedCategory ||
+                  !selectedSubCategory ||
+                  matchesSubcategory(
+                    product,
+                    expandedCategory,
+                    selectedSubCategory,
+                  )),
+            )
+            .map((product) => product.type?.trim())
+            .filter((type): type is string => !!type),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [products, expandedCategory, selectedSubCategory],
+  );
+
   const filteredProducts = useMemo(() => {
     let list = expandedCategory
       ? products.filter((product) => matchesCategory(product, expandedCategory))
@@ -116,6 +157,14 @@ export default function ShopPage() {
       );
     }
     if (stockOnly) list = list.filter(inStock);
+    if (selectedType)
+      list = list.filter((product) => product.type?.trim() === selectedType);
+    if (!invalidRange) {
+      if (minimum !== null)
+        list = list.filter((product) => product.price >= minimum);
+      if (maximum !== null)
+        list = list.filter((product) => product.price <= maximum);
+    }
 
     const term = search.trim().toLowerCase();
     if (term) {
@@ -130,6 +179,18 @@ export default function ShopPage() {
       list.sort((a, b) => a.price - b.price);
     } else if (sortBy === "Price: High to Low") {
       list.sort((a, b) => b.price - a.price);
+    } else if (sortBy === "Name: A to Z") {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === "Name: Z to A") {
+      list.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (sortBy === "Most popular") {
+      list.sort(
+        (a, b) =>
+          (b.unitsSold || 0) - (a.unitsSold || 0) ||
+          Number(b.id) - Number(a.id),
+      );
+    } else {
+      list.sort((a, b) => Number(b.id) - Number(a.id));
     }
 
     return list;
@@ -140,6 +201,10 @@ export default function ShopPage() {
     sortBy,
     search,
     stockOnly,
+    selectedType,
+    minimum,
+    maximum,
+    invalidRange,
   ]);
   const categoryCounts = useMemo(
     () =>
@@ -152,12 +217,21 @@ export default function ShopPage() {
       ),
     [products],
   );
-  const hasFilters = !!search || !!expandedCategory || stockOnly;
+  const hasFilters =
+    !!search ||
+    !!expandedCategory ||
+    stockOnly ||
+    !!selectedType ||
+    minPrice !== "" ||
+    maxPrice !== "";
   function clearFilters() {
     setSearch("");
     setExpandedCategory(null);
     setSelectedSubCategory(null);
     setStockOnly(false);
+    setMinPrice("");
+    setMaxPrice("");
+    setSelectedType("");
   }
 
   return (
@@ -285,6 +359,9 @@ export default function ShopPage() {
               onChange={(value) => setSortBy(value as SortOption)}
               options={[
                 { value: "Newest", label: "Newest" },
+                { value: "Most popular", label: "Most popular" },
+                { value: "Name: A to Z", label: "Name: A to Z" },
+                { value: "Name: Z to A", label: "Name: Z to A" },
                 { value: "Price: Low to High", label: "Price: Low to High" },
                 { value: "Price: High to Low", label: "Price: High to Low" },
               ]}
@@ -327,6 +404,7 @@ export default function ShopPage() {
               onClick={() => {
                 setExpandedCategory(null);
                 setSelectedSubCategory(null);
+                setSelectedType("");
               }}
               className={`flex w-full cursor-pointer items-center justify-between text-left font-body text-sm py-2.5 rounded-xl px-3 transition-colors focus-visible:outline-2 focus-visible:outline-sage ${
                 !expandedCategory
@@ -349,6 +427,7 @@ export default function ShopPage() {
                   onClick={() => {
                     setExpandedCategory(expandedCategory === cat ? null : cat);
                     setSelectedSubCategory(null);
+                    setSelectedType("");
                   }}
                   className={`flex cursor-pointer items-center justify-between gap-2 w-full text-left font-body text-sm py-2.5 rounded-xl px-3 transition-colors focus-visible:outline-2 focus-visible:outline-sage ${
                     expandedCategory === cat
@@ -378,11 +457,12 @@ export default function ShopPage() {
                         key={sub}
                         type="button"
                         aria-pressed={selectedSubCategory === sub}
-                        onClick={() =>
+                        onClick={() => {
                           setSelectedSubCategory(
                             selectedSubCategory === sub ? null : sub,
-                          )
-                        }
+                          );
+                          setSelectedType("");
+                        }}
                         className={`flex w-full cursor-pointer items-center justify-between gap-2 text-left font-body text-xs py-2 px-2 rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-sage ${
                           selectedSubCategory === sub
                             ? "text-sage font-medium"
@@ -399,6 +479,83 @@ export default function ShopPage() {
                 )}
               </div>
             ))}
+
+            <div className="mt-5 space-y-4 border-t border-charcoal/10 pt-4">
+              <div>
+                <p className="mb-2 font-body text-xs uppercase tracking-wide text-charcoal/50">
+                  Price range (PHP)
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="min-w-0 font-body text-xs text-charcoal/60">
+                    Minimum
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={minPrice}
+                      onChange={(event) => setMinPrice(event.target.value)}
+                      aria-invalid={invalidRange}
+                      aria-describedby={
+                        invalidRange ? "shop-price-error" : undefined
+                      }
+                      placeholder="Any"
+                      className="mt-1 w-full rounded-lg border border-charcoal/20 bg-transparent px-2 py-2 text-sm text-charcoal outline-none focus:border-sage"
+                    />
+                  </label>
+                  <label className="min-w-0 font-body text-xs text-charcoal/60">
+                    Maximum
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={maxPrice}
+                      onChange={(event) => setMaxPrice(event.target.value)}
+                      aria-invalid={invalidRange}
+                      aria-describedby={
+                        invalidRange ? "shop-price-error" : undefined
+                      }
+                      placeholder="Any"
+                      className="mt-1 w-full rounded-lg border border-charcoal/20 bg-transparent px-2 py-2 text-sm text-charcoal outline-none focus:border-sage"
+                    />
+                  </label>
+                </div>
+                {invalidRange && (
+                  <p
+                    id="shop-price-error"
+                    role="status"
+                    className="mt-2 font-body text-xs text-red-700"
+                  >
+                    Use non-negative prices with minimum no greater than
+                    maximum. Price filtering pauses until corrected.
+                  </p>
+                )}
+              </div>
+              {typeOptions.length > 0 && (
+                <div>
+                  <label
+                    htmlFor="shop-type"
+                    className="mb-2 block font-body text-xs uppercase tracking-wide text-charcoal/50"
+                  >
+                    Product type
+                  </label>
+                  <CustomSelect
+                    id="shop-type"
+                    value={selectedType}
+                    onChange={setSelectedType}
+                    options={[
+                      { value: "", label: "All types" },
+                      ...typeOptions.map((type) => ({
+                        value: type,
+                        label: type,
+                      })),
+                    ]}
+                    triggerClassName="w-full cursor-pointer rounded-xl border border-charcoal/20 bg-transparent px-3 py-2.5 font-body text-xs text-charcoal outline-none focus:border-sage"
+                  />
+                </div>
+              )}
+            </div>
 
             <p className="font-body text-[10px] text-charcoal/40 mt-6 leading-relaxed">
               Browse a category or search for a tea you love.
