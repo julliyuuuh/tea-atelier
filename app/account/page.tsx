@@ -102,7 +102,7 @@ function AccountPageInner() {
         <div
           role="tablist"
           aria-label="Account sections"
-          className="flex items-center gap-5 overflow-x-auto border-b border-charcoal/10 mb-6 sm:gap-8 sm:mb-8"
+          className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-charcoal/10 mb-6 sm:gap-8 sm:mb-8"
         >
           {TABS.map((tab) => {
             const isActive = tab.key === activeTab;

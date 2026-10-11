@@ -41,7 +41,7 @@ function SettingsCard({
   badge?: ReactNode;
 }) {
   return (
-    <section className="min-w-0 rounded-2xl border border-charcoal/10 bg-white p-5 sm:p-6">
+    <section className="min-w-0 rounded-2xl border border-charcoal/5 bg-sand/25 p-5 sm:p-6">
       <div className="mb-4 flex items-center gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sage/10 text-sage">
           <Icon size={18} aria-hidden="true" />
@@ -69,6 +69,10 @@ export default function SettingsTab({
     currency,
     setCurrency,
   } = useStoreSettings();
+  const [activeSection, setActiveSection] = useState<
+    "account" | "security" | "appearance" | "emails" | "privacy"
+  >("account");
+  const [emailVisited, setEmailVisited] = useState(false);
   const [totpEnabled, setTotpEnabled] = useState(false);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [statusError, setStatusError] = useState("");
@@ -230,328 +234,393 @@ export default function SettingsTab({
           Manage your account, security and the way you shop.
         </p>
       </div>
-      <div className="grid items-start gap-4 md:grid-cols-2">
-        <div className="min-w-0 space-y-4">
-          <SettingsCard
-            title="Account"
-            icon={UserRound}
-            badge={
-              <span
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-body text-[10px] ${user?.isVerified ? "bg-sage/10 text-sage" : "bg-amber-50 text-amber-800"}`}
-              >
-                {user?.isVerified && <Check size={12} />}
-                {user?.isVerified ? "Verified" : "Not verified"}
-              </span>
-            }
-          >
-            <dl className="space-y-3 font-body text-sm">
-              <div>
-                <dt className="text-xs text-charcoal/50">Name</dt>
-                <dd className="mt-1 break-words text-charcoal">
-                  {user?.name || "Your account"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-charcoal/50">Email address</dt>
-                <dd className="mt-1 break-all text-charcoal">{user?.email}</dd>
-              </div>
-            </dl>
-            <div className="mt-4 border-t border-charcoal/10 pt-4">
-              <button
-                type="button"
-                className={actionClass}
-                onClick={onEditProfile}
-              >
-                Edit profile <ChevronRight size={14} />
-              </button>
-            </div>
-            {!user?.isVerified && (
-              <div className="mt-4 rounded-xl bg-sand/20 p-3">
-                <p className="mb-3 font-body text-xs leading-relaxed text-charcoal/60">
-                  Verify your email to receive account updates and subscribe to
-                  offers.
-                </p>
-                <button
-                  type="button"
-                  disabled={resendLoading}
-                  onClick={() => setShowResendConfirm(true)}
-                  className={actionClass}
-                >
-                  {resendLoading && (
-                    <Loader2
-                      size={14}
-                      className="animate-spin motion-reduce:animate-none"
-                    />
-                  )}
-                  {resendLoading ? "Sending..." : "Resend verification"}
-                </button>
-              </div>
-            )}
-            {resendMessage && (
-              <p role="status" className="mt-3 font-body text-xs text-sage">
-                {resendMessage}
-              </p>
-            )}
-            {resendError && (
-              <p role="alert" className="mt-3 font-body text-xs text-red-600">
-                {resendError}
-              </p>
-            )}
-          </SettingsCard>
-
-          <SettingsCard title="Security" icon={ShieldCheck}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h4 className="font-body text-sm font-medium text-charcoal">
-                  Two-factor authentication
-                </h4>
-                <p className="mt-1 font-body text-xs leading-relaxed text-charcoal/60">
-                  Use a code from an authenticator app when you sign in.
-                </p>
-              </div>
-              <span className="shrink-0 rounded-full bg-sand/30 px-2.5 py-1 font-body text-[10px] text-charcoal/60">
-                {isLoadingStatus
-                  ? "Loading..."
-                  : statusError
-                    ? "Unavailable"
-                    : totpEnabled
-                      ? "Enabled"
-                      : "Off"}
-              </span>
-            </div>
-            {statusError ? (
-              <div className="mt-3">
-                <p role="alert" className="font-body text-xs text-red-600">
-                  {statusError}
-                </p>
-                <button
-                  type="button"
-                  className={`${actionClass} mt-3`}
-                  disabled={isLoadingStatus}
-                  onClick={() => {
-                    setIsLoadingStatus(true);
-                    setStatusRefresh((value) => value + 1);
-                  }}
-                >
-                  Try again
-                </button>
-              </div>
-            ) : (
-              !isLoadingStatus &&
-              (totpEnabled ? (
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => setShowDisableConfirm(true)}
-                  className={`${actionClass} mt-4`}
-                >
-                  {isSubmitting ? "Updating..." : "Turn off 2FA"}
-                </button>
-              ) : setupStep === "idle" ? (
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => void startSetup()}
-                  className={`${primaryClass} mt-4`}
-                >
-                  {isSubmitting && (
-                    <Loader2
-                      size={14}
-                      className="animate-spin motion-reduce:animate-none"
-                    />
-                  )}
-                  {isSubmitting ? "Starting setup..." : "Set up 2FA"}
-                </button>
-              ) : (
-                <div className="mt-4 rounded-xl border border-charcoal/10 bg-cream/50 p-4">
-                  <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/60">
-                    Scan this QR code with your authenticator app, then enter
-                    its six-digit code.
-                  </p>
-                  <Image
-                    src={qrCode}
-                    unoptimized
-                    width={176}
-                    height={176}
-                    alt="QR code for authenticator setup"
-                    className="mx-auto rounded-lg"
-                  />
-                  <form onSubmit={confirmSetup} className="mt-4 space-y-3">
-                    <label
-                      className="block font-body text-xs text-charcoal/60"
-                      htmlFor="settings-authenticator-code"
-                    >
-                      Authenticator code
-                    </label>
-                    <input
-                      id="settings-authenticator-code"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      pattern="[0-9]{6}"
-                      minLength={6}
-                      maxLength={6}
-                      required
-                      disabled={isSubmitting}
-                      value={confirmCode}
-                      onChange={(event) =>
-                        setConfirmCode(event.target.value.replace(/\D/g, ""))
-                      }
-                      placeholder="000000"
-                      className="w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 text-center font-body text-lg tracking-[0.3em] text-charcoal outline-none focus:border-sage focus:ring-2 focus:ring-sage/20"
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="submit"
-                        disabled={isSubmitting || confirmCode.length !== 6}
-                        className={primaryClass}
-                      >
-                        {isSubmitting ? "Verifying..." : "Verify and enable"}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isSubmitting}
-                        className={actionClass}
-                        onClick={() => {
-                          setSetupStep("idle");
-                          setConfirmCode("");
-                          setQrCode("");
-                          setErrorMessage("");
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              ))
-            )}
-            {successMessage && (
-              <p role="status" className="mt-3 font-body text-xs text-sage">
-                {successMessage}
-              </p>
-            )}
-            {errorMessage && (
-              <p role="alert" className="mt-3 font-body text-xs text-red-600">
-                {errorMessage}
-              </p>
-            )}
-            <div className="mt-5 border-t border-charcoal/10 pt-4">
-              <h4 className="font-body text-sm font-medium text-charcoal">
-                Password
-              </h4>
-              <p className="mb-3 mt-1 font-body text-xs leading-relaxed text-charcoal/60">
-                Request a reset link to choose a new password.
-              </p>
-              <Link href="/forgot-password" className={actionClass}>
-                <KeyRound size={14} />
-                Reset password
-                <ArrowUpRight size={13} />
-              </Link>
-            </div>
-          </SettingsCard>
-        </div>
-
-        <div className="min-w-0 space-y-4">
-          <SettingsCard
-            title="Appearance"
-            icon={theme === "light" ? Sun : Moon}
-          >
-            <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/60">
-              Choose the theme for this device. Changes apply immediately.
-            </p>
-            <div
-              className="grid grid-cols-2 gap-2"
-              role="group"
-              aria-label="Color theme"
+      <div className="grid items-start gap-5 md:grid-cols-[170px_minmax(0,1fr)]">
+        <nav
+          aria-label="Settings sections"
+          className="flex flex-wrap gap-1 md:flex-col md:border-r md:border-charcoal/10 md:pr-4"
+        >
+          {(
+            [
+              { key: "account", label: "Account", icon: UserRound },
+              { key: "security", label: "Security", icon: ShieldCheck },
+              { key: "appearance", label: "Appearance", icon: Sun },
+              ...(user?.role === "customer"
+                ? [{ key: "emails" as const, label: "Emails", icon: Mail }]
+                : []),
+              { key: "privacy", label: "Privacy & support", icon: Globe },
+            ] as const
+          ).map(({ key, label, icon: Icon }) => (
+            <button
+              id={`settings-section-${key}`}
+              key={key}
+              type="button"
+              aria-pressed={activeSection === key}
+              aria-controls={`settings-content-${key}`}
+              onClick={() => {
+                setActiveSection(key);
+                if (key === "emails") setEmailVisited(true);
+              }}
+              className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-left font-body text-xs transition-colors focus-visible:outline-2 focus-visible:outline-sage ${activeSection === key ? "bg-sage/10 font-medium text-charcoal" : "text-charcoal/60 hover:bg-sand/25 hover:text-charcoal"}`}
             >
-              {(["light", "dark"] as const).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={theme === value}
-                  onClick={() => {
-                    if (theme !== value) toggleTheme();
-                  }}
-                  className={`flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 font-body text-sm transition-colors focus-visible:outline-2 focus-visible:outline-sage ${theme === value ? "border-sage bg-sage/10 text-charcoal" : "border-charcoal/10 text-charcoal/50 hover:border-sage/50"}`}
+              <Icon size={16} aria-hidden="true" className="shrink-0" />
+              {label}
+            </button>
+          ))}
+        </nav>
+        <div className="min-w-0">
+          <div
+            id="settings-content-account"
+            role="region"
+            aria-labelledby="settings-section-account"
+            hidden={activeSection !== "account"}
+          >
+            <SettingsCard
+              title="Account"
+              icon={UserRound}
+              badge={
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-body text-[10px] ${user?.isVerified ? "bg-sage/10 text-sage" : "bg-amber-50 text-amber-800"}`}
                 >
-                  {value === "light" ? <Sun size={16} /> : <Moon size={16} />}
-                  {value === "light" ? "Light" : "Dark"}
-                  {theme === value && <Check size={13} className="text-sage" />}
-                </button>
-              ))}
-            </div>
-            {ready && settings.usd.enabled && (
-              <div className="mt-5 border-t border-charcoal/10 pt-4">
-                <h4 className="mb-3 flex items-center gap-2 font-body text-sm font-medium text-charcoal">
-                  <Globe size={15} className="text-sage" />
-                  Price display
-                </h4>
-                <div
-                  className="flex gap-2"
-                  role="group"
-                  aria-label="Display currency"
-                >
-                  {(["PHP", "USD"] as const).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={currency === value}
-                      onClick={() => setCurrency(value)}
-                      className={`${actionClass} ${currency === value ? "border-sage bg-sage/10" : ""}`}
-                    >
-                      {value}
-                      {currency === value && (
-                        <Check size={12} className="text-sage" />
-                      )}
-                    </button>
-                  ))}
+                  {user?.isVerified && <Check size={12} />}
+                  {user?.isVerified ? "Verified" : "Not verified"}
+                </span>
+              }
+            >
+              <dl className="space-y-3 font-body text-sm">
+                <div>
+                  <dt className="text-xs text-charcoal/50">Name</dt>
+                  <dd className="mt-1 break-words text-charcoal">
+                    {user?.name || "Your account"}
+                  </dd>
                 </div>
-                <p className="mt-3 font-body text-xs leading-relaxed text-charcoal/50">
-                  USD prices are estimates. Payments and refunds are processed
-                  in PHP.
-                </p>
+                <div>
+                  <dt className="text-xs text-charcoal/50">Email address</dt>
+                  <dd className="mt-1 break-all text-charcoal">
+                    {user?.email}
+                  </dd>
+                </div>
+              </dl>
+              <div className="mt-4 border-t border-charcoal/10 pt-4">
+                <button
+                  type="button"
+                  className={actionClass}
+                  onClick={onEditProfile}
+                >
+                  Edit profile <ChevronRight size={14} />
+                </button>
               </div>
-            )}
-            {currencyError && (
-              <p
-                role="status"
-                className="mt-3 font-body text-xs text-charcoal/50"
-              >
-                Currency preferences are temporarily unavailable.
+              {!user?.isVerified && (
+                <div className="mt-4 rounded-xl bg-sand/20 p-3">
+                  <p className="mb-3 font-body text-xs leading-relaxed text-charcoal/60">
+                    Verify your email to receive account updates and subscribe
+                    to offers.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={resendLoading}
+                    onClick={() => setShowResendConfirm(true)}
+                    className={actionClass}
+                  >
+                    {resendLoading && (
+                      <Loader2
+                        size={14}
+                        className="animate-spin motion-reduce:animate-none"
+                      />
+                    )}
+                    {resendLoading ? "Sending..." : "Resend verification"}
+                  </button>
+                </div>
+              )}
+              {resendMessage && (
+                <p role="status" className="mt-3 font-body text-xs text-sage">
+                  {resendMessage}
+                </p>
+              )}
+              {resendError && (
+                <p role="alert" className="mt-3 font-body text-xs text-red-600">
+                  {resendError}
+                </p>
+              )}
+            </SettingsCard>
+          </div>
+          <div
+            id="settings-content-security"
+            role="region"
+            aria-labelledby="settings-section-security"
+            hidden={activeSection !== "security"}
+          >
+            <SettingsCard title="Security" icon={ShieldCheck}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h4 className="font-body text-sm font-medium text-charcoal">
+                    Two-factor authentication
+                  </h4>
+                  <p className="mt-1 font-body text-xs leading-relaxed text-charcoal/60">
+                    Use a code from an authenticator app when you sign in.
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-sand/30 px-2.5 py-1 font-body text-[10px] text-charcoal/60">
+                  {isLoadingStatus
+                    ? "Loading..."
+                    : statusError
+                      ? "Unavailable"
+                      : totpEnabled
+                        ? "Enabled"
+                        : "Off"}
+                </span>
+              </div>
+              {statusError ? (
+                <div className="mt-3">
+                  <p role="alert" className="font-body text-xs text-red-600">
+                    {statusError}
+                  </p>
+                  <button
+                    type="button"
+                    className={`${actionClass} mt-3`}
+                    disabled={isLoadingStatus}
+                    onClick={() => {
+                      setIsLoadingStatus(true);
+                      setStatusRefresh((value) => value + 1);
+                    }}
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : (
+                !isLoadingStatus &&
+                (totpEnabled ? (
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => setShowDisableConfirm(true)}
+                    className={`${actionClass} mt-4`}
+                  >
+                    {isSubmitting ? "Updating..." : "Turn off 2FA"}
+                  </button>
+                ) : setupStep === "idle" ? (
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => void startSetup()}
+                    className={`${primaryClass} mt-4`}
+                  >
+                    {isSubmitting && (
+                      <Loader2
+                        size={14}
+                        className="animate-spin motion-reduce:animate-none"
+                      />
+                    )}
+                    {isSubmitting ? "Starting setup..." : "Set up 2FA"}
+                  </button>
+                ) : (
+                  <div className="mt-4 rounded-xl border border-charcoal/10 bg-cream/50 p-4">
+                    <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/60">
+                      Scan this QR code with your authenticator app, then enter
+                      its six-digit code.
+                    </p>
+                    <Image
+                      src={qrCode}
+                      unoptimized
+                      width={176}
+                      height={176}
+                      alt="QR code for authenticator setup"
+                      className="mx-auto rounded-lg"
+                    />
+                    <form onSubmit={confirmSetup} className="mt-4 space-y-3">
+                      <label
+                        className="block font-body text-xs text-charcoal/60"
+                        htmlFor="settings-authenticator-code"
+                      >
+                        Authenticator code
+                      </label>
+                      <input
+                        id="settings-authenticator-code"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        pattern="[0-9]{6}"
+                        minLength={6}
+                        maxLength={6}
+                        required
+                        disabled={isSubmitting}
+                        value={confirmCode}
+                        onChange={(event) =>
+                          setConfirmCode(event.target.value.replace(/\D/g, ""))
+                        }
+                        placeholder="000000"
+                        className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 text-center font-body text-lg tracking-[0.3em] text-charcoal outline-none focus:border-sage focus:ring-2 focus:ring-sage/20"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="submit"
+                          disabled={isSubmitting || confirmCode.length !== 6}
+                          className={primaryClass}
+                        >
+                          {isSubmitting ? "Verifying..." : "Verify and enable"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          className={actionClass}
+                          onClick={() => {
+                            setSetupStep("idle");
+                            setConfirmCode("");
+                            setQrCode("");
+                            setErrorMessage("");
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                ))
+              )}
+              {successMessage && (
+                <p role="status" className="mt-3 font-body text-xs text-sage">
+                  {successMessage}
+                </p>
+              )}
+              {errorMessage && (
+                <p role="alert" className="mt-3 font-body text-xs text-red-600">
+                  {errorMessage}
+                </p>
+              )}
+              <div className="mt-5 border-t border-charcoal/10 pt-4">
+                <h4 className="font-body text-sm font-medium text-charcoal">
+                  Password
+                </h4>
+                <p className="mb-3 mt-1 font-body text-xs leading-relaxed text-charcoal/60">
+                  Request a reset link to choose a new password.
+                </p>
+                <Link href="/forgot-password" className={actionClass}>
+                  <KeyRound size={14} />
+                  Reset password
+                  <ArrowUpRight size={13} />
+                </Link>
+              </div>
+            </SettingsCard>
+          </div>
+          <div
+            id="settings-content-appearance"
+            role="region"
+            aria-labelledby="settings-section-appearance"
+            hidden={activeSection !== "appearance"}
+          >
+            <SettingsCard
+              title="Appearance"
+              icon={theme === "light" ? Sun : Moon}
+            >
+              <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/60">
+                Choose the theme for this device. Changes apply immediately.
               </p>
-            )}
-            <p className="mt-4 font-body text-[11px] text-charcoal/40">
-              Appearance preferences are saved on this device.
-            </p>
-          </SettingsCard>
-
-          {user?.role === "customer" && (
-            <MarketingPreference verified={user.isVerified} />
-          )}
-
-          <SettingsCard title="Privacy & support" icon={Mail}>
-            <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/60">
-              Learn how your information is handled or get help with your
-              account.
-            </p>
-            <div className="space-y-1">
-              <Link
-                href="/privacy"
-                className="flex min-h-10 items-center justify-between rounded-lg px-2 font-body text-sm text-charcoal/70 hover:bg-sand/20 focus-visible:outline-2 focus-visible:outline-sage"
+              <div
+                className="grid grid-cols-2 gap-2"
+                role="group"
+                aria-label="Color theme"
               >
-                Privacy policy
-                <ArrowUpRight size={14} />
-              </Link>
-              <Link
-                href="/contact"
-                className="flex min-h-10 items-center justify-between rounded-lg px-2 font-body text-sm text-charcoal/70 hover:bg-sand/20 focus-visible:outline-2 focus-visible:outline-sage"
-              >
-                Contact support
-                <ArrowUpRight size={14} />
-              </Link>
+                {(["light", "dark"] as const).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={theme === value}
+                    onClick={() => {
+                      if (theme !== value) toggleTheme();
+                    }}
+                    className={`flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 font-body text-sm transition-colors focus-visible:outline-2 focus-visible:outline-sage ${theme === value ? "border-sage bg-sage/10 text-charcoal" : "border-charcoal/10 text-charcoal/50 hover:border-sage/50"}`}
+                  >
+                    {value === "light" ? <Sun size={16} /> : <Moon size={16} />}
+                    {value === "light" ? "Light" : "Dark"}
+                    {theme === value && (
+                      <Check size={13} className="text-sage" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              {ready && settings.usd.enabled && (
+                <div className="mt-5 border-t border-charcoal/10 pt-4">
+                  <h4 className="mb-3 flex items-center gap-2 font-body text-sm font-medium text-charcoal">
+                    <Globe size={15} className="text-sage" />
+                    Price display
+                  </h4>
+                  <div
+                    className="flex gap-2"
+                    role="group"
+                    aria-label="Display currency"
+                  >
+                    {(["PHP", "USD"] as const).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={currency === value}
+                        onClick={() => setCurrency(value)}
+                        className={`${actionClass} ${currency === value ? "border-sage bg-sage/10" : ""}`}
+                      >
+                        {value}
+                        {currency === value && (
+                          <Check size={12} className="text-sage" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-3 font-body text-xs leading-relaxed text-charcoal/50">
+                    USD prices are estimates. Payments and refunds are processed
+                    in PHP.
+                  </p>
+                </div>
+              )}
+              {currencyError && (
+                <p
+                  role="status"
+                  className="mt-3 font-body text-xs text-charcoal/50"
+                >
+                  Currency preferences are temporarily unavailable.
+                </p>
+              )}
+              <p className="mt-4 font-body text-[11px] text-charcoal/40">
+                Appearance preferences are saved on this device.
+              </p>
+            </SettingsCard>
+          </div>
+          <div
+            id="settings-content-privacy"
+            role="region"
+            aria-labelledby="settings-section-privacy"
+            hidden={activeSection !== "privacy"}
+          >
+            <SettingsCard title="Privacy & support" icon={Mail}>
+              <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/60">
+                Learn how your information is handled or get help with your
+                account.
+              </p>
+              <div className="space-y-1">
+                <Link
+                  href="/privacy"
+                  className="flex min-h-10 items-center justify-between rounded-lg px-2 font-body text-sm text-charcoal/70 hover:bg-sand/20 focus-visible:outline-2 focus-visible:outline-sage"
+                >
+                  Privacy policy
+                  <ArrowUpRight size={14} />
+                </Link>
+                <Link
+                  href="/contact"
+                  className="flex min-h-10 items-center justify-between rounded-lg px-2 font-body text-sm text-charcoal/70 hover:bg-sand/20 focus-visible:outline-2 focus-visible:outline-sage"
+                >
+                  Contact support
+                  <ArrowUpRight size={14} />
+                </Link>
+              </div>
+            </SettingsCard>
+          </div>
+          {user?.role === "customer" && emailVisited && (
+            <div
+              id="settings-content-emails"
+              role="region"
+              aria-labelledby="settings-section-emails"
+              hidden={activeSection !== "emails"}
+            >
+              <MarketingPreference verified={user.isVerified} />
             </div>
-          </SettingsCard>
+          )}
         </div>
       </div>
       <ConfirmDialog

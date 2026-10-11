@@ -74,7 +74,7 @@ export default function MarketingPreference({
   }
   return (
     <section
-      className="min-w-0 rounded-2xl border border-charcoal/10 bg-white p-5 sm:p-6"
+      className="min-w-0 rounded-2xl border border-charcoal/5 bg-sand/25 p-5 sm:p-6"
       aria-busy={loading || saving}
     >
       <div className="mb-4 flex items-center gap-3">
