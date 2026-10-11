@@ -105,3 +105,11 @@ body {
   background-color: #829a7e;
   color: #202721;
 }
+
+[data-validation-invalid="true"] {
+  border-color: #b91c1c !important;
+}
+
+.dark [data-validation-invalid="true"] {
+  border-color: #fca5a5 !important;
+}

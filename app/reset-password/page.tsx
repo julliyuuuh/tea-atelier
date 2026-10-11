@@ -120,7 +120,22 @@ function ResetPasswordForm() {
               Password updated. Redirecting you to login...
             </p>
           ) : (
-            <ValidatedForm onSubmit={handleSubmit} className="space-y-5">
+            <ValidatedForm
+              onSubmit={handleSubmit}
+              className="space-y-5"
+              validateField={(field) => {
+                if (field.name === "newPassword")
+                  return getPasswordError(field.value);
+                if (field.name === "confirmPassword") {
+                  const original = field.form?.elements.namedItem(
+                    "newPassword",
+                  ) as HTMLInputElement | null;
+                  if (original && original.value !== field.value)
+                    return "Passwords do not match.";
+                }
+                return null;
+              }}
+            >
               <div>
                 <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
                   New Password
@@ -131,6 +146,7 @@ function ResetPasswordForm() {
                   minLength={PASSWORD_MIN_LENGTH}
                   required
                   autoFocus
+                  name="newPassword"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
@@ -150,6 +166,7 @@ function ResetPasswordForm() {
                   autoComplete="new-password"
                   minLength={PASSWORD_MIN_LENGTH}
                   required
+                  name="confirmPassword"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"

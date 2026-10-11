@@ -1,6 +1,6 @@
-export const PASSWORD_MIN_LENGTH = 12;
+export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_HINT =
-  "Use at least 12 characters with uppercase and lowercase letters and a number.";
+  "Use at least 8 characters with uppercase and lowercase letters and a number.";
 
 export function getPasswordError(password: unknown): string | null {
   if (typeof password !== "string") return "Enter a valid password.";

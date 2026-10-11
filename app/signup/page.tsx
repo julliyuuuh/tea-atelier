@@ -54,7 +54,7 @@ export default function SignupPage() {
     if (field === "password") {
       const error = getPasswordError(value);
       if (error === PASSWORD_HINT)
-        return "Use 12+ characters, A-Z, a-z and a number.";
+        return "Use 8+ characters, A-Z, a-z and a number.";
       return error || "";
     }
     if (field === "confirmPassword" && value !== currentPassword)
