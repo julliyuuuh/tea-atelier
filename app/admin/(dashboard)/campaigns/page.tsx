@@ -305,10 +305,10 @@ export default function CampaignsPage() {
                 >
                   <span className="mb-1.5 block">
                     {key === "title"
-                      ? "Campaign name (admin only)"
+                      ? "Campaign name (for admins)"
                       : key === "subject"
                         ? "Email subject"
-                        : "Email heading"}
+                        : "Email header"}
                   </span>
                   <input
                     required
