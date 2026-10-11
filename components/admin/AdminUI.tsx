@@ -140,7 +140,7 @@ export function SortHeader<K extends string>({
 export type SelectOption = { value: string; label: string };
 
 /**
- * Custom listbox that replaces native <select> for consistent styling —
+ * Custom listbox that replaces native <select> for consistent styling
  * the browser renders a native <select>'s open dropdown itself, ignoring
  * almost all CSS on it, so it can't be made to match the rest of the UI.
  * This mirrors <select>'s behavior (single value, onChange(value)) via a

@@ -82,7 +82,7 @@ export async function GET(req: Request) {
     ? `WHERE ${conditions.join(" AND ")}`
     : "";
 
-  // Count query doesn't need order_items — none of the filters touch item_count.
+  // Count query doesn't need order_items, none of the filters touch item_count.
   const countResult = await pool.query(
     `SELECT COUNT(*)::int AS count
      FROM orders o

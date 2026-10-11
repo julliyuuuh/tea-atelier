@@ -127,7 +127,7 @@ export default function ShopPage() {
         </div>
       )}
 
-      {/* Collections Teaser — logged in only */}
+      {/* Collections Teaser, logged in only */}
       {user && (
         <div className="max-w-7xl mx-auto px-8 py-8 border-b border-charcoal/10">
           <div className="flex items-center justify-between mb-4">

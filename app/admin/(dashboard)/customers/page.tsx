@@ -208,7 +208,7 @@ export default function AdminCustomersPage() {
           description="Review customer accounts, verification, and order history."
         />
 
-        {/* Stat chips — always reflect the whole customer base, not just this page */}
+        {/* Stat chips, always reflect the whole customer base, not just this page */}
         <div className="flex flex-wrap items-center gap-2">
           <StatChip label="Total Customers" value={stats.total} />
           <StatChip label="Verified" value={stats.verified} />

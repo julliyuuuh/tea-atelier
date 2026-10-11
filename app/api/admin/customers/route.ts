@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { requireAdmin } from "@/lib/require-admin";
 
-// Column allowlist for ORDER BY — never interpolate the sort key directly,
+// Column allowlist for ORDER BY, never interpolate the sort key directly,
 // since it comes from the query string. order_count/total_spent are safe to
 // reference by their SELECT alias since they're computed above the ORDER BY.
 const SORT_COLUMNS: Record<string, string> = {
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
 
   const whereClause = `WHERE ${conditions.join(" AND ")}`;
 
-  // Count query doesn't need the orders join — none of the filters touch
+  // Count query doesn't need the orders join, none of the filters touch
   // order_count/total_spent.
   const countResult = await pool.query(
     `SELECT COUNT(*)::int AS count FROM users u ${whereClause}`,

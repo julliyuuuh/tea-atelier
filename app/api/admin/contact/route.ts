@@ -66,7 +66,7 @@ export async function GET(req: Request) {
     customerEmail: m.email,
   }));
 
-  // Stats stay global, independent of the current search/status filter —
+  // Stats stay global, independent of the current search/status filter
   // same convention as the customers page's stat chips.
   const statsResult = await pool.query(
     `SELECT

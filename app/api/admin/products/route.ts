@@ -55,7 +55,7 @@ export async function POST(req: Request) {
   });
 }
 
-// Column allowlist for ORDER BY — never interpolate the sort key directly,
+// Column allowlist for ORDER BY, never interpolate the sort key directly,
 // since it comes from the query string.
 const SORT_COLUMNS: Record<string, string> = {
   name: "product_name",
