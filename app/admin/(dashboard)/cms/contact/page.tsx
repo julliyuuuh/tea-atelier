@@ -105,9 +105,6 @@ export default function AdminContactCmsPage() {
         <Link href="/admin/cms" className="text-sage hover:underline">
           Back to content management
         </Link>
-        <Link href="/contact" className="text-sage hover:underline">
-          View Contact page
-        </Link>
       </div>
       <ErrorBanner message={error} />
       {loading ? (
