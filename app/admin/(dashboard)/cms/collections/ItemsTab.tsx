@@ -204,7 +204,9 @@ export default function ItemsTab({
           <div className="flex-1 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelClass}>Name</label>
+                <label className="block text-sm font-medium text-charcoal/70 mb-2">
+                  Name
+                </label>
                 <input
                   type="text"
                   value={item.name}
