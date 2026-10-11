@@ -146,9 +146,6 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
               {request.refund_state && (
                 <div className="space-y-1">
                   <ReturnStatusBadge status={request.refund_state} />
-                  {request.refund_is_test && (
-                    <p className="text-xs text-charcoal/50">Test mode</p>
-                  )}
                 </div>
               )}
             </div>
