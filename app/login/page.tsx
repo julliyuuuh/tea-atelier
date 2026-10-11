@@ -237,7 +237,7 @@ function LoginForm() {
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
                     onPaste={i === 0 ? handleOtpPaste : undefined}
-                    className="w-12 h-14 rounded-xl text-center border border-charcoal/20 bg-white font-body text-xl text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    className="w-12 h-14 rounded-xl text-center border border-charcoal/20 bg-sand/20 font-body text-xl text-charcoal focus:outline-none focus:border-sage transition-colors"
                   />
                 ))}
               </div>
@@ -273,7 +273,7 @@ function LoginForm() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                   />
                 </div>
 
@@ -286,7 +286,7 @@ function LoginForm() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                   />
                 </div>
 
@@ -320,23 +320,6 @@ function LoginForm() {
                   ref={googleButtonRef}
                   className="w-full flex justify-center"
                 ></div>
-
-                <button
-                  type="button"
-                  disabled
-                  title="Apple sign-in coming soon"
-                  className="w-full flex items-center justify-center gap-2 rounded-full border border-charcoal/20 py-3 font-body text-sm text-charcoal/40 cursor-not-allowed"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.635.95 3.463.95.813 0 2.187-1.01 3.813-1.01.65 0 2.985.06 4.51 2.27-.118.074-2.692 1.57-2.692 4.8 0 3.75 3.312 5.07 3.353 5.08z" />
-                  </svg>
-                  Apple (coming soon)
-                </button>
               </div>
 
               <p className="font-body text-sm text-charcoal/60 text-center mt-8">

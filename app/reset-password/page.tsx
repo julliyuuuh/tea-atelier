@@ -6,6 +6,12 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
+import {
+  getPasswordError,
+  PASSWORD_HINT,
+  PASSWORD_MIN_LENGTH,
+} from "@/lib/password-policy";
+
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -21,8 +27,9 @@ function ResetPasswordForm() {
     e.preventDefault();
     setErrorMessage("");
 
-    if (newPassword.length < 8) {
-      setErrorMessage("Password must be at least 8 characters.");
+    const passwordError = getPasswordError(newPassword);
+    if (passwordError) {
+      setErrorMessage(passwordError);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -119,13 +126,19 @@ function ResetPasswordForm() {
                 </label>
                 <input
                   type="password"
+                  autoComplete="new-password"
+                  minLength={PASSWORD_MIN_LENGTH}
                   required
                   autoFocus
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                  className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                 />
               </div>
+
+              <p className="font-body text-xs leading-relaxed text-charcoal/60">
+                {PASSWORD_HINT}
+              </p>
 
               <div>
                 <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
@@ -133,10 +146,12 @@ function ResetPasswordForm() {
                 </label>
                 <input
                   type="password"
+                  autoComplete="new-password"
+                  minLength={PASSWORD_MIN_LENGTH}
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                  className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                 />
               </div>
 

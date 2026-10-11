@@ -3,6 +3,7 @@ import { pool } from "@/lib/db";
 import { hashPassword, signToken } from "@/lib/auth-server";
 import { sendVerificationEmail } from "@/lib/email";
 import crypto from "crypto";
+import { getPasswordError } from "@/lib/password-policy";
 
 export async function POST(req: Request) {
   try {
@@ -16,11 +17,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters." },
-        { status: 400 },
-      );
+    const passwordError = getPasswordError(password);
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
     const existing = await pool.query(

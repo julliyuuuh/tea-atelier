@@ -3,8 +3,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+
+import {
+  getPasswordError,
+  PASSWORD_HINT,
+  PASSWORD_MIN_LENGTH,
+} from "@/lib/password-policy";
 
 export default function SignupPage() {
   const { login } = useAuth();
@@ -14,6 +20,7 @@ export default function SignupPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -25,6 +32,12 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
+
+    const passwordError = getPasswordError(password);
+    if (passwordError) {
+      setErrorMessage(passwordError);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setErrorMessage("Passwords don't match.");
@@ -123,7 +136,7 @@ export default function SignupPage() {
                   required
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                  className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                 />
               </div>
 
@@ -136,7 +149,7 @@ export default function SignupPage() {
                   required
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                  className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
                 />
               </div>
             </div>
@@ -150,7 +163,7 @@ export default function SignupPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
               />
             </div>
 
@@ -164,21 +177,47 @@ export default function SignupPage() {
                 value={phoneNumber}
                 onChange={handlePhoneChange}
                 maxLength={11}
-                className="w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
               />
             </div>
 
             <div>
-              <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+              <label
+                htmlFor="signup-password"
+                className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2"
+              >
                 Password
               </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  minLength={PASSWORD_MIN_LENGTH}
+                  id="signup-password"
+                  aria-describedby="signup-password-hint"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-xl border border-charcoal/20 bg-sand/20 pl-4 pr-12 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                />
+                <button
+                  type="button"
+                  aria-label={
+                    showPassword ? "Hide passwords" : "Show passwords"
+                  }
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-charcoal/60 hover:text-charcoal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <p
+                id="signup-password-hint"
+                className="mt-2 font-body text-xs leading-relaxed text-charcoal/60"
+              >
+                {PASSWORD_HINT}
+              </p>
             </div>
 
             <div>
@@ -186,11 +225,13 @@ export default function SignupPage() {
                 Confirm Password
               </label>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                minLength={PASSWORD_MIN_LENGTH}
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
               />
             </div>
 

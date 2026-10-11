@@ -2,12 +2,18 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { pool } from "@/lib/db";
+import { getPasswordError } from "@/lib/password-policy";
 
 export async function POST(req: Request) {
   const { token, newPassword } = await req.json();
 
-  if (!token || !newPassword || newPassword.length < 8) {
+  if (typeof token !== "string" || !token) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+
+  const passwordError = getPasswordError(newPassword);
+  if (passwordError) {
+    return NextResponse.json({ error: passwordError }, { status: 400 });
   }
 
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
