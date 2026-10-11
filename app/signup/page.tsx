@@ -1,6 +1,5 @@
 "use client";
 
-import ValidatedForm from "@/components/ValidatedForm";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -13,6 +12,14 @@ import {
   PASSWORD_MIN_LENGTH,
 } from "@/lib/password-policy";
 
+type SignupField =
+  | "firstName"
+  | "lastName"
+  | "email"
+  | "password"
+  | "confirmPassword";
+type FieldErrors = Partial<Record<SignupField, string>>;
+
 export default function SignupPage() {
   const { login } = useAuth();
   const [firstName, setFirstName] = useState("");
@@ -24,6 +31,93 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  function validateField(
+    field: SignupField,
+    value: string,
+    emailInvalid = false,
+    currentPassword = password,
+  ) {
+    if (!value.trim()) {
+      const prompts: Record<SignupField, string> = {
+        firstName: "Enter your first name.",
+        lastName: "Enter your last name.",
+        email: "Enter your email.",
+        password: "Enter a password.",
+        confirmPassword: "Confirm your password.",
+      };
+      return prompts[field];
+    }
+    if (field === "email" && emailInvalid)
+      return "Enter a valid email address.";
+    if (field === "password") {
+      const error = getPasswordError(value);
+      if (error === PASSWORD_HINT)
+        return "Use 12+ characters, A-Z, a-z and a number.";
+      return error || "";
+    }
+    if (field === "confirmPassword" && value !== currentPassword)
+      return "Passwords don't match.";
+    return "";
+  }
+
+  function blurField(
+    field: SignupField,
+    event: React.FocusEvent<HTMLInputElement>,
+  ) {
+    const error = validateField(
+      field,
+      event.currentTarget.value,
+      event.currentTarget.validity.typeMismatch,
+    );
+    setFieldErrors((previous) => ({ ...previous, [field]: error }));
+  }
+
+  function changeField(
+    field: SignupField,
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const input = event.currentTarget;
+    const value = input.value;
+    const setters = {
+      firstName: setFirstName,
+      lastName: setLastName,
+      email: setEmail,
+      password: setPassword,
+      confirmPassword: setConfirmPassword,
+    };
+    setters[field](value);
+    setFieldErrors((previous) => {
+      const next = { ...previous };
+      if (field in previous)
+        next[field] = validateField(field, value, input.validity.typeMismatch);
+      if (field === "password" && "confirmPassword" in previous)
+        next.confirmPassword = validateField(
+          "confirmPassword",
+          confirmPassword,
+          false,
+          value,
+        );
+      return next;
+    });
+  }
+
+  function fieldError(field: SignupField) {
+    return (
+      <p
+        id={`signup-${field}-error`}
+        aria-live="polite"
+        className="mt-1 min-h-4 font-body text-xs leading-4 text-red-700 dark:text-red-300"
+      >
+        {fieldErrors[field] || ""}
+      </p>
+    );
+  }
+
+  function inputClass(field: SignupField, padding = "px-4") {
+    return `w-full rounded-xl border-[1.5px] bg-transparent ${padding} py-3 font-body text-sm text-charcoal focus:outline-none transition-colors ${fieldErrors[field] ? "border-red-700/60 focus:border-red-700 dark:border-red-300/60" : "border-charcoal/20 focus:border-sage"}`;
+  }
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digitsOnly = e.target.value.replace(/[^0-9]/g, "").slice(0, 11);
@@ -34,14 +128,25 @@ export default function SignupPage() {
     e.preventDefault();
     setErrorMessage("");
 
-    const passwordError = getPasswordError(password);
-    if (passwordError) {
-      setErrorMessage(passwordError);
-      return;
+    const form = e.currentTarget as HTMLFormElement;
+    const values = { firstName, lastName, email, password, confirmPassword };
+    const nextErrors: FieldErrors = {};
+    for (const field of Object.keys(values) as SignupField[]) {
+      const input = form.elements.namedItem(field) as HTMLInputElement | null;
+      nextErrors[field] = validateField(
+        field,
+        values[field],
+        input?.validity.typeMismatch,
+      );
     }
-
-    if (password !== confirmPassword) {
-      setErrorMessage("Passwords don't match.");
+    setFieldErrors(nextErrors);
+    const firstInvalid = (Object.keys(values) as SignupField[]).find(
+      (field) => nextErrors[field],
+    );
+    if (firstInvalid) {
+      (
+        form.elements.namedItem(firstInvalid) as HTMLInputElement | null
+      )?.focus();
       return;
     }
 
@@ -121,51 +226,81 @@ export default function SignupPage() {
           </p>
 
           {errorMessage && (
-            <p className="font-body text-sm text-red-600 text-center mb-6">
+            <p
+              className="font-body text-sm text-red-600 text-center mb-4"
+              role="alert"
+            >
               {errorMessage}
             </p>
           )}
 
-          <ValidatedForm onSubmit={handleSubmit} className="space-y-4">
+          <form noValidate onSubmit={handleSubmit} className="space-y-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="min-w-0">
-                <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5">
+                <label
+                  htmlFor="signup-firstName"
+                  className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5"
+                >
                   First Name
                 </label>
                 <input
+                  id="signup-firstName"
+                  aria-describedby="signup-firstName-error"
                   type="text"
                   required
+                  name="firstName"
+                  aria-invalid={!!fieldErrors.firstName}
+                  onBlur={(e) => blurField("firstName", e)}
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full rounded-xl border-[1.5px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                  onChange={(e) => changeField("firstName", e)}
+                  className={inputClass("firstName")}
                 />
+                {fieldError("firstName")}
               </div>
 
               <div className="min-w-0">
-                <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5">
+                <label
+                  htmlFor="signup-lastName"
+                  className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5"
+                >
                   Last Name
                 </label>
                 <input
+                  id="signup-lastName"
+                  aria-describedby="signup-lastName-error"
                   type="text"
                   required
+                  name="lastName"
+                  aria-invalid={!!fieldErrors.lastName}
+                  onBlur={(e) => blurField("lastName", e)}
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full rounded-xl border-[1.5px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                  onChange={(e) => changeField("lastName", e)}
+                  className={inputClass("lastName")}
                 />
+                {fieldError("lastName")}
               </div>
             </div>
 
             <div>
-              <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5">
+              <label
+                htmlFor="signup-email"
+                className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5"
+              >
                 Email
               </label>
               <input
+                id="signup-email"
+                aria-describedby="signup-email-error"
                 type="email"
                 required
+                name="email"
+                aria-invalid={!!fieldErrors.email}
+                onBlur={(e) => blurField("email", e)}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border-[1.5px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                onChange={(e) => changeField("email", e)}
+                className={inputClass("email")}
               />
+              {fieldError("email")}
             </div>
 
             <div>
@@ -183,7 +318,7 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-4">
                 <div className="min-w-0">
                   <label
                     htmlFor="signup-password"
@@ -197,11 +332,14 @@ export default function SignupPage() {
                       autoComplete="new-password"
                       minLength={PASSWORD_MIN_LENGTH}
                       id="signup-password"
-                      aria-describedby="signup-password-hint"
+                      aria-describedby="signup-password-hint signup-password-error"
                       required
+                      name="password"
+                      aria-invalid={!!fieldErrors.password}
+                      onBlur={(e) => blurField("password", e)}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl border-[1.5px] border-charcoal/20 bg-transparent pl-4 pr-12 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                      onChange={(e) => changeField("password", e)}
+                      className={inputClass("password", "pl-4 pr-12")}
                     />
                     <button
                       type="button"
@@ -215,21 +353,31 @@ export default function SignupPage() {
                       {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                     </button>
                   </div>
+                  {fieldError("password")}
                 </div>
 
                 <div className="min-w-0">
-                  <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5">
+                  <label
+                    htmlFor="signup-confirmPassword"
+                    className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5"
+                  >
                     Confirm Password
                   </label>
                   <input
+                    id="signup-confirmPassword"
+                    aria-describedby="signup-confirmPassword-error"
                     type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
                     minLength={PASSWORD_MIN_LENGTH}
                     required
+                    name="confirmPassword"
+                    aria-invalid={!!fieldErrors.confirmPassword}
+                    onBlur={(e) => blurField("confirmPassword", e)}
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full rounded-xl border-[1.5px] border-charcoal/20 bg-transparent px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                    onChange={(e) => changeField("confirmPassword", e)}
+                    className={inputClass("confirmPassword")}
                   />
+                  {fieldError("confirmPassword")}
                 </div>
               </div>
               <p
@@ -247,7 +395,7 @@ export default function SignupPage() {
             >
               {isLoading ? "Creating account..." : "Create Account"}
             </button>
-          </ValidatedForm>
+          </form>
 
           <p className="font-body text-sm text-charcoal/60 text-center mt-5">
             Already have an account?{" "}
