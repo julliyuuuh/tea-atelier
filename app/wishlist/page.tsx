@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 import DisplayPrice from "@/components/DisplayPrice";
 import Navbar from "@/components/Navbar";
@@ -10,7 +11,9 @@ import { isProductAvailable } from "@/lib/products";
 import { Heart } from "lucide-react";
 
 export default function WishlistPage() {
-  const { items, removeFromWishlist } = useWishlist();
+  const { items, removeFromWishlist, loading, error, refreshWishlist } =
+    useWishlist();
+  const { user } = useAuth();
   const { addToCart } = useCart();
 
   return (
@@ -22,10 +25,38 @@ export default function WishlistPage() {
           My Wishlist
         </h1>
         <p className="font-body text-sm text-charcoal/60 mb-12">
-          {items.length} saved {items.length === 1 ? "item" : "items"}
+          {loading
+            ? "Loading saved items..."
+            : `${items.length} saved ${items.length === 1 ? "item" : "items"}`}
         </p>
 
-        {items.length === 0 ? (
+        {!user && !loading && (
+          <p className="mb-6 font-body text-sm text-charcoal/60">
+            <Link
+              href="/login?redirect=%2Fwishlist"
+              className="text-sage underline"
+            >
+              Sign in
+            </Link>{" "}
+            to keep your wishlist across visits. Guest items are temporary.
+          </p>
+        )}
+        {loading ? (
+          <p role="status" className="font-body text-sm text-charcoal/50">
+            Loading your wishlist...
+          </p>
+        ) : error && items.length === 0 ? (
+          <p className="font-body text-sm text-charcoal/60">
+            Your saved items could not be loaded.{" "}
+            <button
+              type="button"
+              onClick={() => void refreshWishlist()}
+              className="cursor-pointer text-sage underline"
+            >
+              Try again
+            </button>
+          </p>
+        ) : items.length === 0 ? (
           <div className="text-center py-24">
             <Heart size={32} className="mx-auto text-charcoal/20 mb-4" />
             <p className="font-body text-charcoal/60 mb-6">
