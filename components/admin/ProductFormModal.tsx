@@ -247,7 +247,7 @@ export default function ProductFormModal({
           onClick={() => !isSaving && onClose()}
         >
           <motion.div
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto"
+            className="fixed right-0 top-0 h-full w-full max-w-md bg-white  overflow-y-auto"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -260,7 +260,7 @@ export default function ProductFormModal({
             <div className="flex items-center justify-between px-8 pt-8 pb-6 border-b border-charcoal/10 sticky top-0 bg-white z-10">
               <h2
                 id="product-modal-title"
-                className="font-body text-lg font-medium text-charcoal"
+                className="font-display text-2xl text-charcoal"
               >
                 {editingId ? "Edit Product" : "Add Product"}
               </h2>
@@ -300,7 +300,7 @@ export default function ProductFormModal({
                       aria-describedby={
                         fieldErrors.name ? "name-error" : undefined
                       }
-                      className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                      className={`w-full rounded-2xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                         fieldErrors.name
                           ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                           : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
@@ -332,7 +332,7 @@ export default function ProductFormModal({
                         { value: "Matcha", label: "Matcha" },
                         { value: "Tea Accessories", label: "Tea Accessories" },
                       ]}
-                      triggerClassName="w-full bg-white rounded-xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
+                      triggerClassName="w-full bg-white rounded-2xl border border-charcoal/20 px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-all"
                     />
                   </div>
 
@@ -365,7 +365,7 @@ export default function ProductFormModal({
                               value: sub,
                               label: sub,
                             }))}
-                            triggerClassName={`w-full bg-white rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                            triggerClassName={`w-full bg-white rounded-2xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                               fieldErrors.subCategory
                                 ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                 : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
@@ -411,7 +411,7 @@ export default function ProductFormModal({
                                 ] as any
                               )[form.subCategory] as string[]
                             ).map((t) => ({ value: t, label: t }))}
-                            triggerClassName={`w-full bg-white rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                            triggerClassName={`w-full bg-white rounded-2xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                               fieldErrors.type
                                 ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                 : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
@@ -452,7 +452,7 @@ export default function ProductFormModal({
                         aria-describedby={
                           fieldErrors.price ? "price-error" : undefined
                         }
-                        className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                        className={`w-full rounded-2xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                           fieldErrors.price
                             ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                             : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
@@ -488,7 +488,7 @@ export default function ProductFormModal({
                         aria-describedby={
                           fieldErrors.stockQuantity ? "stock-error" : undefined
                         }
-                        className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                        className={`w-full rounded-2xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                           fieldErrors.stockQuantity
                             ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                             : "border-charcoal/20 focus:border-sage focus:ring-sage/20"
@@ -520,7 +520,7 @@ export default function ProductFormModal({
                     }}
                     onDragLeave={() => setIsDraggingImage(false)}
                     onDrop={handleImageDrop}
-                    className={`rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
+                    className={`rounded-2xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
                       isDraggingImage
                         ? "border-sage bg-sage/5"
                         : fieldErrors.image
@@ -593,7 +593,7 @@ export default function ProductFormModal({
                           ? "description-error"
                           : undefined
                       }
-                      className={`w-full rounded-xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
+                      className={`w-full rounded-2xl border px-3 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:ring-2 transition-all ${
                         fieldErrors.description
                           ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                           : "border-charcoal/20 focus:border-sage focus:ring-sage/20"

@@ -50,7 +50,7 @@ export function ErrorBanner({
   );
 }
 
-/** Small pill used for the summary stats row above a table. */
+/** Compact summary card used above admin lists. */
 export function StatChip({
   label,
   value,
@@ -62,19 +62,19 @@ export function StatChip({
 }) {
   const toneClasses =
     tone === "danger"
-      ? "bg-red-50 text-red-600"
+      ? "bg-white text-red-700"
       : tone === "warning"
-        ? "bg-amber-50 text-amber-700"
-        : "bg-sand/40 text-charcoal";
+        ? "bg-white text-amber-700"
+        : "bg-white text-charcoal";
 
   return (
     <div
-      className={`flex items-center gap-2 rounded-md px-4 py-3 border border-charcoal/10 ${toneClasses}`}
+      className={`flex min-w-[108px] flex-col items-start gap-1 rounded-2xl border border-charcoal/10 px-4 py-3 ${toneClasses}`}
     >
-      <span className="font-body text-lg font-semibold leading-none">
+      <span className="font-display text-2xl leading-none tabular-nums">
         {value}
       </span>
-      <span className="font-body text-xs uppercase tracking-wide opacity-70">
+      <span className="font-body text-[11px] tracking-wide opacity-60">
         {label}
       </span>
     </div>
@@ -111,7 +111,7 @@ export function SortHeader<K extends string>({
   return (
     <div
       role="columnheader"
-      aria-sort={ariaSort as any}
+      aria-sort={ariaSort as React.AriaAttributes["aria-sort"]}
       className={`px-5 py-3 ${align === "right" ? "text-right" : ""}`}
     >
       <button
@@ -306,7 +306,7 @@ export function CustomSelect({
                   Math.max(80, window.innerHeight - coords.top - 12),
                 ),
               }}
-              className="z-[200] w-max max-w-xs overflow-y-auto bg-white border border-charcoal/10 rounded-xl shadow-lg py-1"
+              className="z-[200] w-max max-w-xs overflow-y-auto bg-white border border-charcoal/10 rounded-2xl py-1.5"
             >
               {options.map((opt, index) => {
                 const isSelected = opt.value === value;

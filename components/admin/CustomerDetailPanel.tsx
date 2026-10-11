@@ -63,7 +63,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-charcoal/10 rounded-xl p-4">
+    <div className="border border-charcoal/10 rounded-2xl p-4">
       <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/50 mb-2">
         {title}
       </h3>
@@ -189,7 +189,7 @@ export default function CustomerDetailPanel({
             role="dialog"
             aria-modal="true"
             aria-label="Customer details"
-            className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-2xl  w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -198,7 +198,7 @@ export default function CustomerDetailPanel({
             {/* Header */}
             <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-charcoal/10">
               <div className="min-w-0">
-                <h2 className="font-body text-lg font-medium text-charcoal truncate">
+                <h2 className="font-display text-2xl text-charcoal truncate">
                   {current ? current.name : "Customer Details"}
                 </h2>
                 {current && (
@@ -241,8 +241,8 @@ export default function CustomerDetailPanel({
             <div className="flex-1 overflow-y-auto px-6 py-5">
               {isLoading && !current && (
                 <div className="grid gap-4 md:grid-cols-5">
-                  <SkeletonBlock className="h-56 md:col-span-2 rounded-xl" />
-                  <SkeletonBlock className="h-56 md:col-span-3 rounded-xl" />
+                  <SkeletonBlock className="h-56 md:col-span-2 rounded-2xl" />
+                  <SkeletonBlock className="h-56 md:col-span-3 rounded-2xl" />
                 </div>
               )}
 
@@ -298,7 +298,7 @@ export default function CustomerDetailPanel({
                   <div className="md:col-span-3">
                     <Section title={`Order History (${ordersMeta.total})`}>
                       {ordersMeta.total === 0 ? (
-                        <div className="flex flex-col items-center gap-2 text-center py-8 bg-sand/20 rounded-xl">
+                        <div className="flex flex-col items-center gap-2 text-center py-8 bg-sand/20 rounded-2xl">
                           <ShoppingBag className="w-6 h-6 text-charcoal/20" />
                           <span className="font-body text-sm text-charcoal/40">
                             No orders yet.

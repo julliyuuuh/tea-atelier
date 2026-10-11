@@ -1,7 +1,12 @@
 "use client";
 
+import {
+  AdminPage,
+  AdminPageHeader,
+  AdminTable,
+  AdminSearch,
+} from "@/components/admin/AdminPage";
 import React, { useState, useEffect, useCallback } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Package, Loader2 } from "lucide-react";
 import type { Product } from "@/lib/products";
 import { categoryTree, type MainCategory } from "@/lib/categories";
@@ -13,7 +18,6 @@ import {
   SortHeader,
   PlainHeader,
   CustomSelect,
-  rowVariants,
   type SortConfig,
 } from "@/components/admin/AdminUI";
 import ProductFormModal from "@/components/admin/ProductFormModal";
@@ -33,7 +37,9 @@ type Stats = {
 // selection. Both resolve down to the same single-id DELETE endpoint below —
 // bulk delete is N sequential calls to the existing endpoint, not a new one.
 type ConfirmTarget =
-  { type: "single"; id: string } | { type: "bulk"; ids: string[] } | null;
+  | { type: "single"; id: string }
+  | { type: "bulk"; ids: string[] }
+  | null;
 
 // Shared column layout so the header, skeleton rows, and data rows always line up.
 // First column is the row-select checkbox.
@@ -318,31 +324,13 @@ export default function AdminProductsPage() {
   })();
 
   return (
-    <div className="p-10">
+    <AdminPage>
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-        <div>
-          <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
-            Products
-          </h1>
-          <p className="font-body text-sm text-charcoal/60">
-            {isLoading ? (
-              "Loading..."
-            ) : (
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={`${currentPage}-${products.length}`}
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
-                  transition={{ duration: 0.15 }}
-                  className="inline-block"
-                >
-                  Page {currentPage} of {totalPages}
-                </motion.span>
-              </AnimatePresence>
-            )}
-          </p>
-        </div>
+        <AdminPageHeader
+          title="Products"
+          eyebrow="Catalog"
+          description="Manage your catalog, pricing, stock, and product availability."
+        />
 
         <div className="flex flex-wrap items-center gap-4">
           {/* Stat chips — always reflect the whole catalog, not just this page */}
@@ -358,7 +346,7 @@ export default function AdminProductsPage() {
 
           <button
             onClick={openAddModal}
-            className="flex items-center gap-1.5 bg-charcoal text-cream font-body text-sm px-5 py-2.5 hover:bg-sage transition-colors rounded-full shadow-sm"
+            className="flex items-center gap-1.5 bg-sage text-white font-body text-sm px-5 py-3 hover:bg-charcoal transition-colors rounded-full"
           >
             <span className="text-base leading-none">+</span>
             Add Product
@@ -373,13 +361,11 @@ export default function AdminProductsPage() {
       <ErrorBanner message={actionError} />
 
       {/* Filter toolbar */}
-      <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-charcoal/10 rounded-xl px-4 py-3">
-        <input
-          type="text"
-          placeholder="Search products..."
+      <div className="flex flex-wrap items-center gap-3 mb-6 rounded-2xl border border-charcoal/10 bg-white p-5">
+        <AdminSearch
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[200px] max-w-sm border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
+          onChange={setSearch}
+          placeholder="Search products..."
         />
 
         <CustomSelect
@@ -415,33 +401,23 @@ export default function AdminProductsPage() {
           />
         )}
 
-        <AnimatePresence>
+        <>
           {hasActiveFilters && (
-            <motion.button
+            <button
               type="button"
               onClick={clearFilters}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.15 }}
               className="font-body text-sm text-charcoal/60 hover:text-charcoal underline px-1"
             >
               Clear filters
-            </motion.button>
+            </button>
           )}
-        </AnimatePresence>
+        </>
       </div>
 
       {/* Bulk action bar */}
-      <AnimatePresence>
+      <>
         {selectedIds.size > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-            animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
-            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-            transition={{ duration: 0.15 }}
-            className="overflow-hidden"
-          >
+          <div className="overflow-hidden">
             <div className="flex items-center justify-between bg-charcoal text-cream rounded-xl px-4 py-2.5">
               <span className="font-body text-sm">
                 {selectedIds.size} selected
@@ -472,15 +448,11 @@ export default function AdminProductsPage() {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
-      <div
-        className="bg-white border border-charcoal/10 rounded-xl overflow-hidden"
-        role="table"
-        aria-label="Products"
-      >
+      <AdminTable label="Products" minWidth={1000}>
         <div role="rowgroup">
           <div
             role="row"
@@ -559,19 +531,14 @@ export default function AdminProductsPage() {
             ))}
 
           {!isLoading && (
-            <AnimatePresence initial={false}>
-              {products.map((product, index) => {
+            <>
+              {products.map((product) => {
                 const isSelected = selectedIds.has(product.id);
                 return (
-                  <motion.div
+                  <div
                     key={product.id}
                     role="row"
-                    custom={index}
-                    variants={rowVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    className={`grid items-center py-3 border-b border-charcoal/5 last:border-0 hover:bg-sand/20 hover:shadow-sm transition-colors overflow-hidden group ${
+                    className={`grid items-center py-3 border-b border-charcoal/5 last:border-0 hover:bg-sand/20  transition-colors overflow-hidden group ${
                       isSelected ? "bg-sage/5" : ""
                     }`}
                     style={{ gridTemplateColumns: GRID_COLS }}
@@ -661,10 +628,10 @@ export default function AdminProductsPage() {
                         Delete
                       </button>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
-            </AnimatePresence>
+            </>
           )}
 
           {!isLoading && products.length === 0 && (
@@ -681,7 +648,7 @@ export default function AdminProductsPage() {
             </div>
           )}
         </div>
-      </div>
+      </AdminTable>
 
       {/* Pagination */}
       {!isLoading && products.length > 0 && totalPages > 1 && (
@@ -718,29 +685,19 @@ export default function AdminProductsPage() {
             className="flex items-center gap-1.5 font-body text-xs text-charcoal/50 hover:text-charcoal"
             aria-expanded={showArchived}
           >
-            <motion.span
-              animate={{ rotate: showArchived ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
-              className="inline-flex"
-            >
+            <span className="inline-flex">
               <ChevronDown className="w-3.5 h-3.5" />
-            </motion.span>
+            </span>
             <span className="underline">
               {showArchived ? "Hide" : "Show"} Archived Products (
               {stats.archived})
             </span>
           </button>
 
-          <AnimatePresence initial={false}>
+          <>
             {showArchived && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                className="overflow-hidden"
-              >
-                <div className="bg-white border border-charcoal/10 rounded-xl overflow-hidden mt-4">
+              <div className="overflow-hidden">
+                <div className="bg-white border border-charcoal/10 rounded-2xl overflow-hidden mt-4">
                   {archivedLoading ? (
                     <div className="px-5 py-6 flex items-center gap-2 text-charcoal/50">
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -803,9 +760,9 @@ export default function AdminProductsPage() {
                     </table>
                   )}
                 </div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
+          </>
         </div>
       )}
 
@@ -822,6 +779,6 @@ export default function AdminProductsPage() {
         onConfirm={handleConfirmedDelete}
         onCancel={() => setConfirmTarget(null)}
       />
-    </div>
+    </AdminPage>
   );
 }

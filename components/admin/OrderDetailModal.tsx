@@ -117,7 +117,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-charcoal/10 rounded-xl p-4">
+    <div className="border border-charcoal/10 rounded-2xl p-4">
       <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/50 mb-2">
         {title}
       </h3>
@@ -274,10 +274,10 @@ export default function OrderDetailModal({
     if (isLoading && !data) {
       return (
         <div className="space-y-4">
-          <SkeletonBlock className="h-10 w-full rounded-xl" />
+          <SkeletonBlock className="h-10 w-full rounded-2xl" />
           <div className="grid gap-4 md:grid-cols-5">
-            <SkeletonBlock className="h-56 md:col-span-3 rounded-xl" />
-            <SkeletonBlock className="h-56 md:col-span-2 rounded-xl" />
+            <SkeletonBlock className="h-56 md:col-span-3 rounded-2xl" />
+            <SkeletonBlock className="h-56 md:col-span-2 rounded-2xl" />
           </div>
         </div>
       );
@@ -322,7 +322,7 @@ export default function OrderDetailModal({
         </div>
 
         {/* Progress */}
-        <div className="border border-charcoal/10 rounded-xl p-4 mb-4 overflow-x-auto">
+        <div className="border border-charcoal/10 rounded-2xl p-4 mb-4 overflow-x-auto">
           {cancelled ? (
             <p className="font-body text-sm text-red-600">
               This order was cancelled.
@@ -428,8 +428,8 @@ export default function OrderDetailModal({
                   />
                   {unpaidOnline && !cancelled && (
                     <p className="font-body text-xs text-charcoal/50 mt-2">
-                      This order can't move past Order Placed until its payment
-                      is confirmed.
+                      This order can&apos;t move past Order Placed until its
+                      payment is confirmed.
                     </p>
                   )}
                   {cancelled && (
@@ -552,7 +552,7 @@ export default function OrderDetailModal({
             role="dialog"
             aria-modal="true"
             aria-label={`Order TA-${orderId}`}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-2xl  w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}

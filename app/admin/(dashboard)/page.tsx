@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminPage, AdminPageHeader } from "@/components/admin/AdminPage";
 import { useState, useEffect, useRef } from "react";
 import { ShoppingBag, DollarSign, Package, Users } from "lucide-react";
 import {
@@ -163,13 +164,14 @@ export default function AdminOverviewPage() {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10">
-      <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
-        Overview
-      </h1>
-      <p className="font-body text-sm text-charcoal/60 mb-8">
-        Welcome back! here&apos;s what&apos;s happening with Tea Atelier.
-      </p>
+    <AdminPage>
+      <div className="mb-8">
+        <AdminPageHeader
+          title="Overview"
+          eyebrow="Store management"
+          description="A clear view of your store’s sales, products, and recent activity."
+        />
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statCards.map((stat) => {
@@ -177,7 +179,7 @@ export default function AdminOverviewPage() {
           return (
             <div
               key={stat.label}
-              className="bg-white border border-charcoal/10 rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-charcoal/5 hover:border-sage/30 cursor-default"
+              className="bg-white border border-charcoal/10 rounded-2xl p-5 transition-all duration-200   hover:border-sage/30 cursor-default"
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="font-body text-xs text-charcoal/50">
@@ -202,7 +204,7 @@ export default function AdminOverviewPage() {
       </div>
 
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[65%_1fr] gap-4">
-        <div className="bg-white border border-charcoal/10 rounded-xl p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-charcoal/5 hover:border-sage/30">
+        <div className="bg-white border border-charcoal/10 rounded-2xl p-6 transition-all duration-200   hover:border-sage/30">
           <h2 className="font-body text-sm font-medium text-charcoal mb-6">
             Top Products by Revenue
           </h2>
@@ -290,7 +292,12 @@ export default function AdminOverviewPage() {
                     tickMargin={12}
                     width={45}
                   />
-                  <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={55}>
+                  <Bar
+                    isAnimationActive={false}
+                    dataKey="revenue"
+                    radius={[6, 6, 0, 0]}
+                    barSize={55}
+                  >
                     {topProducts.map((entry, index) => (
                       <Cell
                         key={entry.id}
@@ -304,7 +311,7 @@ export default function AdminOverviewPage() {
           )}
         </div>
 
-        <div className="bg-white border border-charcoal/10 rounded-xl p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-charcoal/5 hover:border-sage/30">
+        <div className="bg-white border border-charcoal/10 rounded-2xl p-6 transition-all duration-200   hover:border-sage/30">
           <h2 className="font-body text-sm font-medium text-charcoal mb-4">
             Concerning Stock
           </h2>
@@ -348,6 +355,6 @@ export default function AdminOverviewPage() {
           )}
         </div>
       </div>
-    </div>
+    </AdminPage>
   );
 }

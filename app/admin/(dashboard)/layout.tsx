@@ -166,7 +166,10 @@ export default function AdminLayout({
               (item) => !item.superAdminOnly || user.role === "super_admin",
             )
             .map((item) => {
-              const isActive = pathname === item.href;
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/admin" &&
+                  pathname.startsWith(`${item.href}/`));
               const Icon = item.icon;
               return (
                 <Link
@@ -174,7 +177,7 @@ export default function AdminLayout({
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-2.5 font-body text-sm rounded-xl transition-colors ${
                     isActive
-                      ? "bg-sage text-cream dark:bg-[#71866e] dark:text-[#f0f4ed] font-medium shadow-sm"
+                      ? "bg-sage text-cream dark:bg-[#71866e] dark:text-[#f0f4ed] font-medium"
                       : "text-charcoal/60 dark:text-[#b9c5b7] hover:text-charcoal dark:hover:text-[#f0f4ed] hover:bg-sand/40 dark:hover:bg-[#354038]"
                   }`}
                 >
@@ -212,7 +215,9 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">{children}</main>
+      <main className="min-w-0 flex-1 overflow-y-auto pt-14 lg:pt-0">
+        {children}
+      </main>
     </div>
   );
 }

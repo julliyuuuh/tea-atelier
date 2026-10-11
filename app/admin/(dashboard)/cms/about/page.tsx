@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  AdminPage,
+  AdminPageHeader,
+  adminFormSurface,
+} from "@/components/admin/AdminPage";
 import { useState } from "react";
 import { ErrorBanner } from "@/components/admin/AdminUI";
 import AboutHeroTab from "./AboutHeroTab";
@@ -12,27 +17,31 @@ type Tab = (typeof TABS)[number];
 
 export default function AdminAboutCmsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("Hero");
+  const [visitedTabs, setVisitedTabs] = useState<Tab[]>(["Hero"]);
   const [errorMessage, setErrorMessage] = useState("");
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10">
-      <div className="mb-6">
-        <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
-          About Page Content
-        </h1>
-        <p className="font-body text-sm text-charcoal/60">
-          Manage the sections shown on your storefront's About page.
-        </p>
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="About page content"
+        eyebrow="Content management"
+        description="Tell your story through your hero, pillars, and team sections."
+      />
 
       <ErrorBanner message={errorMessage} />
 
-      <div className="flex flex-wrap items-center gap-1 mb-4 bg-white border border-charcoal/10 rounded-xl px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2 mb-6 bg-white border border-charcoal/10 rounded-2xl p-3">
         {TABS.map((tab) => (
           <button
             key={tab}
             type="button"
-            onClick={() => setActiveTab(tab)}
+            aria-pressed={activeTab === tab}
+            onClick={() => {
+              setActiveTab(tab);
+              setVisitedTabs((previous) =>
+                previous.includes(tab) ? previous : [...previous, tab],
+              );
+            }}
             className={`font-body text-sm px-4 py-2 rounded-full transition-colors ${
               activeTab === tab
                 ? "bg-sage text-cream"
@@ -44,20 +53,28 @@ export default function AdminAboutCmsPage() {
         ))}
       </div>
 
-      <div className="bg-white border border-charcoal/10 rounded-xl p-6">
+      <div className={adminFormSurface}>
         <div className={activeTab === "Hero" ? "block" : "hidden"}>
-          <AboutHeroTab onError={setErrorMessage} />
+          {visitedTabs.includes("Hero") && (
+            <AboutHeroTab onError={setErrorMessage} />
+          )}
         </div>
         <div className={activeTab === "Story" ? "block" : "hidden"}>
-          <AboutStoryTab onError={setErrorMessage} />
+          {visitedTabs.includes("Story") && (
+            <AboutStoryTab onError={setErrorMessage} />
+          )}
         </div>
         <div className={activeTab === "Pillars" ? "block" : "hidden"}>
-          <AboutPillarsTab onError={setErrorMessage} />
+          {visitedTabs.includes("Pillars") && (
+            <AboutPillarsTab onError={setErrorMessage} />
+          )}
         </div>
         <div className={activeTab === "Team" ? "block" : "hidden"}>
-          <AboutTeamTab onError={setErrorMessage} />
+          {visitedTabs.includes("Team") && (
+            <AboutTeamTab onError={setErrorMessage} />
+          )}
         </div>
       </div>
-    </div>
+    </AdminPage>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminPage, AdminPageHeader } from "@/components/admin/AdminPage";
 import Link from "next/link";
 import { Home, Info, Layers, HelpCircle, ShieldCheck } from "lucide-react";
 
@@ -38,27 +39,24 @@ const SECTIONS = [
 
 export default function AdminCmsIndexPage() {
   return (
-    <div className="p-4 sm:p-6 lg:p-10">
-      <div className="mb-6">
-        <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
-          Content Management
-        </h1>
-        <p className="font-body text-sm text-charcoal/60">
-          Manage static content across your storefront's pages.
-        </p>
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Content management"
+        eyebrow="Storefront content"
+        description="Keep your storefront pages current, from the homepage to your policies."
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
         {SECTIONS.map((section) => {
           const Icon = section.icon;
           return (
             <Link
               key={section.href}
               href={section.href}
-              className="bg-white border border-charcoal/10 rounded-xl p-6 hover:border-sage hover:shadow-sm transition-all"
+              className="bg-white border border-charcoal/10 rounded-2xl p-6 hover:border-sage/50 transition-colors"
             >
               <Icon className="text-sage mb-3" size={22} />
-              <h2 className="font-body text-lg text-charcoal mb-1">
+              <h2 className="font-display text-xl text-charcoal mb-2">
                 {section.label}
               </h2>
               <p className="font-body text-sm text-charcoal/60">
@@ -68,6 +66,6 @@ export default function AdminCmsIndexPage() {
           );
         })}
       </div>
-    </div>
+    </AdminPage>
   );
 }

@@ -1,7 +1,12 @@
 "use client";
 
+import {
+  AdminPage,
+  AdminPageHeader,
+  AdminScrollArea,
+  AdminSearch,
+} from "@/components/admin/AdminPage";
 import { useState, useEffect, useCallback } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { Mail } from "lucide-react";
 import { SkeletonBlock } from "@/components/Skeleton";
 import {
@@ -9,7 +14,6 @@ import {
   StatChip,
   PlainHeader,
   CustomSelect,
-  rowVariants,
 } from "@/components/admin/AdminUI";
 import Badge from "@/components/account/Badge";
 
@@ -202,31 +206,13 @@ export default function AdminContactPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10">
+    <AdminPage>
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-        <div>
-          <h1 className="font-body text-2xl font-medium text-charcoal mb-1">
-            Contact Messages
-          </h1>
-          <p className="font-body text-sm text-charcoal/60">
-            {isLoading ? (
-              "Loading..."
-            ) : (
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={`${currentPage}-${messages.length}`}
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
-                  transition={{ duration: 0.15 }}
-                  className="inline-block"
-                >
-                  Page {currentPage} of {totalPages}
-                </motion.span>
-              </AnimatePresence>
-            )}
-          </p>
-        </div>
+        <AdminPageHeader
+          title="Contact messages"
+          eyebrow="Customer support"
+          description="Review inquiries and keep customer conversations moving."
+        />
 
         {/* Stat chips, always reflect the full message list, not just this page */}
         <div className="flex flex-wrap gap-1.5">
@@ -241,13 +227,11 @@ export default function AdminContactPage() {
         onRetry={() => loadMessages(currentPage)}
       />
 
-      <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-charcoal/10 rounded-xl px-4 py-3">
-        <input
-          type="text"
-          placeholder="Search by name, email, or subject..."
+      <div className="flex flex-wrap items-center gap-3 mb-6 rounded-2xl border border-charcoal/10 bg-white p-5">
+        <AdminSearch
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[200px] max-w-sm border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
+          onChange={setSearch}
+          placeholder="Search by name, email, or subject..."
         />
 
         <CustomSelect
@@ -258,26 +242,22 @@ export default function AdminContactPage() {
           triggerClassName="min-w-[170px] bg-white border border-charcoal/20 px-4 py-2.5 font-body text-sm text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20 transition-colors rounded-full"
         />
 
-        <AnimatePresence>
+        <>
           {hasActiveFilters && (
-            <motion.button
+            <button
               type="button"
               onClick={clearFilters}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.15 }}
               className="font-body text-sm text-charcoal/60 hover:text-charcoal underline px-1"
             >
               Clear filters
-            </motion.button>
+            </button>
           )}
-        </AnimatePresence>
+        </>
       </div>
 
-      <div className="bg-white border border-charcoal/10 rounded-xl overflow-hidden">
+      <AdminScrollArea label="Contact messages" minWidth={900}>
         <div
-          className="grid items-center border-b border-charcoal/10"
+          className="grid min-h-14 items-center border-b border-charcoal/10 bg-sand/20"
           style={{ gridTemplateColumns: GRID_COLS }}
         >
           <PlainHeader label="Customer" />
@@ -310,19 +290,24 @@ export default function AdminContactPage() {
           ))}
 
         {!isLoading && (
-          <AnimatePresence initial={false}>
-            {messages.map((m, index) => (
-              <motion.div
-                key={m.id}
-                custom={index}
-                variants={rowVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
+          <>
+            {messages.map((m) => (
+              <div key={m.id}>
                 <div
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={expandedId === m.id}
+                  aria-controls={
+                    expandedId === m.id ? `message-${m.id}` : undefined
+                  }
                   onClick={() => handleExpand(m)}
-                  className="grid items-center py-3 border-b border-charcoal/5 cursor-pointer hover:bg-sand/20 hover:shadow-sm transition-colors overflow-hidden"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleExpand(m);
+                    }
+                  }}
+                  className="grid min-h-[4.5rem] items-center py-3 border-b border-charcoal/5 focus-visible:outline-2 focus-visible:outline-sage cursor-pointer hover:bg-sand/20  transition-colors overflow-hidden"
                   style={{ gridTemplateColumns: GRID_COLS }}
                 >
                   <div className="px-5 min-w-0">
@@ -353,7 +338,10 @@ export default function AdminContactPage() {
                 </div>
 
                 {expandedId === m.id && (
-                  <div className="px-5 py-5 bg-sand/10 border-b border-charcoal/5">
+                  <div
+                    id={`message-${m.id}`}
+                    className="px-5 py-5 bg-sand/10 border-b border-charcoal/5"
+                  >
                     <p className="font-body text-sm text-charcoal/80 mb-4">
                       {m.message}
                     </p>
@@ -406,9 +394,9 @@ export default function AdminContactPage() {
                     )}
                   </div>
                 )}
-              </motion.div>
+              </div>
             ))}
-          </AnimatePresence>
+          </>
         )}
 
         {!isLoading && messages.length === 0 && (
@@ -419,7 +407,7 @@ export default function AdminContactPage() {
             </span>
           </div>
         )}
-      </div>
+      </AdminScrollArea>
 
       {!isLoading && messages.length > 0 && totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
@@ -446,6 +434,6 @@ export default function AdminContactPage() {
           </div>
         </div>
       )}
-    </div>
+    </AdminPage>
   );
 }
