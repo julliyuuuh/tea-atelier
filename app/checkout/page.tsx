@@ -434,6 +434,7 @@ function CheckoutContent() {
   const canStartNewCheckout = ["pending", "failed", "cancelled"].includes(
     paymentStatus,
   );
+  const offerNewCheckout = cartChanged && canStartNewCheckout;
   const showSavedOrder = !!activeOrder && !cartChanged;
   const total = showSavedOrder
     ? (activeOrder.total ?? subtotal + newDeliveryFee)
@@ -746,9 +747,9 @@ function CheckoutContent() {
             </p>
             {cartChanged && (
               <p className="mt-2">
-                Your cart has changed. The summary below shows your current
-                cart. View Order Details shows the saved order&apos;s original
-                items.
+                Your cart has changed. The summary below shows your selected
+                cart items. View Saved Order shows the saved order&apos;s
+                original items.
               </p>
             )}
             {canStartNewCheckout ? (
@@ -1023,8 +1024,20 @@ function CheckoutContent() {
           <aside className="space-y-8">
             <div className="bg-sand/40 border border-charcoal/10 rounded-2xl p-6 md:p-8">
               <h2 className="font-display text-2xl text-charcoal mb-6">
-                Order Summary
+                {cartChanged ? "Current Selection" : "Order Summary"}
               </h2>
+              {activeOrder && cartChanged && (
+                <p className="mb-6 font-body text-xs leading-relaxed text-charcoal/60">
+                  Saved order #TA-{activeOrder.orderId}
+                  {activeOrder.total !== null && (
+                    <> totals ₱{activeOrder.total.toFixed(2)}</>
+                  )}
+                  . Your changes do not update that order.
+                  {canStartNewCheckout
+                    ? " Start a new checkout to order the selection below."
+                    : " Check the saved order's status before starting a new checkout."}
+                </p>
+              )}
               {!showSavedOrder && isCartEmpty ? (
                 <div className="text-center py-6">
                   <p className="font-body text-sm text-charcoal/70 mb-6">
@@ -1106,10 +1119,12 @@ function CheckoutContent() {
                       cartLoading ||
                       authLoading ||
                       isSubmitting ||
-                      checking
+                      checking ||
+                      (offerNewCheckout && isCartEmpty)
                     }
                     onClick={() => {
-                      if (paymentStatus === "cancelled")
+                      if (offerNewCheckout) void startNewCheckout();
+                      else if (paymentStatus === "cancelled")
                         router.push(`/account/orders/${activeOrder.orderId}`);
                       else if (paymentStatus === "paid") viewOrder();
                       else if (
@@ -1131,12 +1146,10 @@ function CheckoutContent() {
                       ? "Checking..."
                       : isSubmitting
                         ? "Processing..."
-                        : paymentStatus === "cancelled"
-                          ? "View Order"
-                          : cartChanged &&
-                              (paymentStatus === "pending" ||
-                                paymentStatus === "failed")
-                            ? "Check Status"
+                        : offerNewCheckout
+                          ? "Start New Checkout"
+                          : paymentStatus === "cancelled"
+                            ? "View Order"
                             : paymentStatus === "paid"
                               ? "View Order"
                               : paymentStatus === "processing"
@@ -1164,7 +1177,7 @@ function CheckoutContent() {
                     href={`/account/orders/${activeOrder.orderId}`}
                     className="block text-center font-body text-sm text-sage underline"
                   >
-                    View Order Details
+                    {cartChanged ? "View Saved Order" : "View Order Details"}
                   </Link>
                 </div>
               ) : (
