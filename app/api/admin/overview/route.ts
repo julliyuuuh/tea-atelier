@@ -37,6 +37,29 @@ export async function GET(req: Request) {
     LIMIT 5
   `);
 
+  // One row per purchasing customer prevents repeat orders from inflating the
+  // buyer count. Gross spend includes shipping and is intentionally before refunds.
+  const customerInsightsResult = await pool.query(`
+    WITH customer_purchases AS (
+      SELECT o.user_id, COUNT(*) AS order_count,
+             SUM(o.total_amount) AS total_spent
+      FROM orders o
+      JOIN users u ON u.user_id = o.user_id
+      WHERE u.role = 'customer'
+        AND o.payment_status = 'paid'
+        AND o.order_status <> 'CANCELLED'
+      GROUP BY o.user_id
+    )
+    SELECT COUNT(*) AS purchasing_customers,
+           COUNT(*) FILTER (WHERE order_count >= 2) AS returning_customers,
+           ROUND(COALESCE(AVG(total_spent), 0), 2) AS average_spend_per_buyer
+    FROM customer_purchases
+  `);
+
+  const insights = customerInsightsResult.rows[0];
+  const purchasingCustomers = Number(insights.purchasing_customers);
+  const returningCustomers = Number(insights.returning_customers);
+
   const stats = statsResult.rows[0];
 
   return NextResponse.json({
@@ -57,5 +80,15 @@ export async function GET(req: Request) {
       name: row.product_name,
       stockQuantity: parseInt(row.stock_quantity, 10),
     })),
+    customerInsights: {
+      purchasingCustomers,
+      firstTimeBuyers: purchasingCustomers - returningCustomers,
+      returningCustomers,
+      repeatPurchaseRate:
+        purchasingCustomers === 0
+          ? 0
+          : Math.round((returningCustomers / purchasingCustomers) * 1000) / 10,
+      averageSpendPerBuyer: Number(insights.average_spend_per_buyer),
+    },
   });
 }

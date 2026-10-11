@@ -27,6 +27,14 @@ type LowStockProduct = {
   stockQuantity: number;
 };
 
+type CustomerInsights = {
+  purchasingCustomers: number;
+  firstTimeBuyers: number;
+  returningCustomers: number;
+  repeatPurchaseRate: number;
+  averageSpendPerBuyer: number;
+};
+
 type Stats = {
   totalOrders: number;
   revenue: number;
@@ -95,6 +103,8 @@ export default function AdminOverviewPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [lowStock, setLowStock] = useState<LowStockProduct[]>([]);
+  const [customerInsights, setCustomerInsights] =
+    useState<CustomerInsights | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme();
   const chartTextColor = theme === "dark" ? "#d5ded4" : "#3a3a3a";
@@ -112,6 +122,7 @@ export default function AdminOverviewPage() {
           setStats(data.stats);
           setTopProducts(data.topProducts);
           setLowStock(data.lowStock);
+          setCustomerInsights(data.customerInsights ?? null);
         }
       } catch {
         // fail silently
@@ -160,6 +171,38 @@ export default function AdminOverviewPage() {
       icon: Users,
       bg: "bg-sand",
       iconColor: "text-charcoal/70",
+    },
+  ];
+
+  const customerCards = [
+    {
+      label: "Purchasing customers",
+      value: customerInsights?.purchasingCustomers.toLocaleString("en-PH"),
+      detail: customerInsights
+        ? `${customerInsights.firstTimeBuyers.toLocaleString("en-PH")} first-time buyers`
+        : "Customers with a paid order",
+    },
+    {
+      label: "Returning customers",
+      value: customerInsights?.returningCustomers.toLocaleString("en-PH"),
+      detail: "Customers with 2+ paid orders",
+    },
+    {
+      label: "Repeat purchase rate",
+      value: customerInsights
+        ? `${customerInsights.repeatPurchaseRate.toFixed(1)}%`
+        : undefined,
+      detail: "Returning customers ÷ purchasing customers",
+    },
+    {
+      label: "Average spend per buyer",
+      value: customerInsights
+        ? `₱${customerInsights.averageSpendPerBuyer.toLocaleString("en-PH", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`
+        : undefined,
+      detail: "Lifetime spend, including shipping",
     },
   ];
 
@@ -292,11 +335,7 @@ export default function AdminOverviewPage() {
                     tickMargin={12}
                     width={45}
                   />
-                  <Bar
-                    dataKey="revenue"
-                    radius={[6, 6, 0, 0]}
-                    barSize={55}
-                  >
+                  <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={55}>
                     {topProducts.map((entry, index) => (
                       <Cell
                         key={entry.id}
@@ -354,6 +393,45 @@ export default function AdminOverviewPage() {
           )}
         </div>
       </div>
+
+      <section
+        aria-labelledby="customer-insights-heading"
+        aria-busy={isLoading}
+        className="mt-6 rounded-2xl border border-charcoal/10 bg-white p-5 sm:p-6"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2
+            id="customer-insights-heading"
+            className="font-body text-sm font-medium text-charcoal"
+          >
+            Customer insights
+          </h2>
+          <p className="font-body text-xs text-charcoal/50">
+            All time · Paid, non-cancelled orders · Before refunds
+          </p>
+        </div>
+        {!isLoading && !customerInsights ? (
+          <p role="status" className="mt-4 font-body text-sm text-charcoal/50">
+            Customer insights are unavailable. Refresh to try again.
+          </p>
+        ) : (
+          <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            {customerCards.map((card) => (
+              <div key={card.label} className="min-w-0">
+                <dt className="font-body text-xs text-charcoal/50">
+                  {card.label}
+                </dt>
+                <dd className="mt-2 font-display text-2xl tabular-nums text-charcoal break-words">
+                  {isLoading ? "…" : card.value}
+                </dd>
+                <dd className="mt-2 font-body text-xs leading-relaxed text-charcoal/50">
+                  {card.detail}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </section>
     </AdminPage>
   );
 }
