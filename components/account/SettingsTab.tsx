@@ -224,12 +224,6 @@ export default function SettingsTab({
   return (
     <div className="min-w-0">
       <div className="mb-6">
-        <h2 className="font-display text-2xl text-charcoal">
-          Account settings
-        </h2>
-        <p className="mt-2 font-body text-sm leading-relaxed text-charcoal/60">
-          Manage your account, security and the way you shop.
-        </p>
       </div>
       <div className="grid items-start gap-5 md:grid-cols-[170px_minmax(0,1fr)]">
         <nav
