@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, History, RefreshCw, Search } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import AuditDateRange from "@/components/admin/AuditDateRange";
 import { CustomSelect } from "@/components/admin/AdminUI";
 import { AUDIT_RESOURCES, type AuditEvent } from "@/lib/admin-audit-types";
 const label = (value: string) =>
@@ -254,30 +255,15 @@ export default function AdminAuditPage() {
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 font-body text-xs text-charcoal/60">
-            From
-            <input
-              type="date"
-              value={from}
-              onChange={(event) => {
-                setFrom(event.target.value);
-                setPage(1);
-              }}
-              className={field}
-            />
-          </label>
-          <label className="flex items-center gap-2 font-body text-xs text-charcoal/60">
-            To
-            <input
-              type="date"
-              value={to}
-              onChange={(event) => {
-                setTo(event.target.value);
-                setPage(1);
-              }}
-              className={field}
-            />
-          </label>
+          <AuditDateRange
+            from={from}
+            to={to}
+            onChange={(start, end) => {
+              setFrom(start);
+              setTo(end);
+              setPage(1);
+            }}
+          />
           <span className="font-body text-xs text-charcoal/40">
             Dates use Manila time
           </span>
