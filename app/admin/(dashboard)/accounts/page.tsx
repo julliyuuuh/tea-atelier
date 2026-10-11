@@ -259,7 +259,7 @@ export default function AdminAccountsPage() {
 
   return (
     <AdminPage>
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <AdminPageHeader
           title="Admin accounts"
           eyebrow="Super admin"

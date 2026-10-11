@@ -375,7 +375,7 @@ export default function AdminOrdersPage() {
 
   return (
     <AdminPage>
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <AdminPageHeader
           title="Orders"
           eyebrow="Order management"
@@ -383,7 +383,7 @@ export default function AdminOrdersPage() {
         />
 
         {/* Stat chips, always reflect the whole order book, not just this page */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           <StatChip label="Total Orders" value={stats.total} />
           <StatChip label="Order Placed" value={stats.pending} tone="warning" />
           <StatChip

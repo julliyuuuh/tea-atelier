@@ -69,12 +69,12 @@ export function StatChip({
 
   return (
     <div
-      className={`flex min-w-[108px] flex-col items-start gap-1 rounded-2xl border border-charcoal/10 px-4 py-3 ${toneClasses}`}
+      className={`inline-flex min-h-11 items-center gap-2 rounded-xl border border-charcoal/10 px-4 py-2.5 ${toneClasses}`}
     >
-      <span className="font-display text-2xl leading-none tabular-nums">
+      <span className="font-body text-lg font-medium leading-none tabular-nums">
         {value}
       </span>
-      <span className="font-body text-[11px] tracking-wide opacity-60">
+      <span className="font-body text-[11px] uppercase tracking-wide whitespace-nowrap opacity-60">
         {label}
       </span>
     </div>

@@ -325,16 +325,16 @@ export default function AdminProductsPage() {
 
   return (
     <AdminPage>
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <AdminPageHeader
           title="Products"
           eyebrow="Catalog"
           description="Manage your catalog, pricing, stock, and product availability."
         />
 
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Stat chips — always reflect the whole catalog, not just this page */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             <StatChip label="Active Products" value={stats.active} />
             <StatChip label="Low Stock" value={stats.lowStock} tone="warning" />
             <StatChip

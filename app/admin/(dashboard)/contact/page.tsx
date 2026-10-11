@@ -207,7 +207,7 @@ export default function AdminContactPage() {
 
   return (
     <AdminPage>
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <AdminPageHeader
           title="Contact messages"
           eyebrow="Customer support"
@@ -215,7 +215,7 @@ export default function AdminContactPage() {
         />
 
         {/* Stat chips, always reflect the full message list, not just this page */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           <StatChip label="Total Messages" value={stats.total} />
           <StatChip label="New" value={stats.new} tone="warning" />
           <StatChip label="Replied" value={stats.replied} />
@@ -257,7 +257,7 @@ export default function AdminContactPage() {
 
       <AdminScrollArea label="Contact messages" minWidth={900}>
         <div
-          className="grid min-h-14 items-center border-b border-charcoal/10 bg-sand/20"
+          className="grid min-h-14 items-center border-b border-charcoal/10 bg-white"
           style={{ gridTemplateColumns: GRID_COLS }}
         >
           <PlainHeader label="Customer" />

@@ -293,7 +293,6 @@ export default function AdminOverviewPage() {
                     width={45}
                   />
                   <Bar
-                    isAnimationActive={false}
                     dataKey="revenue"
                     radius={[6, 6, 0, 0]}
                     barSize={55}

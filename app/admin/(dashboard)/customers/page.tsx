@@ -201,7 +201,7 @@ export default function AdminCustomersPage() {
 
   return (
     <AdminPage>
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <AdminPageHeader
           title="Customers"
           eyebrow="Customer management"
@@ -209,7 +209,7 @@ export default function AdminCustomersPage() {
         />
 
         {/* Stat chips — always reflect the whole customer base, not just this page */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           <StatChip label="Total Customers" value={stats.total} />
           <StatChip label="Verified" value={stats.verified} />
           <StatChip
