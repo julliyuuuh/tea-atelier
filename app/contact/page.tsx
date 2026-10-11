@@ -1,7 +1,12 @@
 "use client";
 
+import {
+  DEFAULT_CONTACT_CONTENT,
+  contactContentError,
+} from "@/lib/contact-content";
+import { useStoreSettings } from "@/lib/store-settings-context";
 import ValidatedForm from "@/components/ValidatedForm";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -10,6 +15,30 @@ import { useAuth } from "@/lib/auth-context";
 
 export default function ContactPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const { settings } = useStoreSettings();
+  const [content, setContent] = useState(DEFAULT_CONTACT_CONTENT);
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      try {
+        const response = await fetch("/api/cms/contact-page", {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        const data = await response.json();
+        if (
+          response.ok &&
+          !controller.signal.aborted &&
+          !contactContentError(data.content)
+        )
+          setContent(data.content);
+      } catch {
+        // Keep the original page text available if CMS content cannot be loaded.
+      }
+    }
+    void load();
+    return () => controller.abort();
+  }, []);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,14 +86,13 @@ export default function ContactPage() {
       <div className="max-w-2xl mx-auto px-8 pt-16 pb-24">
         <div className="text-center mb-12">
           <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-4 block">
-            Get in Touch
+            {content.eyebrow}
           </span>
-          <h1 className="font-display text-4xl text-charcoal mb-4">
-            Contact Us
+          <h1 className="break-words font-display text-4xl text-charcoal mb-4">
+            {content.heading}
           </h1>
-          <p className="font-body text-charcoal/60">
-            Questions, feedback, or just want to talk tea? We'd love to hear
-            from you.
+          <p className="break-words whitespace-pre-line font-body text-charcoal/60">
+            {content.intro}
           </p>
         </div>
 
@@ -78,12 +106,11 @@ export default function ContactPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center bg-sand/40 rounded-2xl p-10"
           >
-            <p className="font-display text-xl text-charcoal mb-2">
-              Log in to send a message
+            <p className="break-words font-display text-xl text-charcoal mb-2">
+              {content.loginHeading}
             </p>
-            <p className="font-body text-sm text-charcoal/60 mb-6">
-              Create an account or sign in so we can get back to you and you can
-              track your messages.
+            <p className="break-words whitespace-pre-line font-body text-sm text-charcoal/60 mb-6">
+              {content.loginBody}
             </p>
             <Link
               href="/login"
@@ -98,12 +125,11 @@ export default function ContactPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center bg-sand/40 rounded-2xl p-10"
           >
-            <p className="font-display text-xl text-charcoal mb-2">
-              Message sent
+            <p className="break-words font-display text-xl text-charcoal mb-2">
+              {content.successHeading}
             </p>
-            <p className="font-body text-sm text-charcoal/60">
-              We'll get back to you within 1-2 business days. You can track this
-              message from your account page.
+            <p className="break-words whitespace-pre-line font-body text-sm text-charcoal/60">
+              {content.successBody}
             </p>
           </motion.div>
         ) : (
@@ -153,8 +179,13 @@ export default function ContactPage() {
         )}
 
         <div className="mt-16 text-center font-body text-sm text-charcoal/60">
-          <p>hello@teaatelier.com</p>
-          <p className="mt-1">123 Leaf Street, Quezon City, PH</p>
+          {settings.store.email && <p>{settings.store.email}</p>}
+          {settings.store.phone && (
+            <p className="mt-1">{settings.store.phone}</p>
+          )}
+          {settings.store.address && (
+            <p className="mt-1 whitespace-pre-line">{settings.store.address}</p>
+          )}
         </div>
       </div>
 

@@ -2,7 +2,14 @@
 
 import { AdminPage, AdminPageHeader } from "@/components/admin/AdminPage";
 import Link from "next/link";
-import { Home, Info, Layers, HelpCircle, ShieldCheck } from "lucide-react";
+import {
+  Home,
+  Info,
+  Layers,
+  HelpCircle,
+  ShieldCheck,
+  Mail,
+} from "lucide-react";
 
 const SECTIONS = [
   {
@@ -28,6 +35,12 @@ const SECTIONS = [
     href: "/admin/cms/faq",
     icon: HelpCircle,
     description: "Questions and answers",
+  },
+  {
+    label: "Contact",
+    href: "/admin/cms/contact",
+    icon: Mail,
+    description: "Page introduction, sign-in prompt, message confirmation",
   },
   {
     label: "Privacy Policy",

@@ -10,7 +10,10 @@ import {
   type AuditEvent,
 } from "@/lib/admin-audit-types";
 const label = (value: string) =>
-  value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  value
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 const display = (value: unknown) =>
   value === undefined || value === null
     ? "—"
