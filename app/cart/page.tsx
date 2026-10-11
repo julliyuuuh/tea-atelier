@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
 import Link from "next/link";
+import { isProductAvailable } from "@/lib/products";
 
 export default function CartPage() {
   const {
@@ -18,6 +19,11 @@ export default function CartPage() {
     updateQuantity,
     loading,
   } = useCart();
+  const unavailableSelection = selectedItems.some(
+    (item) =>
+      !isProductAvailable(item.product) ||
+      item.quantity > item.product.stockQuantity,
+  );
   const selectedIds = new Set(selectedItems.map((item) => item.product.id));
   const allSelected = items.length > 0 && selectedItems.length === items.length;
   const selectedQuantity = selectedItems.reduce(
@@ -167,7 +173,16 @@ export default function CartPage() {
                 </span>
               </div>
 
-              {selectedItems.length > 0 ? (
+              {unavailableSelection && (
+                <p
+                  role="status"
+                  className="mb-4 font-body text-sm text-charcoal/70"
+                >
+                  Some selected items are unavailable or exceed current stock.
+                  Uncheck them or adjust their quantity to continue.
+                </p>
+              )}
+              {selectedItems.length > 0 && !unavailableSelection ? (
                 <Link
                   href="/checkout"
                   className="block text-center rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
@@ -180,7 +195,9 @@ export default function CartPage() {
                   disabled
                   className="block w-full cursor-not-allowed rounded-full bg-charcoal/10 py-4 text-center font-body text-sm text-charcoal/50"
                 >
-                  Select items to checkout
+                  {unavailableSelection
+                    ? "Update your selection"
+                    : "Select items to checkout"}
                 </button>
               )}
             </div>
