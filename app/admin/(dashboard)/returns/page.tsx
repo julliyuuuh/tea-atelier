@@ -74,7 +74,7 @@ export default function AdminReturnsPage() {
           Returns & refunds
         </h1>
         <p className="mt-2 font-body text-sm text-charcoal/60">
-          Review requests, inspect returned items, and issue test refunds or
+          Review requests, inspect returned items, and issue refunds or
           record COD refunds.
         </p>
       </div>

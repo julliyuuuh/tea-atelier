@@ -427,7 +427,7 @@ export default function ReturnReviewCard({
                             onChange={(e) => setConfirmRefund(e.target.checked)}
                             disabled={busy}
                           />
-                          Issue a PayMongo test refund of{" "}
+                          Issue a PayMongo refund of{" "}
                           {peso(request.refund_amount_cents)} to the original
                           payment.
                         </label>
@@ -442,7 +442,7 @@ export default function ReturnReviewCard({
                           ? "Processing…"
                           : cod
                             ? "Record COD refund sent"
-                            : "Issue test refund"}
+                            : "Issue refund"}
                       </button>
                     </>
                   )}
