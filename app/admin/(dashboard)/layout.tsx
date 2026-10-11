@@ -53,7 +53,7 @@ const navItems: NavItem[] = [
     superAdminOnly: true,
   },
   {
-    label: "Settings",
+    label: "Platform Settings",
     href: "/admin/settings",
     icon: Settings,
     superAdminOnly: true,
