@@ -10,7 +10,23 @@ import { marketingEmailConfig, sendCampaignEmail } from "@/lib/marketing-email";
 const eligible =
   "u.role='customer' AND u.is_verified=true AND u.is_suspended=false AND u.email IS NOT NULL AND trim(u.email)<>'' AND p.subscribed=true";
 export const campaignColumns = `c.campaign_id AS id,c.title,c.subject,c.heading,c.message,c.image_url AS "imageUrl",c.image_alt AS "imageAlt",c.cta_label AS "ctaLabel",c.cta_path AS "ctaPath",c.status,c.version,c.created_at AS "createdAt"`;
-export async function campaignSummary(id?: string, page = 1) {
+const campaignFilter = `($3::text='' OR strpos(lower(c.title || ' ' || c.subject),lower($3))>0)
+ AND ($4::text='' OR c.status=$4)`;
+export async function campaignCount(search = "", status = "") {
+  const result = await pool.query(
+    `SELECT COUNT(*) FROM marketing_campaigns c
+     WHERE ($1::text='' OR strpos(lower(c.title || ' ' || c.subject),lower($1))>0)
+       AND ($2::text='' OR c.status=$2)`,
+    [search, status],
+  );
+  return Number(result.rows[0].count);
+}
+export async function campaignSummary(
+  id?: string,
+  page = 1,
+  search = "",
+  status = "",
+) {
   const result = await pool.query(
     `SELECT ${campaignColumns},json_build_object(
  'pending',COUNT(d.delivery_id) FILTER(WHERE d.state='PENDING'),
@@ -20,9 +36,9 @@ export async function campaignSummary(id?: string, page = 1) {
  'unknown',COUNT(d.delivery_id) FILTER(WHERE d.state='UNKNOWN'),
  'skipped',COUNT(d.delivery_id) FILTER(WHERE d.state='SKIPPED')) AS counts
  FROM marketing_campaigns c LEFT JOIN marketing_deliveries d USING(campaign_id)
- WHERE ($1::uuid IS NULL OR c.campaign_id=$1) GROUP BY c.campaign_id
+ WHERE ($1::uuid IS NULL OR c.campaign_id=$1) AND ${campaignFilter} GROUP BY c.campaign_id
  ORDER BY c.created_at DESC,c.campaign_id LIMIT 10 OFFSET $2`,
-    [id ?? null, id ? 0 : (page - 1) * 10],
+    [id ?? null, id ? 0 : (page - 1) * 10, search, status],
   );
   return result.rows as Campaign[];
 }
