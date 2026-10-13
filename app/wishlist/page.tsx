@@ -10,6 +10,7 @@ import { useCart } from "@/lib/cart-context";
 import { isProductAvailable } from "@/lib/products";
 import { Heart } from "lucide-react";
 
+//main page
 export default function WishlistPage() {
   const { items, removeFromWishlist, loading, error, refreshWishlist } =
     useWishlist();
