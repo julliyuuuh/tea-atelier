@@ -23,18 +23,47 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const orderId = Number(body?.orderId);
   const type = body?.type;
+  const returnTarget = body?.returnTarget ?? "website";
 
   if (
     !Number.isSafeInteger(orderId) ||
     orderId <= 0 ||
     typeof type !== "string" ||
-    !ALLOWED_TYPES.includes(type)
+    !ALLOWED_TYPES.includes(type) ||
+    !["website", "mobile"].includes(returnTarget)
   ) {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
 
   const secretKey = process.env.PAYMONGO_SECRET_KEY;
   const appUrl = process.env.APP_URL?.replace(/\/+$/, "");
+  let mobileUrl: string | undefined;
+  if (returnTarget === "mobile") {
+    try {
+      // Only server configuration supplies the destination; never accept a
+      // customer-provided URL or trust the request Origin as a redirect.
+      const configured = new URL(process.env.MOBILE_APP_URL || "");
+      if (
+        configured.protocol !== "https:" ||
+        configured.username ||
+        configured.password ||
+        configured.pathname !== "/" ||
+        configured.search ||
+        configured.hash
+      ) {
+        throw new Error("Invalid mobile payment return origin");
+      }
+      mobileUrl = configured.origin;
+    } catch {
+      console.error(
+        "Mobile PayMongo return configuration is missing or invalid",
+      );
+      return Response.json(
+        { error: "Payment initiation is unavailable." },
+        { status: 503 },
+      );
+    }
+  }
 
   if (!secretKey || !appUrl) {
     console.error("PayMongo configuration is missing");
@@ -43,6 +72,16 @@ export async function POST(req: Request) {
       { status: 503 },
     );
   }
+
+  const redirect = mobileUrl
+    ? {
+        success: `${mobileUrl}/order-confirmation/${orderId}?payment=returned`,
+        failed: `${mobileUrl}/order-confirmation/${orderId}?payment=failed`,
+      }
+    : {
+        success: `${appUrl}/order-confirmation?orderId=${orderId}`,
+        failed: `${appUrl}/checkout?payment=failed&orderId=${orderId}`,
+      };
 
   const headers = {
     "Content-Type": "application/json",
@@ -218,10 +257,7 @@ export async function POST(req: Request) {
                 amount,
                 currency: "PHP",
                 type: sourceType,
-                redirect: {
-                  success: `${appUrl}/order-confirmation?orderId=${orderId}`,
-                  failed: `${appUrl}/checkout?payment=failed&orderId=${orderId}`,
-                },
+                redirect,
               },
             },
           }),
