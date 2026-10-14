@@ -1,5 +1,10 @@
 import { pool } from "@/lib/db";
 import { requireUser } from "@/lib/require-user";
+import {
+  ANDROID_RETURN_ORIGIN,
+  androidReturnUrls,
+  androidSigningFingerprints,
+} from "@/lib/android-app-links";
 
 const ALLOWED_TYPES = ["gcash", "grabpay"];
 const TERMINAL_SOURCE_STATUSES = ["expired", "failed", "cancelled"];
@@ -30,7 +35,7 @@ export async function POST(req: Request) {
     orderId <= 0 ||
     typeof type !== "string" ||
     !ALLOWED_TYPES.includes(type) ||
-    !["website", "mobile"].includes(returnTarget)
+    !["website", "mobile", "android"].includes(returnTarget)
   ) {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
@@ -73,15 +78,31 @@ export async function POST(req: Request) {
     );
   }
 
-  const redirect = mobileUrl
-    ? {
-        success: `${mobileUrl}/order-confirmation/${orderId}?payment=returned`,
-        failed: `${mobileUrl}/order-confirmation/${orderId}?payment=failed`,
-      }
-    : {
-        success: `${appUrl}/order-confirmation?orderId=${orderId}`,
-        failed: `${appUrl}/checkout?payment=failed&orderId=${orderId}`,
-      };
+  if (
+    returnTarget === "android" &&
+    (appUrl !== ANDROID_RETURN_ORIGIN ||
+      !androidSigningFingerprints(
+        process.env.ANDROID_APP_SHA256_CERT_FINGERPRINTS,
+      ).length)
+  ) {
+    return Response.json(
+      { error: "App payment returns are not configured yet." },
+      { status: 503 },
+    );
+  }
+
+  const redirect =
+    returnTarget === "android"
+      ? androidReturnUrls(orderId)
+      : mobileUrl
+        ? {
+          success: `${mobileUrl}/order-confirmation/${orderId}?payment=returned`,
+          failed: `${mobileUrl}/order-confirmation/${orderId}?payment=failed`,
+        }
+        : {
+          success: `${appUrl}/order-confirmation?orderId=${orderId}`,
+          failed: `${appUrl}/checkout?payment=failed&orderId=${orderId}`,
+        };
 
   const headers = {
     "Content-Type": "application/json",
