@@ -23,6 +23,7 @@ import {
   Megaphone,
 } from "lucide-react";
 
+import AdminActivityBell from "@/components/admin/AdminActivityBell";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 
@@ -35,7 +36,7 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { group: "Store", label: "Overview", href: "/admin", icon: LayoutDashboard },
+  { group: "Store", label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { group: "Store", label: "Products", href: "/admin/products", icon: Package },
   { group: "Store", label: "Orders", href: "/admin/orders", icon: ShoppingBag },
   {
@@ -245,6 +246,21 @@ export default function AdminLayout({
         </nav>
 
         <div className="shrink-0 border-t border-charcoal/10 px-4 py-3">
+          <div className="mb-3 flex items-center gap-3">
+            {user.avatarUrl && (
+              <img
+                src={user.avatarUrl}
+                alt=""
+                className="h-9 w-9 rounded-full object-cover"
+              />
+            )}
+            <Link href="/admin/profile" className="text-sm text-sage">
+              {user.name} · My profile
+            </Link>
+          </div>
+          <div className="mb-3">
+            <AdminActivityBell />
+          </div>
           <p
             title={user.email}
             className="mb-2 truncate font-body text-xs text-charcoal/50 dark:text-[#aebbad]"

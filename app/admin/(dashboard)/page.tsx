@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import AdminSalesPanel from "@/components/admin/AdminSalesPanel";
 import { AdminPage, AdminPageHeader } from "@/components/admin/AdminPage";
 import { useState, useEffect, useRef } from "react";
 import { ShoppingBag, DollarSign, Package, Users } from "lucide-react";
@@ -210,19 +212,27 @@ export default function AdminOverviewPage() {
     <AdminPage>
       <div className="mb-8">
         <AdminPageHeader
-          title="Overview"
+          title="Dashboard"
           eyebrow="Store management"
           description="A clear view of your store’s sales, products, and recent activity."
         />
       </div>
 
+      <AdminSalesPanel />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div
+            <Link
+              href={
+                stat.label === "Products"
+                  ? "/admin/products"
+                  : stat.label === "Customers"
+                    ? "/admin/customers"
+                    : "/admin/orders"
+              }
               key={stat.label}
-              className="bg-white border border-charcoal/10 rounded-2xl p-5 transition-all duration-200   hover:border-sage/30 cursor-default"
+              className="bg-white border border-charcoal/10 rounded-2xl p-5 transition-all duration-200   hover:border-sage/30 cursor-pointer"
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="font-body text-xs text-charcoal/50">
@@ -241,7 +251,7 @@ export default function AdminOverviewPage() {
               <span className="font-display text-2xl text-charcoal">
                 {isLoading ? "…" : stat.value}
               </span>
-            </div>
+            </Link>
           );
         })}
       </div>
