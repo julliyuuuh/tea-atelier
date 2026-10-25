@@ -276,11 +276,6 @@ export default function AdminOverviewPage() {
         })}
       </div>
 
-      <p className="mt-3 font-body text-xs text-charcoal/50">
-        Revenue and product performance include paid, non-cancelled orders
-        before refunds. Revenue includes delivery fees; product revenue excludes
-        them. Product count includes active products.
-      </p>
       <div className="mt-6">
         <AdminAttention />
       </div>
@@ -470,6 +465,11 @@ export default function AdminOverviewPage() {
           </dl>
         )}
       </section>
+      <p className="mt-6 font-body text-xs text-charcoal/50">
+        Revenue and product performance include paid, non-cancelled orders
+        before refunds. Revenue includes delivery fees; product revenue excludes
+        them. Product count includes active products.
+      </p>
     </AdminPage>
   );
 }
