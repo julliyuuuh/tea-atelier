@@ -1,4 +1,5 @@
 "use client";
+import OrderStatusConfirmation from "@/components/admin/OrderStatusConfirmation";
 
 import {
   AdminPage,
@@ -61,8 +62,8 @@ const ROW_STATUS_OPTIONS = STATUS_OPTIONS.filter((o) => o.value !== "All");
 // Unpaid online orders can only stay at PLACED or be cancelled (the API
 // enforces this too), so don't offer the forward steps in the dropdown.
 function rowStatusOptions(order: Order) {
-  if (order.status === "CANCELLED") {
-    return ROW_STATUS_OPTIONS.filter((o) => o.value === "CANCELLED");
+  if (order.status === "CANCELLED" || order.status === "DELIVERED") {
+    return ROW_STATUS_OPTIONS.filter((o) => o.value === order.status);
   }
   if (order.fulfillmentIssue) {
     return ROW_STATUS_OPTIONS.filter(
@@ -172,6 +173,10 @@ export default function AdminOrdersPage() {
   const [emailNotice, setEmailNotice] = useState("");
   const [actionError, setActionError] = useState("");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<{
+    orderId: number;
+    status: string;
+  } | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -234,7 +239,19 @@ export default function AdminOrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, loadOrders]);
 
-  const handleStatusChange = async (orderId: number, newStatus: string) => {
+  const handleStatusChange = (orderId: number, newStatus: string) => {
+    if (
+      updatingId !== null ||
+      orders.find((o) => o.id === orderId)?.status === newStatus
+    )
+      return;
+    if (newStatus === "DELIVERED" || newStatus === "CANCELLED") {
+      setPendingStatus({ orderId, status: newStatus });
+      return;
+    }
+    void commitStatusChange(orderId, newStatus);
+  };
+  const commitStatusChange = async (orderId: number, newStatus: string) => {
     setUpdatingId(orderId);
     setActionError("");
     const token = localStorage.getItem("token");
@@ -605,7 +622,8 @@ export default function AdminOrdersPage() {
                         options={rowStatusOptions(order)}
                         disabled={
                           updatingId === order.id ||
-                          order.status === "CANCELLED"
+                          order.status === "CANCELLED" ||
+                          order.status === "DELIVERED"
                         }
                         triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${badge.bg} ${badge.text}`}
                       />
@@ -667,6 +685,16 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       )}
+      <OrderStatusConfirmation
+        pending={pendingStatus}
+        onCancel={() => setPendingStatus(null)}
+        onConfirm={() => {
+          if (!pendingStatus) return;
+          const next = pendingStatus;
+          setPendingStatus(null);
+          void commitStatusChange(next.orderId, next.status);
+        }}
+      />
       <OrderDetailModal
         orderId={viewingOrderId}
         onClose={() => setViewingOrderId(null)}

@@ -170,6 +170,20 @@ export async function PATCH(
   }
 
   if (
+    order.order_status === "DELIVERED" &&
+    status !== undefined &&
+    status !== "DELIVERED"
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Delivered orders cannot change status. Use the returns/refunds process for post-delivery issues.",
+      },
+      { status: 409 },
+    );
+  }
+
+  if (
     status === "CANCELLED" &&
     !isCod(order.payment_method) &&
     order.payment_status === "processing"

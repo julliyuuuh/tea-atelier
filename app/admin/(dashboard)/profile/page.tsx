@@ -156,7 +156,7 @@ function Profile({
                   inputMode="numeric"
                   maxLength={11}
                   pattern="09[0-9]{9}"
-                  placeholder="09XXXXXXXXX"
+                  placeholder="Use 09 format"
                   value={phoneNumber}
                   onChange={(e) => {
                     setPhone(e.target.value);

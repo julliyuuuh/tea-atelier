@@ -1,4 +1,5 @@
 "use client";
+import OrderStatusConfirmation from "@/components/admin/OrderStatusConfirmation";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -158,6 +159,10 @@ export default function OrderDetailModal({
   const changedRef = useRef(false);
   const [paymentId, setPaymentId] = useState("");
 
+  const [pendingStatus, setPendingStatus] = useState<{
+    orderId: number;
+    status: string;
+  } | null>(null);
   const open = orderId !== null;
 
   const load = useCallback(
@@ -187,6 +192,7 @@ export default function OrderDetailModal({
   // Fresh load every time a different order is opened.
   useEffect(() => {
     if (orderId === null) return;
+    setPendingStatus(null);
     setData(null);
     setPaymentId("");
     setActionError("");
@@ -204,7 +210,10 @@ export default function OrderDetailModal({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") handleClose();
+      if (e.key === "Escape") {
+        if (pendingStatus) setPendingStatus(null);
+        else handleClose();
+      }
     };
     document.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
@@ -213,7 +222,7 @@ export default function OrderDetailModal({
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [open, handleClose]);
+  }, [open, handleClose, pendingStatus]);
 
   const recoverPayment = async () => {
     setIsUpdating(true);
@@ -244,7 +253,22 @@ export default function OrderDetailModal({
     }
   };
 
-  const patch = async (body: { status?: string; paymentStatus?: string }) => {
+  const patch = (body: { status?: string; paymentStatus?: string }) => {
+    if (isUpdating) return;
+    if (body.status !== undefined && body.status === data?.order.status) return;
+    if (
+      orderId !== null &&
+      (body.status === "DELIVERED" || body.status === "CANCELLED")
+    ) {
+      setPendingStatus({ orderId, status: body.status });
+      return;
+    }
+    void performPatch(body);
+  };
+  const performPatch = async (body: {
+    status?: string;
+    paymentStatus?: string;
+  }) => {
     setIsUpdating(true);
     setActionError("");
     const token = localStorage.getItem("token");
@@ -292,6 +316,7 @@ export default function OrderDetailModal({
     const sBadge = statusBadge(order.status);
     const pBadge = paymentBadge(order.paymentStatus);
     const cancelled = order.status === "CANCELLED";
+    const delivered = order.status === "DELIVERED";
     const paymentEditable = isCod(order.paymentMethod) && !cancelled;
     const currentStep = TRACK_STEPS.findIndex((s) => s.value === order.status);
 
@@ -301,21 +326,22 @@ export default function OrderDetailModal({
       order.paymentMethod,
       order.paymentStatus,
     );
-    const statusOptions = cancelled
-      ? STATUS_OPTIONS.filter((o) => o.value === "CANCELLED")
-      : order.fulfillmentIssue
-        ? STATUS_OPTIONS.filter(
-            (o) => o.value === "PLACED" || o.value === "CANCELLED",
-          )
-        : unpaidOnline
+    const statusOptions =
+      cancelled || delivered
+        ? STATUS_OPTIONS.filter((o) => o.value === order.status)
+        : order.fulfillmentIssue
           ? STATUS_OPTIONS.filter(
-              (o) =>
-                o.value === order.status ||
-                o.value === "PLACED" ||
-                (o.value === "CANCELLED" &&
-                  order.paymentStatus !== "processing"),
+              (o) => o.value === "PLACED" || o.value === "CANCELLED",
             )
-          : STATUS_OPTIONS;
+          : unpaidOnline
+            ? STATUS_OPTIONS.filter(
+                (o) =>
+                  o.value === order.status ||
+                  o.value === "PLACED" ||
+                  (o.value === "CANCELLED" &&
+                    order.paymentStatus !== "processing"),
+              )
+            : STATUS_OPTIONS;
 
     return (
       <>
@@ -428,13 +454,19 @@ export default function OrderDetailModal({
                     value={order.status}
                     onChange={(value) => patch({ status: value })}
                     options={statusOptions}
-                    disabled={isUpdating || cancelled}
+                    disabled={isUpdating || cancelled || delivered}
                     triggerClassName={`gap-1.5 font-body text-xs px-3 py-1.5 rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-sage ${sBadge.bg} ${sBadge.text}`}
                   />
                   {unpaidOnline && !cancelled && (
                     <p className="font-body text-xs text-charcoal/50 mt-2">
                       This order can&apos;t move past Order Placed until its
                       payment is confirmed.
+                    </p>
+                  )}
+                  {delivered && (
+                    <p className="mt-2 font-body text-xs text-charcoal/50">
+                      Delivery is final. Use returns/refunds for post-delivery
+                      issues.
                     </p>
                   )}
                   {cancelled && (
@@ -541,77 +573,92 @@ export default function OrderDetailModal({
   const pBadgeHeader = data ? paymentBadge(data.order.paymentStatus) : null;
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) handleClose();
-          }}
-        >
+    <>
+      <AnimatePresence>
+        {open && (
           <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-label={`Order TA-${orderId}`}
-            className="bg-white rounded-2xl  w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) handleClose();
+            }}
           >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-charcoal/10">
-              <div className="min-w-0">
-                <h2 className="font-body text-lg font-medium text-charcoal">
-                  Order TA-{orderId}
-                </h2>
-                {data && (
-                  <p className="font-body text-xs text-charcoal/50 mt-0.5">
-                    Placed {formatDate(data.order.createdAt, true)}
-                  </p>
-                )}
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Order TA-${orderId}`}
+              className="bg-white rounded-2xl  w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-charcoal/10">
+                <div className="min-w-0">
+                  <h2 className="font-body text-lg font-medium text-charcoal">
+                    Order TA-{orderId}
+                  </h2>
+                  {data && (
+                    <p className="font-body text-xs text-charcoal/50 mt-0.5">
+                      Placed {formatDate(data.order.createdAt, true)}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {data && sBadgeHeader && pBadgeHeader && (
+                    <>
+                      <span
+                        className={`hidden sm:inline-flex font-body text-xs px-3 py-1 rounded-full ${sBadgeHeader.bg} ${sBadgeHeader.text}`}
+                      >
+                        {ORDER_STATUSES.find(
+                          (s) => s.value === data.order.status,
+                        )?.label ?? data.order.status}
+                      </span>
+                      <span
+                        className={`hidden sm:inline-flex font-body text-xs px-3 py-1 rounded-full ${pBadgeHeader.bg} ${pBadgeHeader.text}`}
+                      >
+                        {paymentLabel(
+                          data.order.paymentStatus,
+                          data.order.paymentMethod,
+                        )}
+                      </span>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    aria-label="Close"
+                    className="p-1.5 rounded-full text-charcoal/50 hover:text-charcoal hover:bg-sand/40 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {data && sBadgeHeader && pBadgeHeader && (
-                  <>
-                    <span
-                      className={`hidden sm:inline-flex font-body text-xs px-3 py-1 rounded-full ${sBadgeHeader.bg} ${sBadgeHeader.text}`}
-                    >
-                      {ORDER_STATUSES.find((s) => s.value === data.order.status)
-                        ?.label ?? data.order.status}
-                    </span>
-                    <span
-                      className={`hidden sm:inline-flex font-body text-xs px-3 py-1 rounded-full ${pBadgeHeader.bg} ${pBadgeHeader.text}`}
-                    >
-                      {paymentLabel(
-                        data.order.paymentStatus,
-                        data.order.paymentMethod,
-                      )}
-                    </span>
-                  </>
-                )}
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  aria-label="Close"
-                  className="p-1.5 rounded-full text-charcoal/50 hover:text-charcoal hover:bg-sand/40 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
 
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto px-6 py-5">
-              {renderBody()}
-            </div>
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto px-6 py-5">
+                {renderBody()}
+              </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+      <OrderStatusConfirmation
+        pending={
+          open && pendingStatus?.orderId === orderId ? pendingStatus : null
+        }
+        onCancel={() => setPendingStatus(null)}
+        onConfirm={() => {
+          if (!pendingStatus || pendingStatus.orderId !== orderId) return;
+          const next = pendingStatus;
+          setPendingStatus(null);
+          void performPatch({ status: next.status });
+        }}
+      />
+    </>
   );
 }
