@@ -10,11 +10,15 @@ type Item = {
   created_at: string;
   read: boolean;
 };
-export default function AdminActivityBell() {
+export default function AdminActivityBell({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
   const { user } = useAuth();
-  return user ? <Activity key={user.email} /> : null;
+  return user ? <Activity key={user.email} compact={compact} /> : null;
 }
-function Activity() {
+function Activity({ compact }: { compact: boolean }) {
   const [items, setItems] = useState<Item[]>([]),
     [unread, setUnread] = useState(0),
     [open, setOpen] = useState(false),
@@ -74,7 +78,11 @@ function Activity() {
     <div>
       <button
         type="button"
-        className="flex cursor-pointer items-center gap-2 rounded-xl border border-sage/30 px-3 py-2"
+        aria-label={
+          unread ? `Notifications, ${unread} unread` : "Notifications"
+        }
+        title="Notifications"
+        className="relative flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-sage/30 px-3 text-sm"
         aria-expanded={open}
         onClick={() => {
           setOpen(!open);
@@ -82,9 +90,17 @@ function Activity() {
         }}
       >
         <Bell size={18} />
-        Notifications{" "}
+        {!compact && "Notifications"}{" "}
         {unread > 0 && (
-          <span className="rounded-full bg-sage px-2 text-cream">{unread}</span>
+          <span
+            className={
+              compact
+                ? "absolute -right-1 -top-1 rounded-full bg-sage px-1.5 text-[10px] text-cream"
+                : "rounded-full bg-sage px-2 text-cream"
+            }
+          >
+            {unread}
+          </span>
         )}
       </button>
       {open && (

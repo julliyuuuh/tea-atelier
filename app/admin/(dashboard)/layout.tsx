@@ -246,27 +246,37 @@ export default function AdminLayout({
         </nav>
 
         <div className="shrink-0 border-t border-charcoal/10 px-4 py-3">
-          <div className="mb-3 flex items-center gap-3">
-            {user.avatarUrl && (
-              <img
-                src={user.avatarUrl}
-                alt=""
-                className="h-9 w-9 rounded-full object-cover"
-              />
-            )}
-            <Link href="/admin/profile" className="text-sm text-sage">
-              {user.name} · My profile
+          <div className="mb-2 flex items-center gap-2">
+            <Link
+              href="/admin/profile"
+              title="My profile"
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-xl p-1 hover:bg-sage/10"
+            >
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt=""
+                  className="h-9 w-9 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sage/15 font-display text-sage">
+                  {(user.name || "A").charAt(0)}
+                </span>
+              )}
+              <span className="min-w-0">
+                <span className="block truncate text-sm text-charcoal">
+                  {user.name}
+                </span>
+                <span
+                  className="block truncate text-[11px] text-charcoal/50"
+                  title={user.email}
+                >
+                  {user.email}
+                </span>
+              </span>
             </Link>
+            <AdminActivityBell compact />
           </div>
-          <div className="mb-3">
-            <AdminActivityBell />
-          </div>
-          <p
-            title={user.email}
-            className="mb-2 truncate font-body text-xs text-charcoal/50 dark:text-[#aebbad]"
-          >
-            {user.email}
-          </p>
           <Link
             href="/"
             className="mb-2 flex min-h-8 items-center justify-between rounded-lg px-2 font-body text-xs text-charcoal/70 dark:text-[#b9c5b7] hover:bg-sand/30 dark:hover:bg-[#354038]"
