@@ -112,9 +112,8 @@ export default function AdminSalesPanel() {
       <div className="rounded-2xl border border-charcoal/10 bg-white p-4 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-display text-2xl">Sales report</h2>
-            <p className="mt-1 text-sm text-charcoal/50">
-              Choose a period to review your sales. All dates use Manila time.
+            <p className="text-sm text-charcoal/50">
+              Select your reporting period. Dates use Manila time.
             </p>
           </div>
           <button

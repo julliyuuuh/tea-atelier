@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, History, RefreshCw, Search } from "lucide-react";
+import { auditChanges, auditDisplayValue } from "@/lib/admin-audit-display";
 import { useAuth } from "@/lib/auth-context";
 import AuditDateRange from "@/components/admin/AuditDateRange";
 import { CustomSelect } from "@/components/admin/AdminUI";
@@ -14,23 +15,11 @@ const label = (value: string) =>
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .replaceAll("_", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
-const display = (value: unknown) =>
-  value === undefined || value === null
-    ? "—"
-    : typeof value === "boolean"
-      ? value
-        ? "Yes"
-        : "No"
-      : typeof value === "object"
-        ? JSON.stringify(value)
-        : String(value);
 function AuditCard({ event }: { event: AuditEvent }) {
   const [open, setOpen] = useState(false);
   const before = event.before_data || {},
     after = event.after_data || {};
-  const fields = Array.from(
-    new Set([...Object.keys(before), ...Object.keys(after)]),
-  ).filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
+  const fields = auditChanges(event.before_data, event.after_data);
   const orderId = after.order_id ?? before.order_id;
   const customerName = auditCustomerName(event);
   const resource =
@@ -102,17 +91,17 @@ function AuditCard({ event }: { event: AuditEvent }) {
             <dl className="divide-y divide-charcoal/10">
               {fields.map((field) => (
                 <div
-                  key={field}
+                  key={field.path}
                   className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 py-3 font-body text-xs sm:text-sm"
                 >
                   <dt className="break-words text-charcoal/60">
-                    {label(field)}
+                    {field.label}
                   </dt>
                   <dd className="whitespace-pre-wrap break-all text-charcoal/50">
-                    {display(before[field])}
+                    {auditDisplayValue(field.before)}
                   </dd>
                   <dd className="whitespace-pre-wrap break-all text-charcoal">
-                    {display(after[field])}
+                    {auditDisplayValue(field.after)}
                   </dd>
                 </div>
               ))}
