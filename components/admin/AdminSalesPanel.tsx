@@ -1,5 +1,5 @@
 "use client";
-import ValidatedForm from "@/components/ValidatedForm";
+import AuditDateRange from "@/components/admin/AuditDateRange";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Printer, RefreshCw, ShoppingBag } from "lucide-react";
@@ -126,37 +126,30 @@ export default function AdminSalesPanel() {
             {printing ? "Preparing…" : "Print / Save PDF"}
           </button>
         </div>
-        <ValidatedForm
-          className="grid grid-cols-2 items-start gap-3 rounded-xl bg-sage/5 p-3 sm:flex sm:flex-wrap"
+        <form
+          className="flex flex-wrap items-center gap-3 rounded-xl bg-sage/5 p-3"
           onSubmit={(e) => {
             e.preventDefault();
+            if (!from || !to || from > to) return;
             setRange({ from, to });
           }}
         >
-          <label className="min-w-0 flex-1 text-xs text-charcoal/60 sm:flex-none">
-            From
-            <input
-              className="mt-1 block h-10 w-full rounded-lg border border-charcoal/20 bg-transparent px-3 text-sm text-charcoal sm:w-40"
-              type="date"
-              required
-              value={from}
-              max={to}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-          </label>
-          <label className="min-w-0 flex-1 text-xs text-charcoal/60 sm:flex-none">
-            To
-            <input
-              className="mt-1 block h-10 w-full rounded-lg border border-charcoal/20 bg-transparent px-3 text-sm text-charcoal sm:w-40"
-              type="date"
-              required
-              min={from}
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
-          </label>
-          <div className="col-span-2 flex items-center gap-3 sm:pt-5">
-            <button className="h-10 cursor-pointer rounded-full bg-sage px-5 text-sm text-cream">
+          <AuditDateRange
+            label="Sales report date range"
+            allowClear={false}
+            from={from}
+            to={to}
+            onChange={(start, end) => {
+              setFrom(start);
+              setTo(end);
+            }}
+          />
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={!from || !to || from > to}
+              className="h-10 cursor-pointer rounded-full bg-sage px-5 text-sm text-cream disabled:cursor-default disabled:opacity-40"
+            >
               Apply dates
             </button>
             <button
@@ -169,7 +162,7 @@ export default function AdminSalesPanel() {
               <RefreshCw size={16} />
             </button>
           </div>
-        </ValidatedForm>
+        </form>
         <div className="my-4 flex flex-wrap items-center gap-2">
           {["Today", "Yesterday", "This week", "This month"].map((p) => (
             <button
@@ -219,12 +212,6 @@ export default function AdminSalesPanel() {
                       year: "numeric",
                     },
                   )}
-                </span>
-                <span className="rounded-full bg-sage/10 px-3 py-1">
-                  PayMongo{" "}
-                  {data.paymongoMode === "test"
-                    ? "test mode"
-                    : "mode unverified"}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -353,9 +340,7 @@ export default function AdminSalesPanel() {
                   Paid/refunded orders by placement date, Manila time. Paid
                   cancelled orders are included; unpaid orders are excluded.
                   Completed refunds for those orders are included as of now,
-                  even if completed after the selected period. Historical
-                  payment mode is not recorded per order, so figures may include
-                  sandbox transactions.
+                  even if completed after the selected period.
                 </p>
               </details>
             </>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import AdminAttention from "@/components/admin/AdminAttention";
 import { useAuth } from "@/lib/auth-context";
-import { AdminPage, AdminPageHeader } from "@/components/admin/AdminPage";
+import { AdminPage } from "@/components/admin/AdminPage";
 import { useState, useEffect, useRef } from "react";
 import { ShoppingBag, DollarSign, Package, Users } from "lucide-react";
 import {
@@ -219,19 +219,16 @@ export default function AdminOverviewPage() {
 
   return (
     <AdminPage>
-      <div className="mb-8">
-        <AdminPageHeader
-          title="Dashboard"
-          eyebrow="Store management"
-          description="A clear view of your store’s sales, products, and recent activity."
-        />
-      </div>
-
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="font-display text-xl">
-          Good {hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"},{" "}
-          {user?.name || "Admin"}.
-        </p>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <header>
+          <h1 className="font-display text-3xl leading-tight text-charcoal sm:text-4xl">
+            Good {hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"},{" "}
+            {user?.name || "Admin"}.
+          </h1>
+          <p className="mt-2 font-body text-sm leading-relaxed text-charcoal/60">
+            Your store at a glance.
+          </p>
+        </header>
         <Link
           href="/admin/sales"
           className="rounded-full border border-sage/30 px-4 py-2 text-sm text-sage hover:bg-sage/10"

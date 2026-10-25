@@ -31,7 +31,11 @@ export default function AuditDateRange({
   from,
   to,
   onChange,
+  label = "Audit date range",
+  allowClear = true,
 }: {
+  label?: string;
+  allowClear?: boolean;
   from: string;
   to: string;
   onChange: (from: string, to: string) => void;
@@ -81,7 +85,7 @@ export default function AuditDateRange({
   return (
     <div
       ref={root}
-      className="relative w-full sm:w-auto"
+      className="relative w-full sm:w-auto [&_button]:cursor-pointer"
       onKeyDown={(event) => {
         if (event.key === "Escape") {
           event.stopPropagation();
@@ -132,7 +136,7 @@ export default function AuditDateRange({
           id={id}
           className="absolute left-0 top-full z-30 mt-2 w-[300px] max-w-[calc(100vw-3rem)] rounded-2xl border border-charcoal/15 bg-white p-4 font-body text-charcoal"
           role="group"
-          aria-label="Audit date range"
+          aria-label={label}
         >
           <div className="mb-4 flex items-center justify-between">
             <span className="font-heading text-lg">Date range</span>
@@ -248,16 +252,18 @@ export default function AuditDateRange({
                 {label}
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => {
-                onChange("", "");
-                close();
-              }}
-              className="ml-auto px-1 text-xs text-charcoal/50 hover:text-charcoal"
-            >
-              Clear
-            </button>
+            {allowClear && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("", "");
+                  close();
+                }}
+                className="ml-auto px-1 text-xs text-charcoal/50 hover:text-charcoal"
+              >
+                Clear
+              </button>
+            )}
           </div>
           <p className="mt-3 text-[11px] text-charcoal/40">
             Inclusive dates · Manila time
