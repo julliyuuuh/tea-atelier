@@ -3,8 +3,6 @@ import ValidatedForm from "@/components/ValidatedForm";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Printer, RefreshCw, ShoppingBag } from "lucide-react";
-import AdminAttention from "@/components/admin/AdminAttention";
-import { useAuth } from "@/lib/auth-context";
 import {
   BarChart,
   Bar,
@@ -28,7 +26,6 @@ const money = (v: number) =>
     v,
   );
 export default function AdminSalesPanel() {
-  const { user } = useAuth();
   const [from, setFrom] = useState(today),
     [to, setTo] = useState(today),
     [range, setRange] = useState({ from: today(), to: today() }),
@@ -110,19 +107,8 @@ export default function AdminSalesPanel() {
       setPrinting(false);
     }
   }
-  const hour = Number(
-    new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Asia/Manila",
-      hour: "2-digit",
-      hourCycle: "h23",
-    }).format(new Date()),
-  );
   return (
     <section className="mb-8 space-y-5">
-      <p className="text-sm text-charcoal/60">
-        Good {hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"},{" "}
-        {user?.name || "Admin"}.
-      </p>
       <div className="rounded-2xl border border-charcoal/10 bg-white p-4 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -142,7 +128,7 @@ export default function AdminSalesPanel() {
           </button>
         </div>
         <ValidatedForm
-          className="flex flex-wrap items-end gap-3 rounded-xl bg-sage/5 p-3"
+          className="grid grid-cols-2 items-start gap-3 rounded-xl bg-sage/5 p-3 sm:flex sm:flex-wrap"
           onSubmit={(e) => {
             e.preventDefault();
             setRange({ from, to });
@@ -170,18 +156,20 @@ export default function AdminSalesPanel() {
               onChange={(e) => setTo(e.target.value)}
             />
           </label>
-          <button className="h-10 cursor-pointer rounded-full bg-sage px-5 text-sm text-cream">
-            Apply dates
-          </button>
-          <button
-            type="button"
-            aria-label="Refresh sales report"
-            title="Refresh sales report"
-            onClick={() => setVersion((v) => v + 1)}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-charcoal/20 hover:bg-sage/10"
-          >
-            <RefreshCw size={16} />
-          </button>
+          <div className="col-span-2 flex items-center gap-3 sm:pt-5">
+            <button className="h-10 cursor-pointer rounded-full bg-sage px-5 text-sm text-cream">
+              Apply dates
+            </button>
+            <button
+              type="button"
+              aria-label="Refresh sales report"
+              title="Refresh sales report"
+              onClick={() => setVersion((v) => v + 1)}
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-charcoal/20 hover:bg-sage/10"
+            >
+              <RefreshCw size={16} />
+            </button>
+          </div>
         </ValidatedForm>
         <div className="my-4 flex flex-wrap items-center gap-2">
           {["Today", "Yesterday", "This week", "This month"].map((p) => (
@@ -375,8 +363,6 @@ export default function AdminSalesPanel() {
           )
         )}
       </div>
-      <AdminAttention />
-      <h2 className="font-display text-xl">All-time store overview</h2>
     </section>
   );
 }

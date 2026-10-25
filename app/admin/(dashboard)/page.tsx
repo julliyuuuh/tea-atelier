@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import AdminSalesPanel from "@/components/admin/AdminSalesPanel";
+import AdminAttention from "@/components/admin/AdminAttention";
+import { useAuth } from "@/lib/auth-context";
 import { AdminPage, AdminPageHeader } from "@/components/admin/AdminPage";
 import { useState, useEffect, useRef } from "react";
 import { ShoppingBag, DollarSign, Package, Users } from "lucide-react";
@@ -109,6 +110,14 @@ export default function AdminOverviewPage() {
     useState<CustomerInsights | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme();
+  const { user } = useAuth();
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Manila",
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).format(new Date()),
+  );
   const chartTextColor = theme === "dark" ? "#d5ded4" : "#3a3a3a";
   const chartGridColor = theme === "dark" ? "#c9d3c833" : "#3a3a3a26";
 
@@ -218,7 +227,18 @@ export default function AdminOverviewPage() {
         />
       </div>
 
-      <AdminSalesPanel />
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="font-display text-xl">
+          Good {hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"},{" "}
+          {user?.name || "Admin"}.
+        </p>
+        <Link
+          href="/admin/sales"
+          className="rounded-full border border-sage/30 px-4 py-2 text-sm text-sage hover:bg-sage/10"
+        >
+          View sales reports
+        </Link>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
@@ -261,6 +281,9 @@ export default function AdminOverviewPage() {
         before refunds. Revenue includes delivery fees; product revenue excludes
         them. Product count includes active products.
       </p>
+      <div className="mt-6">
+        <AdminAttention />
+      </div>
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[65%_1fr] gap-4">
         <div className="bg-white border border-charcoal/10 rounded-2xl p-6 transition-all duration-200   hover:border-sage/30">
           <h2 className="font-body text-sm font-medium text-charcoal mb-6">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
+  ChartNoAxesCombined,
   Package,
   ShoppingBag,
   Users,
@@ -37,6 +38,12 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { group: "Store", label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  {
+    group: "Store",
+    label: "Sales Reports",
+    href: "/admin/sales",
+    icon: ChartNoAxesCombined,
+  },
   { group: "Store", label: "Products", href: "/admin/products", icon: Package },
   { group: "Store", label: "Orders", href: "/admin/orders", icon: ShoppingBag },
   {
