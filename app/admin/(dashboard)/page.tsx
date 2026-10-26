@@ -273,111 +273,105 @@ export default function AdminOverviewPage() {
         })}
       </div>
 
-      <div className="mt-6">
-        <AdminAttention />
-      </div>
-      <div className="mt-10 grid grid-cols-1 lg:grid-cols-[65%_1fr] gap-4">
-        <div className="bg-white border border-charcoal/10 rounded-2xl p-6 transition-all duration-200   hover:border-sage/30">
-          <h2 className="font-body text-sm font-medium text-charcoal mb-6">
-            Top Products by Revenue
-          </h2>
+      <div className="mt-6 bg-white border border-charcoal/10 rounded-2xl p-6 transition-all duration-200   hover:border-sage/30">
+        <h2 className="font-body text-sm font-medium text-charcoal mb-6">
+          Top Products by Revenue
+        </h2>
 
-          {isLoading && (
-            <span className="font-body text-xs text-charcoal/40">
-              Loading...
-            </span>
-          )}
+        {isLoading && (
+          <span className="font-body text-xs text-charcoal/40">Loading...</span>
+        )}
 
-          {!isLoading && topProducts.length === 0 && (
-            <span className="font-body text-xs text-charcoal/40">
-              Not enough sales data yet.
-            </span>
-          )}
+        {!isLoading && topProducts.length === 0 && (
+          <span className="font-body text-xs text-charcoal/40">
+            Not enough sales data yet.
+          </span>
+        )}
 
-          {/* Mobile / tablet: simple ranked list */}
-          {!isLoading && topProducts.length > 0 && (
-            <div className="lg:hidden space-y-1">
-              {topProducts.map((product, index) => (
-                <div
-                  key={product.id}
-                  className="flex items-center justify-between border-b-2 border-charcoal/10 last:border-0 px-2 -mx-2 py-3 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`font-display text-sm w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                        index === 0
-                          ? "bg-sage text-white"
-                          : "bg-sage/10 text-sage"
-                      }`}
-                    >
-                      {index + 1}
-                    </span>
-                    <span className="font-body text-sm text-charcoal">
-                      {product.name}
-                    </span>
-                  </div>
-                  <span className="font-body text-sm text-charcoal/70 shrink-0">
-                    ₱
-                    {product.revenue.toLocaleString("en-PH", {
-                      maximumFractionDigits: 0,
-                    })}
+        {/* Mobile / tablet: simple ranked list */}
+        {!isLoading && topProducts.length > 0 && (
+          <div className="lg:hidden space-y-1">
+            {topProducts.map((product, index) => (
+              <div
+                key={product.id}
+                className="flex items-center justify-between border-b-2 border-charcoal/10 last:border-0 px-2 -mx-2 py-3 rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`font-display text-sm w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                      index === 0
+                        ? "bg-sage text-white"
+                        : "bg-sage/10 text-sage"
+                    }`}
+                  >
+                    {index + 1}
+                  </span>
+                  <span className="font-body text-sm text-charcoal">
+                    {product.name}
                   </span>
                 </div>
-              ))}
-            </div>
-          )}
+                <span className="font-body text-sm text-charcoal/70 shrink-0">
+                  ₱
+                  {product.revenue.toLocaleString("en-PH", {
+                    maximumFractionDigits: 0,
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
-          {/* Desktop: bar chart */}
-          {!isLoading && topProducts.length > 0 && (
-            <div className="hidden lg:block">
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart
-                  data={topProducts}
-                  margin={{ top: 10, left: -10, right: 10, bottom: 10 }}
-                  className="[&_*:focus]:outline-none"
-                >
-                  <CartesianGrid vertical={false} stroke={chartGridColor} />
-                  <XAxis
-                    dataKey="name"
-                    tick={{
-                      fontSize: 11,
-                      fill: chartTextColor,
-                      fontWeight: 600,
-                    }}
-                    axisLine={{ stroke: chartTextColor, strokeWidth: 1.5 }}
-                    tickLine={false}
-                    interval={0}
-                    tickMargin={16}
-                  />
-                  <YAxis
-                    tick={{
-                      fontSize: 11,
-                      fill: chartTextColor,
-                      fontWeight: 600,
-                    }}
-                    axisLine={{ stroke: chartTextColor, strokeWidth: 1.5 }}
-                    tickLine={false}
-                    tickFormatter={(value) =>
-                      value >= 1000
-                        ? `${Math.round(value / 1000)}k`
-                        : `${value}`
-                    }
-                    tickMargin={12}
-                    width={45}
-                  />
-                  <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={55}>
-                    {topProducts.map((entry, index) => (
-                      <Cell
-                        key={entry.id}
-                        fill={index === 0 ? "#7a9b76" : "#7a9b7655"}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+        {/* Desktop: bar chart */}
+        {!isLoading && topProducts.length > 0 && (
+          <div className="hidden lg:block">
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart
+                data={topProducts}
+                margin={{ top: 10, left: -10, right: 10, bottom: 10 }}
+                className="[&_*:focus]:outline-none"
+              >
+                <CartesianGrid vertical={false} stroke={chartGridColor} />
+                <XAxis
+                  dataKey="name"
+                  tick={{
+                    fontSize: 11,
+                    fill: chartTextColor,
+                    fontWeight: 600,
+                  }}
+                  axisLine={{ stroke: chartTextColor, strokeWidth: 1.5 }}
+                  tickLine={false}
+                  interval={0}
+                  tickMargin={16}
+                />
+                <YAxis
+                  tick={{
+                    fontSize: 11,
+                    fill: chartTextColor,
+                    fontWeight: 600,
+                  }}
+                  axisLine={{ stroke: chartTextColor, strokeWidth: 1.5 }}
+                  tickLine={false}
+                  tickFormatter={(value) =>
+                    value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`
+                  }
+                  tickMargin={12}
+                  width={45}
+                />
+                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={55}>
+                  {topProducts.map((entry, index) => (
+                    <Cell
+                      key={entry.id}
+                      fill={index === 0 ? "#7a9b76" : "#7a9b7655"}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
+        <AdminAttention />
 
         <div className="bg-white border border-charcoal/10 rounded-2xl p-6 transition-all duration-200   hover:border-sage/30">
           <h2 className="font-body text-sm font-medium text-charcoal mb-4">

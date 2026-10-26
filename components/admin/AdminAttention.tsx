@@ -83,7 +83,7 @@ export default function AdminAttention() {
           {error}
         </p>
       )}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 2xl:grid-cols-4">
         {tasks.map(({ key, label, href, icon: Icon }) => (
           <Link
             key={key}
