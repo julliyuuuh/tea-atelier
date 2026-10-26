@@ -1,7 +1,13 @@
+import {
+  DEFAULT_PURCHASE_LIMITS,
+  validatePurchaseLimits,
+  type PurchaseLimits,
+} from "@/lib/purchase-limits";
 export const PAYMENT_OPTIONS = {
   cod: "Cash on delivery",
   gcash: "GCash",
   grabpay: "GrabPay",
+  card: "Credit/debit card",
 } as const;
 export type PaymentOption = keyof typeof PAYMENT_OPTIONS;
 export const SHIPPING_OPTIONS = {
@@ -17,6 +23,7 @@ export type StoreSettings = {
   >;
   freeShippingThresholdCents: number | null;
   payments: Record<PaymentOption, boolean>;
+  purchaseLimits: PurchaseLimits;
   usd: { enabled: boolean; phpPerUsd: number };
 };
 export type SettingsDocument = {
@@ -36,7 +43,8 @@ export const DEFAULT_SETTINGS: StoreSettings = {
     express: { enabled: false, feeCents: 15000, estimate: "1–2 business days" },
   },
   freeShippingThresholdCents: null,
-  payments: { cod: true, gcash: true, grabpay: true },
+  payments: { cod: true, gcash: true, grabpay: true, card: false },
+  purchaseLimits: DEFAULT_PURCHASE_LIMITS,
   usd: { enabled: false, phpPerUsd: 58 },
 };
 export class SettingsError extends Error {
@@ -87,9 +95,34 @@ function cents(value: unknown) {
   return value;
 }
 export function validateSettings(value: unknown): StoreSettings {
+  // Older saved settings acquire safe defaults without enabling card payments.
+  const source =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
+  const oldPayments = source?.payments;
+  const normalized = source
+    ? {
+        ...source,
+        purchaseLimits: source.purchaseLimits ?? DEFAULT_PURCHASE_LIMITS,
+        payments:
+          oldPayments &&
+          typeof oldPayments === "object" &&
+          !Array.isArray(oldPayments)
+            ? { card: false, ...oldPayments }
+            : oldPayments,
+      }
+    : value;
   const root = object(
-    value,
-    ["store", "shipping", "freeShippingThresholdCents", "payments", "usd"],
+    normalized,
+    [
+      "store",
+      "shipping",
+      "freeShippingThresholdCents",
+      "payments",
+      "usd",
+      "purchaseLimits",
+    ],
     "settings",
   );
   const store = object(
@@ -160,6 +193,15 @@ export function validateSettings(value: unknown): StoreSettings {
     shipping: resultShipping,
     freeShippingThresholdCents: threshold,
     payments: resultPayments,
+    purchaseLimits: (() => {
+      try {
+        return validatePurchaseLimits(root.purchaseLimits);
+      } catch (e) {
+        throw new SettingsError(
+          e instanceof Error ? e.message : "Invalid purchase limits.",
+        );
+      }
+    })(),
     usd: { enabled: bool(usd.enabled), phpPerUsd: usd.phpPerUsd },
   };
 }

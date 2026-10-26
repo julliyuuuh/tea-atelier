@@ -9,6 +9,7 @@ type Resource = {
     status: string;
     payment_id?: string;
     source?: { id: string };
+    payment_intent_id?: string;
     refunds?: Resource[];
     metadata?: Record<string, string>;
     notes?: string;
@@ -68,7 +69,12 @@ async function request(path: string, attributes?: object): Promise<Resource> {
 }
 export function validatePayment(
   payment: Resource,
-  order: { total_amount: string; paymongo_source_id: string | null },
+  order: {
+    total_amount: string;
+    paymongo_source_id: string | null;
+    payment_method?: string;
+    paymongo_payment_intent_id?: string | null;
+  },
 ) {
   const attributes = payment.attributes;
   if (
@@ -77,8 +83,11 @@ export function validatePayment(
     attributes.currency !== "PHP" ||
     attributes.status !== "paid" ||
     attributes.amount !== Math.round(Number(order.total_amount) * 100) ||
-    !order.paymongo_source_id ||
-    attributes.source?.id !== order.paymongo_source_id
+    (order.payment_method === "card"
+      ? !order.paymongo_payment_intent_id ||
+        attributes.payment_intent_id !== order.paymongo_payment_intent_id
+      : !order.paymongo_source_id ||
+        attributes.source?.id !== order.paymongo_source_id)
   ) {
     throw new ReturnError(
       "This test payment does not match the order's amount, source, currency and mode.",

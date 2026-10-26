@@ -9,6 +9,7 @@ export const AUDIT_RESOURCES = {
   cms: "Content management",
   settings: "Store settings",
   campaign: "Promotional campaigns",
+  business: "Business applications",
 } as const;
 export type AuditEvent = {
   event_id: string;

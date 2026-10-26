@@ -1,3 +1,4 @@
+import { readSettings } from "@/lib/store-settings-server";
 import { pool } from "@/lib/db";
 
 export class CartError extends Error {
@@ -42,7 +43,7 @@ export async function changeCartItem(
   try {
     await client.query("BEGIN");
     const owner = await client.query(
-      "SELECT user_id FROM users WHERE user_id = $1 AND is_suspended = false FOR UPDATE",
+      "SELECT user_id, COALESCE((to_jsonb(users)->>'business_approved')::boolean,false) AS business_approved FROM users WHERE user_id = $1 AND is_suspended = false FOR UPDATE",
       [userId],
     );
     if (!owner.rows.length)
@@ -63,7 +64,23 @@ export async function changeCartItem(
     if (!add && !current.rows.length)
       throw new CartError("This product is no longer in your cart.", 404);
     const next = add ? (current.rows[0]?.quantity ?? 0) + quantity : quantity;
-    if (next > product.stock_quantity)
+    const { config } = await readSettings(client, true);
+    const tier = owner.rows[0].business_approved
+      ? config.purchaseLimits.business
+      : config.purchaseLimits.standard;
+    // Old over-limit carts may still be reduced in steps; increases remain blocked.
+    if (
+      next > tier.perProduct &&
+      (add || next >= (current.rows[0]?.quantity ?? 0))
+    )
+      throw new CartError(
+        `Your account allows up to ${tier.perProduct} units per product.`,
+        409,
+      );
+    if (
+      next > product.stock_quantity &&
+      next >= (current.rows[0]?.quantity ?? 0)
+    )
       throw new CartError(`Only ${product.stock_quantity} in stock.`, 409);
     if (current.rows.length) {
       await client.query(

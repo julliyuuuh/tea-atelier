@@ -1,8 +1,8 @@
 "use client";
 
 import ValidatedForm from "@/components/ValidatedForm";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -31,15 +31,38 @@ const PANEL_TRANSITION = { duration: 0.25, ease: [0.16, 1, 0.3, 1] as const };
 // ================================================================
 
 export default function AccountPage() {
-  return <AccountPageInner />;
+  return (
+    <Suspense
+      fallback={
+        <p className="p-8 text-sm text-charcoal/50">Loading account…</p>
+      }
+    >
+      <AccountPageInner />
+    </Suspense>
+  );
 }
 
 function AccountPageInner() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const requestedSection = searchParams.get("section");
 
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
 
+  useEffect(() => {
+    if (
+      requestedTab &&
+      ["profile", "orders", "settings", "messages"].includes(requestedTab)
+    ) {
+      const timer = window.setTimeout(
+        () => setActiveTab(requestedTab as TabKey),
+        0,
+      );
+      return () => window.clearTimeout(timer);
+    }
+  }, [requestedTab, requestedSection]);
   const [visited, setVisited] = useState<Set<TabKey>>(new Set(["profile"]));
 
   useEffect(() => {
@@ -118,7 +141,10 @@ function AccountPageInner() {
                 aria-selected={isActive}
                 aria-controls={`account-panel-${tab.key}`}
                 tabIndex={isActive ? 0 : -1}
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  router.replace(`/account?tab=${tab.key}`, { scroll: false });
+                }}
                 onKeyDown={(e) => handleTabKeyDown(e, tab.key)}
                 className="relative shrink-0 pb-4 font-display text-base sm:text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage focus-visible:ring-offset-2 focus-visible:ring-offset-cream rounded-sm"
               >
@@ -207,8 +233,10 @@ function AccountPageInner() {
               inert={activeTab !== "settings" ? true : undefined}
             >
               <SettingsTab
+                requestedSection={requestedSection}
                 onEditProfile={() => {
                   setActiveTab("profile");
+                  router.replace("/account?tab=profile", { scroll: false });
                   tabRefs.current.profile?.focus();
                 }}
               />
@@ -639,6 +667,7 @@ function formatPaymentMethod(method: string): string {
   const labels: Record<string, string> = {
     cod: "Cash on Delivery",
     gcash: "GCash",
+    card: "Credit/debit card",
     grabpay: "GrabPay",
     credit: "Credit Card",
     paypal: "PayPal",
@@ -812,10 +841,35 @@ function OrdersTab() {
           );
         return;
       }
-      const created = await post("/api/payments/paymongo/source", {
-        orderId: order.id,
-        type: order.paymentMethod,
-      });
+      const created = await post(
+        order.paymentMethod === "card"
+          ? "/api/payments/paymongo/card"
+          : "/api/payments/paymongo/source",
+        {
+          orderId: order.id,
+          ...(order.paymentMethod === "card"
+            ? {}
+            : { type: order.paymentMethod }),
+        },
+      );
+      if (
+        ["paid", "processing", "cancelled"].includes(
+          created.result.paymentStatus,
+        )
+      ) {
+        setRefreshKey((value) => value + 1);
+        if (created.result.paymentStatus === "paid") {
+          setActiveTab("orders");
+          setPage(1);
+        } else if (created.result.paymentStatus === "cancelled") {
+          setActiveTab("cancelled");
+          setPage(1);
+        } else
+          setCancelError(
+            "Payment is being confirmed. Check its status shortly.",
+          );
+        return;
+      }
       if (
         !created.res.ok ||
         typeof created.result.checkoutUrl !== "string" ||
@@ -827,6 +881,7 @@ function OrdersTab() {
             "Unable to resume payment. Please check again.",
         );
       }
+      // Card checkout resumes its saved session through the separate card endpoint.
       // The source endpoint reuses a pending link or creates a retry for this order.
       // No new order is created from the Orders tab.
       paymentRedirectedRef.current = true;
@@ -889,7 +944,7 @@ function OrdersTab() {
         const toCheck = loadedOrders.filter(
           (order) =>
             !isCancelledOrder(order) &&
-            ["gcash", "grabpay"].includes(order.paymentMethod) &&
+            ["gcash", "grabpay", "card"].includes(order.paymentMethod) &&
             ["pending", "processing", "failed"].includes(order.paymentStatus),
         );
         let unauthorized = false;
@@ -1190,7 +1245,9 @@ function OrdersTab() {
                     View Order Details
                   </Link>
                   {!isCancelledOrder(order) &&
-                    ["gcash", "grabpay"].includes(order.paymentMethod) &&
+                    ["gcash", "grabpay", "card"].includes(
+                      order.paymentMethod,
+                    ) &&
                     ["pending", "failed"].includes(order.paymentStatus) && (
                       <button
                         type="button"
@@ -1207,7 +1264,9 @@ function OrdersTab() {
                     )}
                   {!isCancelledOrder(order) &&
                     order.status === "PLACED" &&
-                    ["gcash", "grabpay"].includes(order.paymentMethod) &&
+                    ["gcash", "grabpay", "card"].includes(
+                      order.paymentMethod,
+                    ) &&
                     ["pending", "failed"].includes(order.paymentStatus) && (
                       <button
                         type="button"

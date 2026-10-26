@@ -1,6 +1,6 @@
-import { deliverOrderNotificationEmails } from "@/lib/notification-emails";
 // app/api/orders/cancel/route.ts.
-
+import { expireCardOrder, CardError } from "@/lib/paymongo-card";
+import { deliverOrderNotificationEmails } from "@/lib/notification-emails";
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getUserId } from "@/lib/api-auth";
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   try {
     const result = await pool.query(
       `SELECT order_id, order_status, payment_status, payment_method,
-              paymongo_source_id, total_amount
+              paymongo_source_id, total_amount, to_jsonb(orders)->>'card_session_attempt' AS card_session_attempt, to_jsonb(orders)->>'paymongo_checkout_session_id' AS paymongo_checkout_session_id, to_jsonb(orders)->>'paymongo_payment_intent_id' AS paymongo_payment_intent_id
        FROM orders WHERE order_id = $1 AND user_id = $2`,
       [orderId, userId],
     );
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       });
     }
     if (
-      !["gcash", "grabpay"].includes(order.payment_method) ||
+      !["gcash", "grabpay", "card"].includes(order.payment_method) ||
       order.order_status !== "PLACED" ||
       !["pending", "failed"].includes(order.payment_status)
     ) {
@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       );
     }
 
+    if (order.payment_method === "card") await expireCardOrder(order);
     const sourceId = order.paymongo_source_id;
     if (sourceId) {
       const secret = process.env.PAYMONGO_SECRET_KEY;
@@ -112,11 +113,19 @@ export async function POST(req: Request) {
       `UPDATE orders SET order_status = 'CANCELLED', payment_status = 'cancelled'
        WHERE order_id = $1 AND user_id = $2
          AND order_status = 'PLACED'
-         AND payment_method IN ('gcash', 'grabpay')
+         AND payment_method IN ('gcash', 'grabpay', 'card')
          AND payment_status IN ('pending', 'failed')
          AND paymongo_source_id IS NOT DISTINCT FROM $3
+         AND (to_jsonb(orders)->>'card_session_attempt') IS NOT DISTINCT FROM $4
+         AND (to_jsonb(orders)->>'paymongo_checkout_session_id') IS NOT DISTINCT FROM $5
        RETURNING order_id`,
-      [orderId, userId, sourceId],
+      [
+        orderId,
+        userId,
+        sourceId,
+        order.card_session_attempt ?? null,
+        order.paymongo_checkout_session_id ?? null,
+      ],
     );
     if (!cancelled.rows.length) {
       return NextResponse.json(
@@ -135,6 +144,11 @@ export async function POST(req: Request) {
       orderStatus: "CANCELLED",
     });
   } catch (error) {
+    if (error instanceof CardError)
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
     console.error(`Order ${orderId}: cancellation failed`, error);
     return NextResponse.json(
       { error: "Unable to cancel this order. Please check again." },

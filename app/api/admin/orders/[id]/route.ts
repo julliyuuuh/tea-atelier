@@ -1,3 +1,4 @@
+import type { CardOrder } from "@/lib/paymongo-card";
 import { adminQuery } from "@/lib/admin-audit";
 import { deliverOrderNotificationEmails } from "@/lib/notification-emails";
 import { NextResponse } from "next/server";
@@ -146,9 +147,11 @@ export async function PATCH(
     );
   }
 
-  const current = await adminQuery(
+  const current = await adminQuery<
+    CardOrder & { fulfillment_issue: string | null }
+  >(
     decoded!.userId,
-    "SELECT order_status, payment_method, payment_status, to_jsonb(orders)->>'payment_fulfillment_issue' AS fulfillment_issue FROM orders WHERE order_id = $1",
+    "SELECT orders.*, to_jsonb(orders)->>'card_session_attempt' AS card_session_attempt, to_jsonb(orders)->>'paymongo_checkout_session_id' AS paymongo_checkout_session_id, to_jsonb(orders)->>'paymongo_payment_intent_id' AS paymongo_payment_intent_id, to_jsonb(orders)->>'payment_fulfillment_issue' AS fulfillment_issue FROM orders WHERE order_id = $1",
     [id],
   );
   if (current.rows.length === 0) {
@@ -242,6 +245,26 @@ export async function PATCH(
     }
   }
 
+  if (
+    status === "CANCELLED" &&
+    order.payment_method === "card" &&
+    !["paid", "refunded"].includes(order.payment_status)
+  ) {
+    try {
+      const { expireCardOrder } = await import("@/lib/paymongo-card");
+      await expireCardOrder(order);
+    } catch (e) {
+      return NextResponse.json(
+        {
+          error:
+            e instanceof Error
+              ? e.message
+              : "Verify card checkout before cancellation.",
+        },
+        { status: 409 },
+      );
+    }
+  }
   const sets: string[] = [];
   const vals: unknown[] = [];
   if (status !== undefined) {
@@ -260,6 +283,8 @@ export async function PATCH(
     order.payment_status,
     order.payment_method,
     order.fulfillment_issue ?? null,
+    order.card_session_attempt ?? null,
+    order.paymongo_checkout_session_id ?? null,
   );
   // Check the values used for validation again inside the update. A concurrent
   // cancellation or payment update must not be overwritten by a stale request.
@@ -270,6 +295,8 @@ export async function PATCH(
       AND payment_status IS NOT DISTINCT FROM $${idPosition + 2}
       AND payment_method IS NOT DISTINCT FROM $${idPosition + 3}
       AND (to_jsonb(orders)->>'payment_fulfillment_issue') IS NOT DISTINCT FROM $${idPosition + 4}
+      AND (to_jsonb(orders)->>'card_session_attempt') IS NOT DISTINCT FROM $${idPosition + 5}
+      AND (to_jsonb(orders)->>'paymongo_checkout_session_id') IS NOT DISTINCT FROM $${idPosition + 6}
       RETURNING order_id`,
     vals,
   );

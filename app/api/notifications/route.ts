@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     const { rows } = await pool.query(
       `SELECT (SELECT count(*)::integer FROM notifications WHERE user_id = $1 AND read_at IS NULL) AS unread_count,
         COALESCE((SELECT jsonb_agg(item ORDER BY item.created_at DESC, item.notification_id DESC)
-          FROM (SELECT notification_id, order_id, title, message, created_at, read_at
+          FROM (SELECT notification_id, order_id, href, title, message, created_at, read_at
             FROM notifications WHERE user_id = $1
             ORDER BY created_at DESC, notification_id DESC LIMIT 30) item), '[]'::jsonb) AS notifications`,
       [userId],

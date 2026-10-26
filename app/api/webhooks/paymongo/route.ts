@@ -1,3 +1,4 @@
+import { reconcileCardSession } from "@/lib/paymongo-card";
 import { verifyPaymongoSignature } from "@/lib/paymongo";
 import { pool } from "@/lib/db";
 import {
@@ -32,6 +33,16 @@ export async function POST(req: Request) {
   }
   const type = event?.data?.attributes?.type;
   const resource = event?.data?.attributes?.data;
+  if (type === "checkout_session.payment.paid") {
+    if (typeof resource?.id !== "string")
+      return new Response("Invalid checkout event", { status: 400 });
+    try {
+      await reconcileCardSession(resource.id);
+      return new Response("ok");
+    } catch {
+      return new Response("Card payment needs verification", { status: 503 });
+    }
+  }
   if (!["source.chargeable", "payment.paid"].includes(type))
     return new Response("ok");
   if (typeof resource?.id !== "string")
@@ -40,6 +51,17 @@ export async function POST(req: Request) {
     // Verify the actual payment through PayMongo for capture/recovery events.
     const captured =
       type === "payment.paid" ? await fetchPayment(resource.id) : null;
+    if (captured?.attributes.payment_intent_id) {
+      const card = await pool.query(
+        "SELECT * FROM orders WHERE payment_method='card' AND paymongo_payment_intent_id=$1",
+        [captured.attributes.payment_intent_id],
+      );
+      if (card.rows[0]) {
+        await finalizePayment(card.rows[0], captured);
+        return new Response("ok");
+      }
+      // Non-card Payment Intents may still belong to the legacy Sources flow.
+    }
     const sourceId = captured ? captured.attributes.source?.id : resource.id;
     if (typeof sourceId !== "string")
       return new Response("Invalid source", { status: 400 });

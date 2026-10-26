@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
+  Building2,
   Check,
   ChevronRight,
   Globe,
@@ -23,6 +24,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { useStoreSettings } from "@/lib/store-settings-context";
 import ConfirmDialog from "@/components/account/ConfirmDialog";
+import BusinessApplication from "@/components/account/BusinessApplication";
 import MarketingPreference from "@/components/account/MarketingPreference";
 
 const actionClass =
@@ -57,8 +59,10 @@ function SettingsCard({
 
 export default function SettingsTab({
   onEditProfile,
+  requestedSection,
 }: {
   onEditProfile: () => void;
+  requestedSection?: string | null;
 }) {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -71,8 +75,28 @@ export default function SettingsTab({
     setCurrency,
   } = useStoreSettings();
   const [activeSection, setActiveSection] = useState<
-    "account" | "security" | "appearance" | "emails" | "privacy"
+    "account" | "security" | "appearance" | "emails" | "privacy" | "business"
   >("account");
+  useEffect(() => {
+    if (
+      requestedSection &&
+      [
+        "account",
+        "security",
+        "appearance",
+        "emails",
+        "privacy",
+        "business",
+      ].includes(requestedSection) &&
+      (requestedSection !== "business" || user?.role === "customer")
+    ) {
+      const timer = window.setTimeout(
+        () => setActiveSection(requestedSection as typeof activeSection),
+        0,
+      );
+      return () => window.clearTimeout(timer);
+    }
+  }, [requestedSection, user?.role]);
   const [emailVisited, setEmailVisited] = useState(false);
   const [totpEnabled, setTotpEnabled] = useState(false);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
@@ -246,7 +270,14 @@ export default function SettingsTab({
               { key: "security", label: "Security", icon: ShieldCheck },
               { key: "appearance", label: "Appearance", icon: Sun },
               ...(user?.role === "customer"
-                ? [{ key: "emails" as const, label: "Emails", icon: Mail }]
+                ? [
+                    {
+                      key: "business" as const,
+                      label: "Business purchasing",
+                      icon: Building2,
+                    },
+                    { key: "emails" as const, label: "Emails", icon: Mail },
+                  ]
                 : []),
               { key: "privacy", label: "Privacy & support", icon: Globe },
             ] as const
@@ -259,6 +290,9 @@ export default function SettingsTab({
               aria-controls={`settings-content-${key}`}
               onClick={() => {
                 setActiveSection(key);
+                router.replace(`/account?tab=settings&section=${key}`, {
+                  scroll: false,
+                });
                 if (key === "emails") setEmailVisited(true);
               }}
               className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-left font-body text-xs transition-colors focus-visible:outline-2 focus-visible:outline-sage ${activeSection === key ? "bg-sage/10 font-medium text-charcoal" : "text-charcoal/60 hover:bg-sand/25 hover:text-charcoal"}`}
@@ -343,6 +377,14 @@ export default function SettingsTab({
                 </p>
               )}
             </SettingsCard>
+          </div>
+          <div
+            id="settings-content-business"
+            role="region"
+            aria-labelledby="settings-section-business"
+            hidden={activeSection !== "business"}
+          >
+            {activeSection === "business" && <BusinessApplication />}
           </div>
           <div
             id="settings-content-security"

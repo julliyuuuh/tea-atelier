@@ -8,7 +8,8 @@ import { useAuth } from "@/lib/auth-context";
 
 type Notification = {
   notification_id: string;
-  order_id: number;
+  order_id: number | null;
+  href?: string | null;
   title: string;
   message: string;
   created_at: string;
@@ -214,7 +215,14 @@ function CustomerNotifications() {
                       className={`border-b border-charcoal/10 last:border-0 ${item.read_at ? "" : "bg-sand/40"}`}
                     >
                       <Link
-                        href={`/account/orders/${item.order_id}`}
+                        href={
+                          item.href?.startsWith("/account") &&
+                          !item.href.startsWith("//")
+                            ? item.href
+                            : item.order_id
+                              ? `/account/orders/${item.order_id}`
+                              : "/account?tab=settings&section=business"
+                        }
                         onClick={() => {
                           if (!item.read_at)
                             void markRead(item.notification_id);

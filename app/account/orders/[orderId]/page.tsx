@@ -49,6 +49,7 @@ function formatPaymentMethod(method: string): string {
   const labels: Record<string, string> = {
     cod: "Cash on Delivery",
     gcash: "GCash",
+    card: "Credit/debit card",
     grabpay: "GrabPay",
     credit: "Credit Card",
     paypal: "PayPal",

@@ -9,6 +9,7 @@ export type PaymentResource = {
     livemode: boolean;
     status: string;
     source?: { id: string };
+    payment_intent_id?: string;
   };
 };
 export type PaymentOrder = {
@@ -18,7 +19,10 @@ export type PaymentOrder = {
   recipient_name: string | null;
   order_status: string;
   payment_status: string;
-  paymongo_source_id: string;
+  payment_method?: string;
+  paymongo_checkout_session_id?: string | null;
+  paymongo_payment_intent_id?: string | null;
+  paymongo_source_id: string | null;
   paymongo_payment_id: string | null;
 };
 export function matchesPayment(
@@ -34,7 +38,12 @@ export function matchesPayment(
     a?.amount === Math.round(Number(order.total_amount) * 100) &&
     a.currency === "PHP" &&
     a.livemode === !key.startsWith("sk_test_") &&
-    a.source?.id === order.paymongo_source_id &&
+    (order.payment_method === "card"
+      ? !!order.paymongo_checkout_session_id &&
+        !!order.paymongo_payment_intent_id &&
+        a.payment_intent_id === order.paymongo_payment_intent_id
+      : !!order.paymongo_source_id &&
+        a.source?.id === order.paymongo_source_id) &&
     (!order.paymongo_payment_id || order.paymongo_payment_id === payment.id)
   );
 }
@@ -67,7 +76,14 @@ export async function finalizePayment(
 ) {
   if (!matchesPayment(payment, order) || payment.attributes.status !== "paid")
     throw new Error("Payment does not match order");
-  const sourceId = order.paymongo_source_id;
+  const sourceId =
+    order.payment_method === "card"
+      ? order.paymongo_checkout_session_id
+      : order.paymongo_source_id;
+  const attemptColumn =
+    order.payment_method === "card"
+      ? "paymongo_checkout_session_id"
+      : "paymongo_source_id";
   const saved = await (
     auditActorId === undefined
       ? pool.query.bind(pool)
@@ -75,7 +91,7 @@ export async function finalizePayment(
           adminQuery(auditActorId, sql, values)
   )(
     `UPDATE orders SET paymongo_payment_id = $3
-    WHERE order_id = $1 AND paymongo_source_id = $2
+    WHERE order_id = $1 AND ${attemptColumn} = $2
       AND (paymongo_payment_id IS NULL OR paymongo_payment_id = $3) RETURNING order_id`,
     [order.order_id, sourceId, payment.id],
   );
@@ -93,8 +109,9 @@ export async function finalizePayment(
     const upd = await client.query(
       `UPDATE orders SET payment_status = 'paid', paymongo_payment_id = $3
         WHERE order_id = $1
-          AND paymongo_source_id = $2
+          AND ${attemptColumn} = $2
           AND payment_status IS DISTINCT FROM 'paid'
+          AND payment_status IS DISTINCT FROM 'refunded'
           AND (paymongo_payment_id IS NULL OR paymongo_payment_id = $3)
         RETURNING user_id, order_status`,
       [order.order_id, sourceId, payment.id],

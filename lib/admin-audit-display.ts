@@ -1,6 +1,12 @@
 // Presentation helpers only. Audit snapshots remain unchanged in storage.
 export function auditFieldLabel(value: string): string {
   const names: Record<string, string> = {
+    purchaseLimits: "Purchase limits",
+    perProduct: "Units per product",
+    totalUnits: "Units per checkout",
+    totalCents: "Order total",
+    codCents: "COD maximum",
+    feeCents: "Fee",
     usd: "USD",
     phpPerUsd: "PHP per USD",
     enabled: "Enabled",
@@ -76,11 +82,26 @@ export function auditChanges(
         return;
       }
     }
+    const moneyKeys = [
+      "feeCents",
+      "totalCents",
+      "codCents",
+      "freeShippingThresholdCents",
+      "refund_amount_cents",
+      "amount_cents",
+    ];
+    const show = (value: unknown) =>
+      moneyKeys.includes(path[path.length - 1]) && typeof value === "number"
+        ? new Intl.NumberFormat("en-PH", {
+            style: "currency",
+            currency: "PHP",
+          }).format(value / 100)
+        : value;
     rows.push({
       path: JSON.stringify(path),
       label: path.map(auditFieldLabel).join(" · "),
-      before: a,
-      after: b,
+      before: show(a),
+      after: show(b),
     });
   }
   const a = before || {},

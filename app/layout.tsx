@@ -1,3 +1,4 @@
+import { BusinessProvider } from "@/lib/business-context";
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
@@ -27,8 +28,8 @@ export const metadata: Metadata = {
   title: "Tea Atelier",
   description: "Where every leaf tells a story",
   icons: {
-    icon: { url: "/images/favicon.png", type: "image/png" },
-    apple: "/images/favicon.png",
+    icon: { url: "/images/logo.png", type: "image/png" },
+    apple: "/images/logo.png",
   },
 };
 
@@ -47,13 +48,15 @@ export default function RootLayout({
         <StoreSettingsProvider>
           <ThemeProvider>
             <AuthProvider>
-              <CartProvider>
-                <WishlistProvider>
-                  {children}
-                  <StockErrorModal />
-                  <AddedToCartModal />
-                </WishlistProvider>
-              </CartProvider>
+              <BusinessProvider>
+                <CartProvider>
+                  <WishlistProvider>
+                    {children}
+                    <StockErrorModal />
+                    <AddedToCartModal />
+                  </WishlistProvider>
+                </CartProvider>
+              </BusinessProvider>
             </AuthProvider>
           </ThemeProvider>
         </StoreSettingsProvider>

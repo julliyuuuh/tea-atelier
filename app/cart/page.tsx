@@ -1,4 +1,6 @@
 "use client";
+import { useBusiness } from "@/lib/business-context";
+import { purchaseViolation, php } from "@/lib/purchase-limits";
 
 import { motion } from "framer-motion";
 import DisplayPrice from "@/components/DisplayPrice";
@@ -19,6 +21,20 @@ export default function CartPage() {
     updateQuantity,
     loading,
   } = useCart();
+  const {
+    approved,
+    limits,
+    ready: limitsReady,
+    error: limitsError,
+  } = useBusiness();
+  const tier = approved ? limits.business : limits.standard;
+  const limitError = purchaseViolation(
+    selectedItems,
+    Math.round(subtotal * 100),
+    "",
+    limits,
+    approved,
+  );
   const unavailableSelection = selectedItems.some(
     (item) =>
       !isProductAvailable(item.product) ||
@@ -130,6 +146,14 @@ export default function CartPage() {
                           onClick={() =>
                             updateQuantity(item.product.id, item.quantity + 1)
                           }
+                          disabled={
+                            !limitsReady ||
+                            item.quantity >=
+                              Math.min(
+                                tier.perProduct,
+                                item.product.stockQuantity,
+                              )
+                          }
                           className="px-3 py-2 font-body text-charcoal hover:bg-sand transition-colors"
                         >
                           +
@@ -173,6 +197,15 @@ export default function CartPage() {
                 </span>
               </div>
 
+              <p className="mb-3 text-xs text-charcoal/50">
+                {selectedQuantity}/{tier.totalUnits} units selected · Up to{" "}
+                {php(tier.totalCents)} including delivery
+              </p>
+              {(limitError || limitsError) && (
+                <p role="alert" className="mb-3 text-sm text-red-700">
+                  {limitError || limitsError}
+                </p>
+              )}
               {unavailableSelection && (
                 <p
                   role="status"
@@ -182,7 +215,10 @@ export default function CartPage() {
                   Uncheck them or adjust their quantity to continue.
                 </p>
               )}
-              {selectedItems.length > 0 && !unavailableSelection ? (
+              {selectedItems.length > 0 &&
+              !unavailableSelection &&
+              !limitError &&
+              limitsReady ? (
                 <Link
                   href="/checkout"
                   className="block text-center rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
@@ -195,9 +231,11 @@ export default function CartPage() {
                   disabled
                   className="block w-full cursor-not-allowed rounded-full bg-charcoal/10 py-4 text-center font-body text-sm text-charcoal/50"
                 >
-                  {unavailableSelection
-                    ? "Update your selection"
-                    : "Select items to checkout"}
+                  {!limitsReady
+                    ? "Loading purchase limits…"
+                    : limitError || unavailableSelection
+                      ? "Update your selection"
+                      : "Select items to checkout"}
                 </button>
               )}
             </div>

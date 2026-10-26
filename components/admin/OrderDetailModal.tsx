@@ -59,6 +59,7 @@ const MANUAL_PAYMENT_OPTIONS = PAYMENT_STATUSES.filter((s) =>
 const METHOD_LABELS: Record<string, string> = {
   cod: "Cash on Delivery",
   gcash: "GCash",
+  card: "Credit/debit card",
   paymaya: "Maya",
   grabpay: "GrabPay",
 };

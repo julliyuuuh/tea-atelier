@@ -22,6 +22,12 @@ function AuditCard({ event }: { event: AuditEvent }) {
   const fields = auditChanges(event.before_data, event.after_data);
   const orderId = after.order_id ?? before.order_id;
   const customerName = auditCustomerName(event);
+  const businessName =
+    event.resource_type === "business" &&
+    typeof (after.business_name ?? before.business_name) === "string"
+      ? String(after.business_name ?? before.business_name)
+      : null;
+  const resourceName = customerName || businessName;
   const resource =
     AUDIT_RESOURCES[event.resource_type as keyof typeof AUDIT_RESOURCES] ||
     event.resource_type;
@@ -40,7 +46,7 @@ function AuditCard({ event }: { event: AuditEvent }) {
               {label(event.action)}
             </span>
             <span className="break-words font-body text-xs text-charcoal/50">
-              {resource} · {customerName && <>{customerName} · </>}
+              {resource} · {resourceName && <>{resourceName} · </>}
               {orderId ? `Order #TA-${orderId}` : `#${event.resource_id}`}
             </span>
           </div>

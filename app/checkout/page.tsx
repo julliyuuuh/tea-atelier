@@ -1,4 +1,6 @@
 "use client";
+import { useBusiness } from "@/lib/business-context";
+import { purchaseViolation, php } from "@/lib/purchase-limits";
 
 import ValidatedForm from "@/components/ValidatedForm";
 import Link from "next/link";
@@ -32,7 +34,7 @@ type SummaryItem = { name: string; quantity: number; price: number };
 type SavedOrder = {
   accountEmail: string;
   orderId: number;
-  paymentMethod: "gcash" | "grabpay" | null;
+  paymentMethod: "gcash" | "grabpay" | "card" | null;
   subtotal: number | null;
   deliveryFee: number | null;
   total: number | null;
@@ -55,6 +57,12 @@ function CheckoutContent() {
     refreshCart,
     loading: cartLoading,
   } = useCart();
+  const {
+    approved,
+    limits,
+    ready: limitsReady,
+    error: limitsError,
+  } = useBusiness();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -86,6 +94,15 @@ function CheckoutContent() {
     shippingFeeCents(settings, chosenShipping, Math.round(subtotal * 100)) /
     100;
 
+  const newTotalCents = Math.round((subtotal + newDeliveryFee) * 100);
+  const codUnavailable = newTotalCents > limits.codCents;
+  const limitError = purchaseViolation(
+    items,
+    newTotalCents,
+    chosenPayment,
+    limits,
+    approved,
+  );
   const [showConfirm, setShowConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -196,7 +213,9 @@ function CheckoutContent() {
           candidate?.accountEmail === accountEmail &&
           Number.isSafeInteger(candidate.orderId) &&
           candidate.orderId > 0 &&
-          ["gcash", "grabpay", null].includes(candidate.paymentMethod) &&
+          ["gcash", "grabpay", "card", null].includes(
+            candidate.paymentMethod,
+          ) &&
           Array.isArray(candidate.items)
         ) {
           saved = candidate;
@@ -250,7 +269,7 @@ function CheckoutContent() {
             if (found) {
               saved = {
                 ...saved,
-                paymentMethod: ["gcash", "grabpay"].includes(
+                paymentMethod: ["gcash", "grabpay", "card"].includes(
                   found.paymentMethod,
                 )
                   ? found.paymentMethod
@@ -318,18 +337,25 @@ function CheckoutContent() {
       throw new Error(
         "Order details are unavailable. Check again or open your Orders page.",
       );
-    const res = await fetch("/api/payments/paymongo/source", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const res = await fetch(
+      order.paymentMethod === "card"
+        ? "/api/payments/paymongo/card"
+        : "/api/payments/paymongo/source",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          orderId: order.orderId,
+          ...(order.paymentMethod === "card"
+            ? {}
+            : { type: order.paymentMethod }),
+        }),
+        signal: AbortSignal.timeout(40000),
       },
-      body: JSON.stringify({
-        orderId: order.orderId,
-        type: order.paymentMethod,
-      }),
-      signal: AbortSignal.timeout(40000),
-    });
+    );
     const result = await res.json();
     if (
       result.paymentStatus === "paid" ||
@@ -554,6 +580,8 @@ function CheckoutContent() {
     if (
       !settingsReady ||
       !!settingsError ||
+      !limitsReady ||
+      !!limitError ||
       !addressesReady ||
       !restored ||
       cartLoading ||
@@ -671,7 +699,12 @@ function CheckoutContent() {
       const order: SavedOrder = {
         accountEmail: user.email,
         orderId,
-        paymentMethod: chosenPayment === "grabpay" ? "grabpay" : "gcash",
+        paymentMethod:
+          chosenPayment === "card"
+            ? "card"
+            : chosenPayment === "grabpay"
+              ? "grabpay"
+              : "gcash",
         subtotal: Number(data.subtotal),
         deliveryFee: Number(data.deliveryFee),
         total: Number(data.total),
@@ -969,12 +1002,21 @@ function CheckoutContent() {
                         type="radio"
                         name="payment"
                         value={key}
-                        checked={chosenPayment === key}
+                        checked={
+                          chosenPayment === key &&
+                          !(key === "cod" && codUnavailable)
+                        }
+                        disabled={key === "cod" && codUnavailable}
                         onChange={() => setPaymentMethod(key)}
                         className="accent-sage"
                       />
                       <span className="font-body text-sm text-charcoal">
                         {PAYMENT_OPTIONS[key]}
+                        {key === "cod" && (
+                          <span className="ml-2 text-xs text-charcoal/50">
+                            Up to {php(limits.codCents)}
+                          </span>
+                        )}
                       </span>
                     </label>
                   ))}
@@ -1055,6 +1097,11 @@ function CheckoutContent() {
                   {canStartNewCheckout
                     ? " Start a new checkout to order the selection below."
                     : " Check the saved order's status before starting a new checkout."}
+                </p>
+              )}
+              {!showSavedOrder && (limitError || limitsError) && (
+                <p role="alert" className="mb-4 text-sm text-red-700">
+                  {limitError || limitsError}
                 </p>
               )}
               {!showSavedOrder && unavailableSelection && (
@@ -1216,6 +1263,8 @@ function CheckoutContent() {
                   type="submit"
                   form="checkout-form"
                   disabled={
+                    !limitsReady ||
+                    !!limitError ||
                     !settingsReady ||
                     !!settingsError ||
                     !restored ||

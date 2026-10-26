@@ -1,4 +1,5 @@
 // app/api/orders/route.ts
+import { purchaseViolation } from "@/lib/purchase-limits";
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
@@ -18,7 +19,7 @@ import {
   type ShippingOption,
   type PaymentOption,
 } from "@/lib/store-settings";
-const ALLOWED_PAYMENT_METHODS = ["cod", "gcash", "grabpay"];
+const ALLOWED_PAYMENT_METHODS = ["cod", "gcash", "grabpay", "card"];
 // Optional fields may be empty; required fields must be non-empty strings.
 function isValidText(
   value: unknown,
@@ -255,7 +256,7 @@ export async function POST(req: Request) {
     // Serialize order creation for this user. The request-key lookup below
     // provides deduplication; the row lock alone only serializes requests.
     const userResult = await client.query(
-      `SELECT email, is_suspended FROM users WHERE user_id = $1 FOR UPDATE`,
+      `SELECT email, is_suspended, COALESCE((to_jsonb(users)->>'business_approved')::boolean,false) AS business_approved FROM users WHERE user_id = $1 FOR UPDATE`,
       [userId],
     );
     if (userResult.rows.length === 0) {
@@ -460,6 +461,17 @@ export async function POST(req: Request) {
     const shippingCost =
       shippingFeeCents(config, shippingMethod, subtotalCents) / 100;
     const totalAmount = subtotalCents / 100 + shippingCost;
+    const violation = purchaseViolation(
+      cartResult.rows,
+      Math.round(totalAmount * 100),
+      method,
+      config.purchaseLimits,
+      userResult.rows[0].business_approved === true,
+    );
+    if (violation) {
+      await client.query("ROLLBACK");
+      return NextResponse.json({ error: violation }, { status: 409 });
+    }
     // Create the order
     const orderResult = await client.query(
       `INSERT INTO orders (user_id, address_id, shipping_cost, total_amount, order_status, payment_method, contact_phone, recipient_name, checkout_request_key, checkout_request_hash, shipping_method, shipping_label)

@@ -10,6 +10,7 @@ import {
   Mail,
   RotateCcw,
   ShoppingBag,
+  Building2,
   ArrowUpRight,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -305,8 +306,9 @@ function Activity({ compact }: { compact: boolean }) {
             ) : (
               <ul className="divide-y divide-charcoal/10">
                 {visibleItems.map((item) => {
-                  const Icon =
-                    item.href === "/admin/contact"
+                  const Icon = item.href.startsWith("/admin/customers/business")
+                    ? Building2
+                    : item.href === "/admin/contact"
                       ? Mail
                       : item.href === "/admin/returns"
                         ? RotateCcw

@@ -11,6 +11,7 @@ import {
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { isProductAvailable, type Product } from "./products";
+import { useBusiness } from "@/lib/business-context";
 import { useAuth } from "./auth-context";
 
 type CartItem = { product: Product; quantity: number };
@@ -65,6 +66,10 @@ function authHeaders(): Record<string, string> {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { approved, limits, ready: limitsReady } = useBusiness();
+  const perProductLimit = approved
+    ? limits.business.perProduct
+    : limits.standard.perProduct;
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -188,9 +193,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (!limitsReady) {
+      setStockError("Loading purchase limits. Please try again.");
+      return;
+    }
     const existing = items.find((i) => i.product.id === product.id);
     const currentQuantity = existing?.quantity || 0;
 
+    if (currentQuantity + quantity > perProductLimit) {
+      setStockError(
+        `Your account allows up to ${perProductLimit} units per product.`,
+      );
+      return;
+    }
     if (currentQuantity + quantity > product.stockQuantity) {
       setStockError(`Exceeds stock.`);
       return;
@@ -241,7 +256,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!Number.isSafeInteger(quantity) || quantity < 1) return;
 
     const item = items.find((i) => i.product.id === productId);
-    if (item && quantity > item.product.stockQuantity) {
+    if (
+      item &&
+      quantity > item.quantity &&
+      (!limitsReady || quantity > perProductLimit)
+    ) {
+      setStockError(
+        !limitsReady
+          ? "Loading purchase limits. Please try again."
+          : `Your account allows up to ${perProductLimit} units per product.`,
+      );
+      return;
+    }
+    if (
+      item &&
+      quantity > item.product.stockQuantity &&
+      quantity >= item.quantity
+    ) {
       setStockError("Exceeds stock.");
       return;
     }

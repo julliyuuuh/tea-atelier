@@ -28,6 +28,7 @@ type Order = {
   total_amount: string;
   paymongo_payment_id: string | null;
   paymongo_source_id: string | null;
+  paymongo_payment_intent_id?: string | null;
 };
 type Attempt = {
   attempt_id: string;
@@ -66,7 +67,7 @@ async function lockCase(client: PoolClient, id: string) {
   if (!found.rows[0]) throw new ReturnError("Request not found.", 404);
   const order = (
     await client.query<Order>(
-      "SELECT order_id,user_id,order_status,payment_status,payment_method,total_amount,paymongo_payment_id,paymongo_source_id FROM orders WHERE order_id=$1 FOR UPDATE",
+      "SELECT order_id,user_id,order_status,payment_status,payment_method,total_amount,paymongo_payment_id,paymongo_source_id,to_jsonb(orders)->>'paymongo_payment_intent_id' AS paymongo_payment_intent_id FROM orders WHERE order_id=$1 FOR UPDATE",
       [found.rows[0].order_id],
     )
   ).rows[0];
@@ -329,7 +330,9 @@ export async function linkPayment(
       throw new ReturnError("A payment is already linked to this order.", 409);
     if (
       order.total_amount !== found.total_amount ||
-      order.paymongo_source_id !== found.paymongo_source_id
+      order.paymongo_source_id !== found.paymongo_source_id ||
+      (order.paymongo_payment_intent_id ?? null) !==
+        (found.paymongo_payment_intent_id ?? null)
     )
       throw new ReturnError(
         "Order payment changed. Refresh and try again.",

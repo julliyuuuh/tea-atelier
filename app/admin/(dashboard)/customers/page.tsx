@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import {
   AdminPage,
@@ -220,6 +221,12 @@ export default function AdminCustomersPage() {
         </div>
       </div>
 
+      <Link
+        href="/admin/customers/business"
+        className="mb-4 inline-flex rounded-full border border-sage/30 px-4 py-2 text-sm text-sage hover:bg-sage/10"
+      >
+        Business requests
+      </Link>
       <ErrorBanner
         message={errorMessage}
         onRetry={() => loadCustomers(currentPage)}

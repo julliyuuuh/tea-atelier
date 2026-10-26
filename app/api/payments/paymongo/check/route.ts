@@ -1,3 +1,4 @@
+import { checkCardOrder, CardError } from "@/lib/paymongo-card";
 import { NextResponse } from "next/server";
 import { fetchPayment, finalizePayment } from "@/lib/paymongo-payment";
 import { pool } from "@/lib/db";
@@ -32,6 +33,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
 
+    if (order.payment_method === "card") {
+      const result = await checkCardOrder(order);
+      return NextResponse.json({
+        paymentStatus:
+          result.paymentStatus === "refunded" ? "paid" : result.paymentStatus,
+      });
+    }
     if (order.payment_status !== "paid" && order.paymongo_payment_id) {
       const payment = await fetchPayment(order.paymongo_payment_id);
       await finalizePayment(order, payment);
@@ -177,6 +185,11 @@ export async function POST(req: Request) {
       { status: 502 },
     );
   } catch (error) {
+    if (error instanceof CardError)
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
     console.error("Payment status check failed:", error);
 
     return NextResponse.json(

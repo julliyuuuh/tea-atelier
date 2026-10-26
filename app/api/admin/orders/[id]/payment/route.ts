@@ -37,7 +37,7 @@ export async function POST(
     const order = result.rows[0];
     if (!order)
       return Response.json({ error: "Order not found." }, { status: 404 });
-    if (!["gcash", "grabpay"].includes(order.payment_method)) {
+    if (!["gcash", "grabpay", "card"].includes(order.payment_method)) {
       return Response.json(
         { error: "This order does not use PayMongo." },
         { status: 409 },

@@ -1,4 +1,5 @@
 "use client";
+import PurchaseLimitsFields from "@/components/admin/PurchaseLimitsFields";
 import ConfirmDialog from "@/components/account/ConfirmDialog";
 import ValidatedForm from "@/components/ValidatedForm";
 import { useCallback, useEffect, useState } from "react";
@@ -368,6 +369,12 @@ export default function StoreSettingsPage() {
                   ))}
                 </div>
               </section>
+              <PurchaseLimitsFields
+                value={draft.purchaseLimits}
+                onChange={(purchaseLimits) =>
+                  setDraft({ ...draft, purchaseLimits })
+                }
+              />
               <section className="rounded-2xl border border-charcoal/10 bg-white p-5 sm:p-7">
                 <h2 className="flex items-center gap-3 font-display text-2xl">
                   <DollarSign size={20} className="text-sage" />

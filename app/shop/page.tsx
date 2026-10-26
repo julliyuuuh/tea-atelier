@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import BusinessPurchaseBanner from "@/components/BusinessPurchaseBanner";
 import DisplayPrice from "@/components/DisplayPrice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -302,6 +303,7 @@ export default function ShopPage() {
           Find your next everyday ritual, from loose-leaf tea to matcha
           essentials.
         </p>
+        <BusinessPurchaseBanner />
       </div>
 
       {/* Search Bar */}

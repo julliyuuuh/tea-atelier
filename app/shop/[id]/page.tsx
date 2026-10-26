@@ -1,4 +1,5 @@
 "use client";
+import { useBusiness } from "@/lib/business-context";
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -22,6 +23,10 @@ export default function ProductDetailsPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const { approved, limits, ready: limitsReady } = useBusiness();
+  const perProductLimit = approved
+    ? limits.business.perProduct
+    : limits.standard.perProduct;
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
@@ -126,6 +131,10 @@ export default function ProductDetailsPage() {
             )}
           </span>
 
+          <p className="mb-3 text-xs text-charcoal/50">
+            Your account allows up to {perProductLimit} units of this product,
+            subject to stock.
+          </p>
           <div className="flex items-center gap-4">
             <div className="flex items-center rounded-full border border-charcoal/20 overflow-hidden">
               <button
@@ -141,10 +150,13 @@ export default function ProductDetailsPage() {
               <button
                 disabled={
                   !isProductAvailable(product) ||
-                  quantity >= product.stockQuantity
+                  !limitsReady ||
+                  quantity >= Math.min(product.stockQuantity, perProductLimit)
                 }
                 onClick={() =>
-                  setQuantity((q) => Math.min(product.stockQuantity, q + 1))
+                  setQuantity((q) =>
+                    Math.min(product.stockQuantity, perProductLimit, q + 1),
+                  )
                 }
                 className="px-4 py-3 font-body text-charcoal hover:bg-sand transition-colors"
               >
@@ -154,7 +166,10 @@ export default function ProductDetailsPage() {
             <button
               onClick={() => addToCart(product, quantity)}
               disabled={
-                !isProductAvailable(product) || quantity > product.stockQuantity
+                !limitsReady ||
+                !isProductAvailable(product) ||
+                quantity > product.stockQuantity ||
+                quantity > perProductLimit
               }
               className="flex-1 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/15 disabled:text-charcoal/40"
             >
