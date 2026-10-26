@@ -59,7 +59,7 @@ export default function AdminAttention() {
     },
   ];
   return (
-    <section className="rounded-2xl border border-charcoal/10 bg-white p-5 sm:p-6">
+    <section className="flex min-w-0 flex-col rounded-2xl border border-charcoal/10 bg-white p-5 sm:p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="font-body text-sm font-medium text-charcoal">
@@ -83,12 +83,12 @@ export default function AdminAttention() {
           {error}
         </p>
       )}
-      <div className="grid grid-cols-2 gap-3 2xl:grid-cols-4">
+      <div className="grid flex-1 auto-rows-fr grid-cols-2 gap-3">
         {tasks.map(({ key, label, href, icon: Icon }) => (
           <Link
             key={key}
             href={href}
-            className="group rounded-xl border border-charcoal/10 p-3 transition-colors hover:border-sage/40 hover:bg-sage/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage/40"
+            className="group flex min-w-0 flex-col justify-between rounded-xl border border-charcoal/10 p-3 transition-colors hover:border-sage/40 hover:bg-sage/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage/40"
           >
             <div className="mb-3 flex items-center justify-between">
               <Icon size={17} className="text-sage" />
