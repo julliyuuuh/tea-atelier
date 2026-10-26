@@ -959,16 +959,26 @@ function CheckoutContent() {
                     </p>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block font-body text-sm text-charcoal/70 mb-2">
+                    <label
+                      htmlFor="checkout-phone"
+                      className="block font-body text-sm text-charcoal/70 mb-2"
+                    >
                       Phone Number
                     </label>
                     <input
+                      id="checkout-phone"
                       type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
                       required
+                      minLength={11}
                       maxLength={11}
+                      pattern="09[0-9]{9}"
+                      title="Enter an 11-digit Philippine mobile number starting with 09."
+                      placeholder="09123456789"
                       className="w-full rounded-xl border border-charcoal/20 bg-cream px-4 py-3 font-body text-sm text-charcoal outline-none focus:border-sage"
                     />
                   </div>

@@ -182,6 +182,17 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+  // Older clients can omit this optional API field, but any supplied phone
+  // must match the checkout form's Philippine mobile number format.
+  if (
+    phone !== undefined &&
+    (typeof phone !== "string" || !/^09[0-9]{9}$/.test(phone))
+  ) {
+    return NextResponse.json(
+      { error: "Enter an 11-digit Philippine mobile number starting with 09." },
+      { status: 400 },
+    );
+  }
   if (
     (savedAddressId === null &&
       (!isValidText(street, 200, true) ||
