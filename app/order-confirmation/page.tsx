@@ -62,22 +62,6 @@ function OrderConfirmationContent() {
     const poll = async () => {
       if (controller.signal.aborted) return;
       try {
-        // Periodically reconcile a captured payment whose webhook finalization
-        // was interrupted. This endpoint never initiates another charge.
-        if (attempts > 0 && attempts % 5 === 0) {
-          await fetch("/api/payments/paymongo/check", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify({ orderId: Number(orderId) }),
-            signal: AbortSignal.any([
-              controller.signal,
-              AbortSignal.timeout(15000),
-            ]),
-          }).catch(() => undefined);
-        }
         const response = await fetch(`/api/orders/${orderId}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           cache: "no-store",
@@ -104,6 +88,23 @@ function OrderConfirmationContent() {
           !["pending", "processing"].includes(data.paymentStatus)
         )
           return;
+        // Reconcile immediately on a provider return, then periodically while
+        // pending. An authorized wallet source can use the shared capture claim;
+        // a capture already in progress can only be reconciled, never repeated.
+        if (attempts % 5 === 0) {
+          await fetch("/api/payments/paymongo/check", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ orderId: Number(orderId) }),
+            signal: AbortSignal.any([
+              controller.signal,
+              AbortSignal.timeout(20000),
+            ]),
+          }).catch(() => undefined);
+        }
       } catch {
         if (controller.signal.aborted) return;
         if (!receivedOrder && attempts >= 3) {

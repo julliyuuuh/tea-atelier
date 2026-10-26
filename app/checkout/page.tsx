@@ -67,6 +67,7 @@ function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnOrderId = searchParams.get("orderId");
+  const returnPayment = searchParams.get("payment");
   const accountEmail = user?.email;
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [shippingMethod, setShippingMethod] =
@@ -293,6 +294,25 @@ function CheckoutContent() {
       const status = await checkOrder(saved);
       if (cancelled) return;
 
+      // Existing card sessions may still return to checkout. Confirmation
+      // continues verification if pending; a return URL never proves payment.
+      if (
+        hasUrlOrder &&
+        (status === "paid" ||
+          (saved.paymentMethod === "card" && returnPayment === "success"))
+      ) {
+        if (status === "paid") {
+          try {
+            sessionStorage.removeItem(CHECKOUT_ORDER_STORAGE);
+            sessionStorage.removeItem(CHECKOUT_ATTEMPT_STORAGE);
+          } catch {
+            /* Confirmation remains available without browser storage. */
+          }
+        }
+        router.replace(`/order-confirmation?orderId=${saved.orderId}`);
+        return;
+      }
+
       // A paid order no longer owns checkout. Leave the current cart intact.
       if (status === "paid" || status === "cancelled") {
         try {
@@ -330,7 +350,14 @@ function CheckoutContent() {
       ++statusSequenceRef.current;
       window.removeEventListener("pageshow", handlePageShow);
     };
-  }, [accountEmail, returnOrderId, rememberOrder, checkOrder]);
+  }, [
+    accountEmail,
+    returnOrderId,
+    returnPayment,
+    rememberOrder,
+    checkOrder,
+    router,
+  ]);
 
   const startPayment = async (order: SavedOrder, token: string) => {
     if (!order.paymentMethod)

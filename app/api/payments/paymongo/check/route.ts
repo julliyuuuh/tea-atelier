@@ -1,3 +1,4 @@
+import { captureAuthorizedWallet } from "@/lib/paymongo-wallet";
 import { checkCardOrder, CardError } from "@/lib/paymongo-card";
 import { NextResponse } from "next/server";
 import { fetchPayment, finalizePayment } from "@/lib/paymongo-payment";
@@ -51,10 +52,12 @@ export async function POST(req: Request) {
     if (
       order.payment_status === "paid" ||
       order.payment_status === "processing" ||
+      order.payment_status === "refunded" ||
       order.payment_status === "cancelled"
     ) {
       return NextResponse.json({
-        paymentStatus: order.payment_status,
+        paymentStatus:
+          order.payment_status === "refunded" ? "paid" : order.payment_status,
       });
     }
 
@@ -170,9 +173,10 @@ export async function POST(req: Request) {
     }
 
     if (sourceStatus === "chargeable") {
-      // This is a UI status only. The webhook must claim the database
-      // processing status itself before creating the payment.
-      return NextResponse.json({ paymentStatus: "processing" });
+      // A verified authorized source may arrive before its webhook. The same
+      // atomic claim is used by both paths, so polling cannot capture twice.
+      const paymentStatus = await captureAuthorizedWallet(latest, source.data);
+      return NextResponse.json({ paymentStatus });
     }
 
     if (sourceStatus === "pending") {

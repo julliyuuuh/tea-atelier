@@ -325,7 +325,7 @@ export async function startCardOrder(orderId: number, userId: number) {
       ],
       payment_method_types: ["card"],
       success_url: new URL(
-        `/checkout?orderId=${orderId}&payment=success`,
+        `/order-confirmation?orderId=${orderId}`,
         site,
       ).toString(),
       cancel_url: new URL(
