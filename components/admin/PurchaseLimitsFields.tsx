@@ -1,24 +1,80 @@
 "use client";
-import Link from "next/link";
-import { useBusiness } from "@/lib/business-context";
-import { php } from "@/lib/purchase-limits";
-export default function BusinessPurchaseBanner() {
-  const { approved, application, limits, ready } = useBusiness();
+import type { PurchaseLimits } from "@/lib/purchase-limits";
+export default function PurchaseLimitsFields({
+  value,
+  onChange,
+}: {
+  value: PurchaseLimits;
+  onChange: (value: PurchaseLimits) => void;
+}) {
+  const input =
+    "mt-1 block w-full rounded-xl border border-charcoal/20 bg-transparent px-3 py-2 text-sm";
   return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sage/20 bg-sage/5 px-4 py-3 text-xs">
-      <p className="text-charcoal/60">
-        {approved && ready
-          ? `Business purchasing enabled · Up to ${limits.business.perProduct} per product and ${limits.business.totalUnits} units per order (${php(limits.business.totalCents)}).`
-          : application?.status === "PENDING"
-            ? "Your bulk purchasing application is under review."
-            : "Buying in bulk? Apply for higher purchase limits."}
+    <section className="rounded-2xl border border-charcoal/10 bg-white p-5 sm:p-7">
+      <h2 className="font-display text-2xl">Purchase limits</h2>
+      <p className="mt-2 text-sm text-charcoal/50">
+        Limits apply to selected items and include delivery fees. Approved
+        businesses retain customer access.
       </p>
-      <Link
-        href="/account?tab=settings&section=business"
-        className="text-sage underline"
-      >
-        {approved ? "View your limits" : "Business purchasing"}
-      </Link>
-    </div>
+      <div className="mt-4 grid gap-5 sm:grid-cols-2">
+        {(["standard", "business"] as const).map((tier) => (
+          <div key={tier} className="rounded-xl border border-charcoal/10 p-4">
+            <h3 className="mb-3 text-sm font-medium">
+              {tier === "standard"
+                ? "Standard customers"
+                : "Approved businesses"}
+            </h3>
+            {[
+              ["perProduct", "Units per product", 1],
+              ["totalUnits", "Units per checkout", 1],
+              ["totalCents", "Maximum order total (PHP)", 100],
+            ].map(([key, label, scale]) => (
+              <label key={key} className="mt-3 block text-xs text-charcoal/60">
+                {label}
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  required
+                  value={
+                    value[tier][key as keyof typeof value.standard] /
+                      Number(scale) || ""
+                  }
+                  onChange={(e) =>
+                    onChange({
+                      ...value,
+                      [tier]: {
+                        ...value[tier],
+                        [key]: Math.round(
+                          Number(e.target.value) * Number(scale),
+                        ),
+                      },
+                    })
+                  }
+                  className={input}
+                />
+              </label>
+            ))}
+          </div>
+        ))}
+      </div>
+      <label className="mt-4 block max-w-sm text-xs text-charcoal/60">
+        COD maximum, including delivery (PHP)
+        <input
+          type="number"
+          min="1"
+          step="1"
+          required
+          value={value.codCents / 100 || ""}
+          onChange={(e) =>
+            onChange({
+              ...value,
+              codCents: Math.round(Number(e.target.value) * 100),
+            })
+          }
+          className={input}
+        />
+      </label>
+    </section>
   );
 }

@@ -96,13 +96,13 @@ export async function POST(req: Request) {
       ? androidReturnUrls(orderId)
       : mobileUrl
         ? {
-          success: `${mobileUrl}/order-confirmation/${orderId}?payment=returned`,
-          failed: `${mobileUrl}/order-confirmation/${orderId}?payment=failed`,
-        }
+            success: `${mobileUrl}/order-confirmation/${orderId}?payment=returned`,
+            failed: `${mobileUrl}/order-confirmation/${orderId}?payment=failed`,
+          }
         : {
-          success: `${appUrl}/order-confirmation?orderId=${orderId}`,
-          failed: `${appUrl}/checkout?payment=failed&orderId=${orderId}`,
-        };
+            success: `${appUrl}/order-confirmation?orderId=${orderId}`,
+            failed: `${appUrl}/checkout?payment=failed&orderId=${orderId}`,
+          };
 
   const headers = {
     "Content-Type": "application/json",

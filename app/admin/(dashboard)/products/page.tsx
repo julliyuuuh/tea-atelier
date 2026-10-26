@@ -37,9 +37,7 @@ type Stats = {
 // selection. Both resolve down to the same single-id DELETE endpoint below,
 // bulk delete is N sequential calls to the existing endpoint, not a new one.
 type ConfirmTarget =
-  | { type: "single"; id: string }
-  | { type: "bulk"; ids: string[] }
-  | null;
+  { type: "single"; id: string } | { type: "bulk"; ids: string[] } | null;
 
 // Shared column layout so the header, skeleton rows, and data rows always line up.
 // First column is the row-select checkbox.

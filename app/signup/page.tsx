@@ -13,11 +13,7 @@ import {
 } from "@/lib/password-policy";
 
 type SignupField =
-  | "firstName"
-  | "lastName"
-  | "email"
-  | "password"
-  | "confirmPassword";
+  "firstName" | "lastName" | "email" | "password" | "confirmPassword";
 type FieldErrors = Partial<Record<SignupField, string>>;
 
 export default function SignupPage() {
