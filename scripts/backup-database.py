@@ -22,46 +22,70 @@ class BackupError(Exception):
 
 
 def connection(value, target=False):
+    label = "SUPABASE_BACKUP_TARGET_URL" if target else "RAILWAY_BACKUP_SOURCE_URL"
+
+    def invalid(message):
+        # Fixed messages only: never include the URI, password or parse exception.
+        raise BackupError(f"{label}: {message}")
+
+    if not isinstance(value, str) or not value.strip():
+        invalid("Secret is missing or empty. Add it under repository Actions secrets, not Variables.")
+    value = value.strip()
+    if any(c in value for c in "\r\n\x00"):
+        invalid("The URI contains a line break/control character. Paste a single-line connection URI.")
+    if not value.startswith(("postgresql://", "postgres://")):
+        invalid("Paste only the PostgreSQL URI beginning postgresql:// or postgres://, without psql, quotes or a variable-name prefix.")
+    if "YOUR-PASSWORD" in unquote(value).upper():
+        invalid("Replace [YOUR-PASSWORD] with the saved database password, without brackets; URL-encode special characters in the password.")
     try:
         url = urlsplit(value)
-        port = url.port or 5432
-        params = parse_qs(url.query, strict_parsing=True)
+        if url.fragment:
+            invalid("The URI contains a fragment (#). A # inside the password must be URL-encoded as %23.")
+        port = url.port if url.port is not None else 5432
+        host = url.hostname
+        username = unquote(url.username or "")
         password = unquote(url.password or "")
-        if (url.scheme not in ("postgres", "postgresql") or not url.hostname
-                or not url.username or not password or url.fragment
-                or not url.path.strip("/") or not 1 <= port <= 65535
-                or any(c in value for c in "\r\n\x00")
-                or password in ("[YOUR-PASSWORD]", "YOUR-PASSWORD")):
-            raise ValueError()
-        if any(len(values) != 1 for values in params.values()) or set(params) - {"sslmode", "sslrootcert", "connect_timeout"}:
-            raise ValueError()
-        sslmode = params.get("sslmode", ["require"])[0]
-        if sslmode not in ("require", "verify-ca", "verify-full"):
-            raise ValueError()
-        if "sslrootcert" in params and params["sslrootcert"] != ["system"]:
-            raise ValueError()
-        if target:
-            host = url.hostname.lower()
-            if not (host.endswith(".supabase.com") or host.endswith(".supabase.co")):
-                raise BackupError("Target must be the Supabase database connection, not Railway.")
-            if port == 6543:
-                raise BackupError("Use Supabase's Session pooler on port 5432, not the transaction pooler.")
-        elif url.hostname.endswith(".railway.internal"):
-            raise BackupError("The source must use Railway's current public TCP proxy URL.")
-        result = {
-            "PGHOST": url.hostname, "PGPORT": str(port),
-            "PGUSER": unquote(url.username), "PGPASSWORD": password,
-            "PGDATABASE": unquote(url.path[1:]), "PGSSLMODE": sslmode,
-            "PGCONNECT_TIMEOUT": "15", "PGAPPNAME": "tea-atelier-backup",
-            "PGOPTIONS": "-c timezone=UTC -c statement_timeout=120000 -c lock_timeout=10000 -c standard_conforming_strings=on",
-        }
-        if "sslrootcert" in params:
-            result["PGSSLROOTCERT"] = "system"
-        if not target:
-            result["PGOPTIONS"] += " -c default_transaction_read_only=on"
-        return result
     except (ValueError, TypeError):
-        raise BackupError("Check both GitHub database secrets: use a PostgreSQL URI, URL-encode password characters, and require TLS.") from None
+        invalid("The URI cannot be parsed. Recopy it from Connect/Variables and URL-encode password characters; do not paste a shell command.")
+    if not host or not username or not password:
+        invalid("The URI needs a username, password and hostname. Recopy the database connection URI and insert the URL-encoded password.")
+    if not url.path.strip("/"):
+        invalid("The URI is missing its database name after the hostname/port.")
+    if not 1 <= port <= 65535:
+        invalid("The URI's database port is invalid; recopy the current connection URI.")
+    try:
+        params = parse_qs(url.query, strict_parsing=True, keep_blank_values=True)
+    except ValueError:
+        invalid("The URI query string is malformed. Encode any ? or & inside the password, rather than changing the database connection options.")
+    if any(len(values) != 1 for values in params.values()):
+        invalid("The URI contains repeated connection options. Use a single value for each option.")
+    if set(params) - {"sslmode", "sslrootcert", "connect_timeout"}:
+        invalid("The URI contains unsupported query options. Use the PostgreSQL connection URI, not a framework/client-library example.")
+    sslmode = params.get("sslmode", ["require"])[0]
+    if sslmode not in ("require", "verify-ca", "verify-full"):
+        invalid("Use sslmode=require (or verify-ca/verify-full). This transfer will not use disable/prefer/allow TLS modes.")
+    if "sslrootcert" in params and params["sslrootcert"] != ["system"]:
+        invalid("Only sslrootcert=system is supported; a file path from your PC is not available on the runner.")
+    if target:
+        host = host.lower()
+        if not (host.endswith(".supabase.com") or host.endswith(".supabase.co")):
+            invalid("Target must be the Supabase database connection, not Railway.")
+        if port == 6543:
+            invalid("Use Supabase's Session pooler on port 5432, not the transaction pooler.")
+    elif host.endswith(".railway.internal"):
+        invalid("Use Railway's current public TCP proxy URL; GitHub-hosted runners cannot reach its private hostname.")
+    result = {
+        "PGHOST": host, "PGPORT": str(port),
+        "PGUSER": username, "PGPASSWORD": password,
+        "PGDATABASE": unquote(url.path[1:]), "PGSSLMODE": sslmode,
+        "PGCONNECT_TIMEOUT": "15", "PGAPPNAME": "tea-atelier-backup",
+        "PGOPTIONS": "-c timezone=UTC -c statement_timeout=120000 -c lock_timeout=10000 -c standard_conforming_strings=on",
+    }
+    if "sslrootcert" in params:
+        result["PGSSLROOTCERT"] = "system"
+    if not target:
+        result["PGOPTIONS"] += " -c default_transaction_read_only=on"
+    return result
 
 
 def ident(value):
@@ -274,8 +298,15 @@ def transfer(source, target, directory):
 def main():
     os.umask(0o077)
     try:
-        source = connection(os.environ.get("RAILWAY_BACKUP_SOURCE_URL", ""))
-        target = connection(os.environ.get("SUPABASE_BACKUP_TARGET_URL", ""), target=True)
+        connections, errors = [], []
+        for name, is_target in (("RAILWAY_BACKUP_SOURCE_URL", False), ("SUPABASE_BACKUP_TARGET_URL", True)):
+            try:
+                connections.append(connection(os.environ.get(name, ""), target=is_target))
+            except BackupError as error:
+                errors.append(str(error))
+        if errors:
+            raise BackupError("\n".join(errors))
+        source, target = connections
         with tempfile.TemporaryDirectory(prefix="tea-backup-") as temporary:
             transfer(source, target, Path(temporary))
     except (BackupError, OSError, ValueError, json.JSONDecodeError):

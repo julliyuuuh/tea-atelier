@@ -1,4 +1,6 @@
 """Pure safeguard tests: no credentials, network or database required."""
+import contextlib
+import io
 import importlib.util
 from pathlib import Path
 import tempfile
@@ -11,6 +13,45 @@ SPEC.loader.exec_module(backup)
 
 
 class BackupSafeguards(unittest.TestCase):
+    def test_missing_secrets_identify_the_exact_repository_secret(self):
+        for target, name in ((False, "RAILWAY_BACKUP_SOURCE_URL"), (True, "SUPABASE_BACKUP_TARGET_URL")):
+            with self.subTest(target=target), self.assertRaises(backup.BackupError) as caught:
+                backup.connection("", target=target)
+            self.assertIn(name, str(caught.exception))
+            self.assertIn("missing or empty", str(caught.exception))
+
+    def test_outer_copy_whitespace_is_harmless(self):
+        env = backup.connection("  postgresql://u:fixture@db.example.test/db\n")
+        self.assertEqual(env["PGDATABASE"], "db")
+
+    def test_password_fragment_error_is_specific_without_printing_password(self):
+        with self.assertRaises(backup.BackupError) as caught:
+            backup.connection("postgresql://u:private#value@db.example.test/db")
+        self.assertIn("fragment", str(caught.exception))
+        self.assertNotIn("private", str(caught.exception))
+        self.assertNotIn("postgresql://u:", str(caught.exception))
+
+    def test_placeholder_explains_password_replacement(self):
+        with self.assertRaises(backup.BackupError) as caught:
+            backup.connection("postgresql://postgres.project:[YOUR-PASSWORD]@aws.pooler.supabase.com/postgres", target=True)
+        self.assertIn("SUPABASE_BACKUP_TARGET_URL", str(caught.exception))
+        self.assertIn("Replace [YOUR-PASSWORD]", str(caught.exception))
+
+    def test_shell_command_and_variable_prefixes_have_a_clear_error(self):
+        for value in ("psql 'postgresql://u:fixture@db.example.test/db'", "DATABASE_URL=postgresql://u:fixture@db.example.test/db"):
+            with self.subTest(value=value), self.assertRaises(backup.BackupError) as caught:
+                backup.connection(value)
+            self.assertIn("Paste only", str(caught.exception))
+            self.assertNotIn("fixture", str(caught.exception))
+
+    def test_main_reports_both_invalid_secrets_without_connecting(self):
+        output = io.StringIO()
+        with patch.dict(backup.os.environ, {"RAILWAY_BACKUP_SOURCE_URL": "", "SUPABASE_BACKUP_TARGET_URL": ""}), patch.object(backup, "transfer") as transfer, contextlib.redirect_stderr(output):
+            self.assertEqual(backup.main(), 1)
+            transfer.assert_not_called()
+        self.assertIn("RAILWAY_BACKUP_SOURCE_URL", output.getvalue())
+        self.assertIn("SUPABASE_BACKUP_TARGET_URL", output.getvalue())
+
     def test_encoded_password_and_pooler_user_are_preserved(self):
         env = backup.connection("postgresql://postgres.project:p%40ss%3Aword@aws-0-example.pooler.supabase.com:5432/postgres", target=True)
         self.assertEqual(env["PGPASSWORD"], "p@ss:word")
