@@ -1,10 +1,10 @@
-name: Initial Railway to Supabase backup
+name: Initial Railway to Neon backup
 
 on:
   workflow_dispatch:
     inputs:
       confirm_fresh_target:
-        description: "Restore into the empty Supabase backup project (Railway stays primary)"
+        description: "Restore into the empty Neon backup project (Railway stays primary)"
         required: true
         type: boolean
         default: false
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: railway-supabase-backup
+  group: railway-neon-backup
   cancel-in-progress: false
 
 jobs:
@@ -31,5 +31,5 @@ jobs:
       - name: Copy and verify the application database
         env:
           RAILWAY_BACKUP_SOURCE_URL: ${{ secrets.RAILWAY_BACKUP_SOURCE_URL }}
-          SUPABASE_BACKUP_TARGET_URL: ${{ secrets.SUPABASE_BACKUP_TARGET_URL }}
+          NEON_BACKUP_TARGET_URL: ${{ secrets.NEON_BACKUP_TARGET_URL }}
         run: python3 scripts/backup-database.py

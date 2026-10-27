@@ -14,7 +14,7 @@ SPEC.loader.exec_module(backup)
 
 class BackupSafeguards(unittest.TestCase):
     def test_missing_secrets_identify_the_exact_repository_secret(self):
-        for target, name in ((False, "RAILWAY_BACKUP_SOURCE_URL"), (True, "SUPABASE_BACKUP_TARGET_URL")):
+        for target, name in ((False, "RAILWAY_BACKUP_SOURCE_URL"), (True, "NEON_BACKUP_TARGET_URL")):
             with self.subTest(target=target), self.assertRaises(backup.BackupError) as caught:
                 backup.connection("", target=target)
             self.assertIn(name, str(caught.exception))
@@ -33,8 +33,8 @@ class BackupSafeguards(unittest.TestCase):
 
     def test_placeholder_explains_password_replacement(self):
         with self.assertRaises(backup.BackupError) as caught:
-            backup.connection("postgresql://postgres.project:[YOUR-PASSWORD]@aws.pooler.supabase.com/postgres", target=True)
-        self.assertIn("SUPABASE_BACKUP_TARGET_URL", str(caught.exception))
+            backup.connection("postgresql://neondb_owner:[YOUR-PASSWORD]@ep-example.ap-southeast-1.aws.neon.tech/postgres", target=True)
+        self.assertIn("NEON_BACKUP_TARGET_URL", str(caught.exception))
         self.assertIn("Replace [YOUR-PASSWORD]", str(caught.exception))
 
     def test_shell_command_and_variable_prefixes_have_a_clear_error(self):
@@ -46,18 +46,31 @@ class BackupSafeguards(unittest.TestCase):
 
     def test_main_reports_both_invalid_secrets_without_connecting(self):
         output = io.StringIO()
-        with patch.dict(backup.os.environ, {"RAILWAY_BACKUP_SOURCE_URL": "", "SUPABASE_BACKUP_TARGET_URL": ""}), patch.object(backup, "transfer") as transfer, contextlib.redirect_stderr(output):
+        with patch.dict(backup.os.environ, {"RAILWAY_BACKUP_SOURCE_URL": "", "NEON_BACKUP_TARGET_URL": ""}), patch.object(backup, "transfer") as transfer, contextlib.redirect_stderr(output):
             self.assertEqual(backup.main(), 1)
             transfer.assert_not_called()
         self.assertIn("RAILWAY_BACKUP_SOURCE_URL", output.getvalue())
-        self.assertIn("SUPABASE_BACKUP_TARGET_URL", output.getvalue())
+        self.assertIn("NEON_BACKUP_TARGET_URL", output.getvalue())
 
-    def test_encoded_password_and_pooler_user_are_preserved(self):
-        env = backup.connection("postgresql://postgres.project:p%40ss%3Aword@aws-0-example.pooler.supabase.com:5432/postgres", target=True)
+    def test_encoded_password_and_neon_owner_are_preserved(self):
+        env = backup.connection("postgresql://neondb_owner:p%40ss%3Aword@ep-example.ap-southeast-1.aws.neon.tech:5432/postgres", target=True)
         self.assertEqual(env["PGPASSWORD"], "p@ss:word")
-        self.assertEqual(env["PGUSER"], "postgres.project")
+        self.assertEqual(env["PGUSER"], "neondb_owner")
         self.assertEqual(env["PGSSLMODE"], "require")
         self.assertNotIn("default_transaction_read_only", env["PGOPTIONS"])
+
+    def test_neon_channel_binding_is_preserved_with_required_tls(self):
+        env = backup.connection("postgresql://neondb_owner:fixture@ep-example.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require", target=True)
+        self.assertEqual(env["PGCHANNELBINDING"], "require")
+        self.assertEqual(env["PGSSLMODE"], "require")
+
+    def test_invalid_channel_binding_is_refused(self):
+        with self.assertRaises(backup.BackupError):
+            backup.connection("postgresql://u:fixture@db.example.test/db?channel_binding=unknown")
+
+    def test_old_provider_is_refused_as_neon_target(self):
+        with self.assertRaises(backup.BackupError):
+            backup.connection("postgresql://postgres:fixture@aws.pooler.supabase.com/postgres", target=True)
 
     def test_source_connections_are_read_only(self):
         env = backup.connection("postgresql://postgres:fixture@fixture.proxy.rlwy.net:12345/railway")
@@ -68,8 +81,8 @@ class BackupSafeguards(unittest.TestCase):
             with self.subTest(query=query), self.assertRaises(backup.BackupError):
                 backup.connection("postgresql://u:fixture@db.example.test/db?" + query)
 
-    def test_target_must_be_supabase_and_not_transaction_pooler(self):
-        for uri in ("postgresql://u:fixture@fixture.proxy.rlwy.net/db", "postgresql://u:fixture@evil-supabase.com/db", "postgresql://u:fixture@aws.pooler.supabase.com:6543/postgres"):
+    def test_target_must_be_neon_and_not_a_pooler(self):
+        for uri in ("postgresql://u:fixture@fixture.proxy.rlwy.net/db", "postgresql://u:fixture@evil-neon.tech/db", "postgresql://u:fixture@ep-example-pooler.ap-southeast-1.aws.neon.tech:5432/neondb", "postgresql://u:fixture@ep-example.ap-southeast-1.aws.neon.tech:6543/neondb", "postgresql://u:fixture@ep-example.neon.tech.evil.test/neondb"):
             with self.subTest(uri=uri), self.assertRaises(backup.BackupError):
                 backup.connection(uri, target=True)
 
@@ -114,7 +127,8 @@ class BackupSafeguards(unittest.TestCase):
             tools.assert_not_called()
 
     def test_privacy_targets_only_application_schema(self):
-        self.assertIn("REVOKE ALL ON SCHEMA public FROM PUBLIC, anon, authenticated", backup.PRIVACY_SQL)
+        self.assertIn("REVOKE ALL ON SCHEMA public FROM PUBLIC;", backup.PRIVACY_SQL)
+        self.assertIn("rolname IN ('anon','anonymous','authenticated')", backup.PRIVACY_SQL)
         self.assertNotIn("SCHEMA auth", backup.PRIVACY_SQL)
         self.assertNotIn("SCHEMA storage", backup.PRIVACY_SQL)
         self.assertNotIn("DROP", backup.EMPTY_GUARD)

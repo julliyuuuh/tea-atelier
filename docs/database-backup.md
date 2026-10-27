@@ -1,78 +1,115 @@
-# Railway → Supabase: first verified backup
+# Railway → Neon: first verified backup
 
-Railway remains the live database. This manual Action creates a **point-in-time standby copy** in an empty Supabase project. It does not change `DATABASE_URL`, deploy the website, automatically fail over, schedule refreshes, or continuously synchronize databases.
+Railway stays primary on PostgreSQL 18.6. This manual GitHub Action copies the application into a separate **Neon PostgreSQL 18** project. It does not downgrade Railway, change the live `DATABASE_URL`, deploy the app, continuously synchronize data, schedule refreshes, or automatically fail over.
 
-## Files to push to main
+## Four files to replace and push together
 
 - `.github/workflows/database-backup.yml`
 - `scripts/backup-database.py`
 - `tests/test_database_backup.py`
 - `docs/database-backup.md`
 
-No application code, npm dependencies or application migrations change. Python and Docker are already available on the GitHub-hosted Ubuntu runner; nothing needs installing on your Windows PC.
+These replace the Supabase-specific backup setup. No application code, npm dependency, application SQL migration or checkout/payment flow changes. The Ubuntu GitHub runner already has Python and Docker; no PostgreSQL installation is needed on your Windows PC.
 
-## Before the first run
+## 1. Create the Neon backup project
 
-1. Supabase project is Healthy, with **Data API off** and automatic RLS left off. Use the dedicated backup project's **Session pooler URI**, usually port 5432. Keep its `auth`, `storage` and other managed schemas intact.
-2. Railway PostgreSQL's temporary **public TCP proxy** is enabled. Use the current public URL; recreating a proxy can change its hostname/port.
-3. Under repository Settings → Secrets and variables → Actions, set:
-   - `RAILWAY_BACKUP_SOURCE_URL`: current Railway public PostgreSQL URL.
-   - `SUPABASE_BACKUP_TARGET_URL`: Supabase Session pooler PostgreSQL URI, with the real URL-encoded database password substituted.
-4. The script requires TLS. Plain URIs default to `sslmode=require`; explicitly insecure URI modes are rejected. If the endpoint does not support TLS, review the endpoint configuration rather than disabling TLS.
-5. The Supabase target's `public` schema must be empty of application objects. This initial-copy Action deliberately refuses to overwrite populated databases. Source PostgreSQL must be version 14–18 and the target must be the same or newer major version. Public-schema extensions or external/foreign-table dependencies require a separate compatibility review.
+1. Sign in at https://neon.com and create a project named **Tea Atelier Backup**.
+2. Select **PostgreSQL 18** explicitly. Keep Railway on its existing version. A matching major version is required; a different 18.x maintenance release is acceptable. Choose a nearby region, such as **AWS Singapore**.
+3. Use an empty PostgreSQL database. Do not load example tables or enable Neon Auth/Data API for this database; the app will continue using its existing custom authentication and server-side `pg` access.
+4. The Free plan may fit a small standby, subject to the allowance displayed in your console. Check Railway's database size first:
 
-Keep the live deployment's `DATABASE_URL` unchanged.
+   ```sql
+   SELECT pg_size_pretty(pg_database_size(current_database())) AS database_size;
+   ```
 
-## Run it
+   Leave headroom for indexes, growth and provider accounting differences. Neon's documentation currently lists 1 GB/project and 100 CU-hours/project/month for Free; the console's applicable plan limits take precedence. Free compute sleeps after inactivity and wakes on a new connection; it is not an always-running dedicated standby.
 
-1. Push the four files to **main**.
-2. Open GitHub → repository → **Actions**.
-3. Select **Initial Railway to Supabase backup**.
-4. Click **Run workflow**, select **main**, and check the confirmation for restoring into the empty backup project.
-5. Run it and wait for a green result. If the checkbox is left off or another branch is selected, the job is skipped and nothing transfers.
-6. The final log line must say: **Backup verified and committed. Railway remains primary. No dump artifact was uploaded.** A script-unit-test success alone does not mean a database transfer happened.
-7. Open Supabase Table Editor and check the `public` tables, including users, products, orders, order_items, returns/refund tables, notifications, business_applications, CMS, store_settings and audit tables that exist in your actual Railway database. The dump reads the live database schema; it does not reconstruct it from the repository's old base schema or migration files.
-8. Record the successful run link/time so you know the backup's age. Customer actions after its snapshot are not included.
+5. In the Neon SQL Editor confirm:
 
-**The source stays live and read-only for this job.** A consistent exported PostgreSQL snapshot is used for both the dump and source row counts, so concurrent orders do not make verification compare different moments. Read-only dump transactions can briefly hold schema locks; the script uses lock/query timeouts rather than blocking schema changes indefinitely.
+   ```sql
+   SELECT current_setting('server_version') AS version;
+   ```
 
-## What is copied and verified
+   It must return **18.x**, rather than 17. This version check is performed again by the workflow before dumping anything.
 
-The application's `public` schema: tables/data, keys, indexes, serial/identity sequences and positions, views, functions, triggers, enum/domain types and policies. Existing application custom-auth records are copied as database data; there is no migration to Supabase Auth.
+6. Open **Connect**, select the backup database and its owner role (normally `neondb_owner`), and switch **Connection pooling off**. Copy the complete **direct PostgreSQL URI**, including the actual password. Paste only the URI, without a leading `psql`, wrapping quotes or a variable-name assignment. Do not send it through chat/screenshots.
 
-The target restore is one transaction, with an empty-target check repeated inside it. Object identities and exact row counts for every regular/partitioned source table must match before commit. A failed verification rolls the restore back. Ownership and ACLs are not copied from Railway's superuser roles into Supabase's managed role system. The existing Supabase `public` schema itself is retained. Anonymous/authenticated Data API roles lose access to the imported application schema; future default grants there are restricted too. Keep Data API disabled.
+A direct endpoint's hostname does not have the `-pooler` suffix. The usual port is 5432. Direct connections are required for snapshot/session state and pg_dump/pg_restore. The script accepts Neon's standard `sslmode=require&channel_binding=require` options and passes them to libpq; TLS is required.
 
-All temporary dump/SQL files stay on the ephemeral runner and are removed on completion. No database dumps are committed, uploaded as GitHub artifacts, or printed in logs. Provider errors/COPY contexts are intentionally withheld because they can contain credentials or customer data. Only fixed diagnostic messages and non-sensitive verification progress are printed.
+## 2. Configure repository secrets
 
-Not covered: PostgreSQL global roles, provider settings, other non-public source schemas, Cloudinary image binaries, local uploaded files, application environment variables or third-party payment state. Existing Cloudinary URLs remain in the copied data; Cloudinary continues hosting those images.
+Under GitHub repository Settings → Secrets and variables → Actions → **Secrets**, retain/add:
 
-## After verification
+| Secret                      | Value                                             |
+| --------------------------- | ------------------------------------------------- |
+| `RAILWAY_BACKUP_SOURCE_URL` | Railway's current public PostgreSQL TCP proxy URL |
+| `NEON_BACKUP_TARGET_URL`    | The complete direct Neon backup database URI      |
 
-Do not run this initial-copy Action against the now-populated Supabase project expecting a refresh: it will refuse. Updating an existing standby needs a separate reviewed refresh procedure. There is no schedule in this workflow.
+`NEON_BACKUP_TARGET_URL` is a **new secret**. The old `SUPABASE_BACKUP_TARGET_URL` is no longer read by the workflow or script; it may remain unused or be removed. Supabase itself remains unused.
 
-We can disable Railway's temporary public proxy **only after confirming the live app/backend uses Railway's private connection**. A Cloudflare-hosted server that connects directly to Railway may itself require that public endpoint; disabling it in that case would disconnect the live app. Removing a proxy invalidates its old public URL, so a future backup run needs a current reachable source address.
+Railway's public proxy must be reachable from the GitHub runner. Removing/recreating it can change the public address; update this source secret if necessary. Keep the live app's `DATABASE_URL` unchanged.
 
-A successful restore is not a full website failover rehearsal. Before a live testing date, verify the backup project is running (free projects may pause), and test a separate deployment pointed at Supabase with emails and payment/webhook writes isolated from production.
+Passwords containing URI-special characters must be URL-encoded. If the URI copied from Neon already contains its password correctly, keep that complete URI. The script's validation messages name the affected secret without exposing its value.
 
-## If Railway later goes down
+## 3. Run the first backup
 
-1. Put checkout/payment creation into maintenance before changing database connections. A backup can be older than PayMongo's payment records.
-2. Establish the snapshot time and identify orders, captures, refunds and edits made afterward. Do not blindly retry charges or refunds that may already exist at PayMongo.
-3. Use a separately tested Supabase connection URI with TLS for the app's `DATABASE_URL`, preserving the other app secrets, and redeploy all backends that use this database. Native clients using that backend need its API to remain reachable as well.
-4. Reconcile the payment/order gap before reopening payments; replay only verified provider events or use the existing verified payment-recovery path where appropriate. Browser success URLs are not payment evidence.
-5. Keep the old Railway database intact. Once recovered, reconcile all writes made on the standby before deciding where to run long-term; switching back without merging them would lose those changes.
+1. Push the four updated files together to **main**.
+2. Open GitHub → Actions → **Initial Railway to Neon backup**.
+3. Click **Run workflow**, select **main**, and tick the confirmation for restoring into the fresh backup database.
+4. Start a **new run**. Re-running an old failed run uses its old commit, which may still contain the Supabase workflow.
+5. Wait for all steps to succeed. The log must end with:
 
-This is a manual recovery plan, not automatic zero-downtime failover or zero-data-loss replication.
+   > Backup verified and committed. Railway remains primary. No dump artifact was uploaded.
+
+   Unit-test success or a skipped job alone does not mean a database was copied. Leaving the checkbox off or selecting a different branch skips the job.
+
+6. Inspect Neon's public tables, including users, products, orders, order_items, business_applications, notifications, returns/refunds, CMS, store settings and audit tables that exist in the live source. The dump copies the live schema, not the repository's original base-schema file.
+7. Record the successful run link and snapshot/run time. Transactions after the snapshot are not included.
+
+## What the job does
+
+- Reads Railway through a read-only connection and exports a single repeatable-read snapshot.
+- Uses that same snapshot for source row counts and pg_dump. Concurrent orders do not cause the dump and counts to describe different moments.
+- Uses PostgreSQL client tools matching the source major version. It reports both server major versions before checking compatibility.
+- Refuses a populated target public schema, an older target version, a wrong-provider target or a pooled Neon URI. Public-schema extensions/foreign tables require a separate compatibility review.
+- Restores into one target transaction, preserving the existing public schema and avoiding ownership/ACL imports from Railway's superuser environment. Managed/global roles are not copied.
+- Compares table row counts and object identities (tables, sequences, indexes, views, functions, triggers, enum/domain types and policies) before commit. Failed SQL or verification rolls the restore back.
+- Restricts PUBLIC access to the imported schema, objects and future defaults. If optional anonymous/authenticated API roles exist, their access/default grants are removed too; those roles are not required for the job. The database-owner role retains its normal owner privileges.
+- Removes temporary files afterward. It does not upload dump artifacts, commit customer data or print connection strings, passwords or provider COPY error contexts.
+
+The application data includes custom-auth user records and existing image URLs. It does not copy Cloudinary image binaries, local uploaded files, provider settings, application environment secrets, PostgreSQL global roles, non-public source schemas or PayMongo's external transaction state. Keep the other application services/configuration in place.
+
+## Source access and refreshes
+
+This is an **initial snapshot copy**, not ongoing synchronization. The initial-copy workflow refuses to overwrite the now-populated Neon target. Refreshing an existing standby needs a separately reviewed procedure; there is no scheduled job here. Recheck its freshness before a live testing date.
+
+Railway public access can be disabled only after verifying that every live backend uses its private connection. A Cloudflare-hosted backend connecting directly to Railway may need its public endpoint; closing that endpoint would disconnect that backend. We will check the live connection arrangement before turning it off. Future GitHub-hosted backup jobs need a reachable source address again.
+
+## Recovery if Railway goes down later
+
+1. Pause checkout/payment creation before switching databases, and establish the backup's age. Orders, captures, refunds and edits after its snapshot may be missing.
+2. First test a separate deployment on Neon with emails/payment/webhook writes isolated from the live environment. A successful restore alone is not a full failover rehearsal. Verify the project is running and within its plan quotas.
+3. During an actual recovery, use the separately tested Neon TLS URI for the app/backend `DATABASE_URL`, preserve other app secrets, and redeploy every backend using the affected Railway database. Native clients still need their backend API available.
+4. Reconcile the PayMongo/order gap before reopening payments. Do not blindly repeat a charge/refund or trust a browser success URL. Use verified provider events or the existing captured-payment recovery action where appropriate.
+5. Keep Railway's original data intact. If writes happen on Neon during recovery, reconcile them before any later switch back; changing the connection back alone would lose those writes.
+
+There is no automatic zero-downtime failover or zero-data-loss replication in this setup.
 
 ## Troubleshooting
 
-- **Skipped job:** select main and tick the confirmation checkbox.
-- **Authentication failed:** check the secret values, pooler username/project suffix and URL-encoded password. Do not put credentials into screenshots or logs.
-- **Connection/hostname failure:** check current public proxy access, source URL, Supabase Healthy status and Session pooler selection. A stale Railway public URL does not repair itself.
-- **Target not empty:** safe refusal. Do not delete backup tables or use `--clean` just to bypass it. Review whether a prior run already committed.
-- **Version/extension/permission issue:** leave Railway untouched and review the reported compatibility prerequisite.
-- **Verification or restore error:** the target transaction rolls back on an SQL error. If a job was interrupted around commit, inspect the target before rerunning; a completed copy is protected by the nonempty-target refusal.
+- **Missing Neon secret:** add `NEON_BACKUP_TARGET_URL` under Actions repository Secrets, not Variables. The old Supabase secret is not a substitute.
+- **Pooled target refused:** switch Connection pooling off in Neon's Connect dialog and recopy the direct URI.
+- **Version mismatch:** choose PostgreSQL 18 for Neon. Railway stays unchanged.
+- **Authentication/connection error:** check the actual password, database/owner role, URL encoding, current Railway public proxy, and Neon project/compute status. Secrets and COPY details are deliberately omitted from logs.
+- **Target not empty:** this protects a prior successful backup or existing database. Do not remove the guard or delete tables just to make the job pass.
+- **Compatibility/extension/permission error:** leave Railway untouched and review the prerequisite.
+- **Interrupted restore:** SQL errors roll back the restore transaction. A lost connection near commit may leave the outcome uncertain; inspect Neon before retrying. A committed copy is protected by the nonempty-target guard.
 
-## Local verification performed
+## Verification and provider references
 
-The script's URI parsing, TLS and target guards, quoting, credential-free command arguments and log redaction have unit tests. A separate isolated PostgreSQL 17 round trip was tested with actual pg_dump/pg_restore, including keys, sequences, trigger behavior and restricted API-role access. A deliberate verification mismatch rolled the entire restore back, and a populated target was refused without changing its data. A concurrent-write test also confirmed that an order created during the dump stayed outside the exported snapshot and its matching verification counts. Those checks use fixtures; the real Railway/Supabase transfer is performed only when you run the Action with your repository secrets.
+The safeguards have credential-free unit tests. The Neon adaptation was also tested against isolated PostgreSQL 18 instances with an ordinary, non-superuser target database owner, including no API roles, optional API-role restrictions, actual dump/restore, sequences and triggers, overwrite refusal, rollback on a deliberately mismatched row count, and writes concurrent with the exported source snapshot. No real Railway/Neon transfer is performed from this development workspace.
+
+- https://neon.com/docs/postgresql/postgres-version-support
+- https://neon.com/docs/connect/connection-pooling
+- https://neon.com/docs/introduction/plans
+- https://neon.com/docs/introduction/scale-to-zero
