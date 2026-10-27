@@ -1,0 +1,35 @@
+name: Initial Railway to Supabase backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_fresh_target:
+        description: "Restore into the empty Supabase backup project (Railway stays primary)"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: railway-supabase-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: ${{ inputs.confirm_fresh_target && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the reviewed main branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Check the backup script safeguards
+        run: python3 -m unittest discover -s tests -p 'test_database_backup.py'
+      - name: Copy and verify the application database
+        env:
+          RAILWAY_BACKUP_SOURCE_URL: ${{ secrets.RAILWAY_BACKUP_SOURCE_URL }}
+          SUPABASE_BACKUP_TARGET_URL: ${{ secrets.SUPABASE_BACKUP_TARGET_URL }}
+        run: python3 scripts/backup-database.py
