@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { safeAuthRedirect } from "@/lib/auth-redirect";
+import { readAuthResponse } from "@/lib/auth-response";
 
 function LoginForm() {
   const { login, user, isLoading: authLoading } = useAuth();
@@ -81,8 +82,7 @@ function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ credential: response.credential }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Google sign-in failed.");
+      const data = await readAuthResponse(res, "Unable to sign in with Google. Please try again shortly.");
 
       login(data.token, data.user);
       window.location.href = redirectTo || "/";
@@ -139,8 +139,7 @@ function LoginForm() {
           totpCode: needsTotp ? totpCode : undefined,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login failed.");
+      const data = await readAuthResponse(res, "Unable to sign in. Please try again shortly.");
 
       if (data.requiresTotp) {
         setNeedsTotp(true);

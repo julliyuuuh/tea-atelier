@@ -7,6 +7,7 @@ import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
+import { readAuthResponse } from "@/lib/auth-response";
 
 export default function AdminLoginPage() {
   const { login, user, isLoading: authLoading } = useAuth();
@@ -35,8 +36,7 @@ export default function AdminLoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login failed.");
+      const data = await readAuthResponse(res, "Unable to sign in. Please try again shortly.");
 
       if (data.user.role !== "admin" && data.user.role !== "super_admin") {
         setErrorMessage("This login is for administrators only.");
