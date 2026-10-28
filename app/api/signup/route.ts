@@ -4,11 +4,15 @@ import { hashPassword, signToken } from "@/lib/auth-server";
 import { sendVerificationEmail } from "@/lib/email";
 import crypto from "crypto";
 import { getPasswordError } from "@/lib/password-policy";
+import { limitAuthRequest, limitAuthAccount, normalizeAuthEmail } from "@/lib/auth-rate-limit";
 
 export async function POST(req: Request) {
+  const requestLimit = await limitAuthRequest(req, "signup");
+  if (requestLimit) return requestLimit;
   try {
-    const { firstName, lastName, email, phoneNumber, password } =
-      await req.json();
+    const body = await req.json().catch(() => null);
+    const { firstName, lastName, phoneNumber, password } = body || {};
+    const email = normalizeAuthEmail(body?.email);
 
     if (!firstName || !lastName || !email || !password) {
       return NextResponse.json(
@@ -21,6 +25,9 @@ export async function POST(req: Request) {
     if (passwordError) {
       return NextResponse.json({ error: passwordError }, { status: 400 });
     }
+
+    const accountLimit = await limitAuthAccount("signup", email!);
+    if (accountLimit) return accountLimit;
 
     const existing = await pool.query(
       "SELECT user_id FROM users WHERE email = $1",

@@ -3,11 +3,15 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { pool } from "@/lib/db";
 import { getPasswordError } from "@/lib/password-policy";
+import { limitAuthRequest, limitAuthAccount } from "@/lib/auth-rate-limit";
 
 export async function POST(req: Request) {
-  const { token, newPassword } = await req.json();
+  const requestLimit = await limitAuthRequest(req, "reset");
+  if (requestLimit) return requestLimit;
+  const body = await req.json().catch(() => null);
+  const { token, newPassword } = body || {};
 
-  if (typeof token !== "string" || !token) {
+  if (typeof token !== "string" || !token || token.length > 256) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
@@ -15,6 +19,9 @@ export async function POST(req: Request) {
   if (passwordError) {
     return NextResponse.json({ error: passwordError }, { status: 400 });
   }
+
+  const accountLimit = await limitAuthAccount("reset", token);
+  if (accountLimit) return accountLimit;
 
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 

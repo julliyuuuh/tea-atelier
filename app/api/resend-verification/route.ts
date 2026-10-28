@@ -3,10 +3,16 @@ import { pool } from "@/lib/db";
 import { requireUser } from "@/lib/require-user";
 import { sendVerificationEmail } from "@/lib/email";
 import crypto from "crypto";
+import { limitAuthRequest, limitAuthAccount } from "@/lib/auth-rate-limit";
 
 export async function POST(req: Request) {
+  const requestLimit = await limitAuthRequest(req, "verification");
+  if (requestLimit) return requestLimit;
   const { userId, error } = await requireUser(req);
   if (error) return error;
+
+  const accountLimit = await limitAuthAccount("verification", String(userId));
+  if (accountLimit) return accountLimit;
 
   const userResult = await pool.query(
     "SELECT email, is_verified FROM users WHERE user_id = $1",

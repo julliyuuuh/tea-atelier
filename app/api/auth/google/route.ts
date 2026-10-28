@@ -3,14 +3,18 @@ import { OAuth2Client } from "google-auth-library";
 import { pool } from "@/lib/db";
 import { signToken } from "@/lib/auth-server";
 import { sendWelcomeEmail } from "@/lib/email";
+import { limitAuthRequest, limitAuthAccount } from "@/lib/auth-rate-limit";
 
 const client = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
 export async function POST(req: Request) {
+  const requestLimit = await limitAuthRequest(req, "google");
+  if (requestLimit) return requestLimit;
   try {
-    const { credential } = await req.json();
+    const body = await req.json().catch(() => null);
+    const credential = body?.credential;
 
-    if (!credential) {
+    if (typeof credential !== "string" || !credential || credential.length > 16384) {
       return NextResponse.json(
         { error: "Missing Google credential." },
         { status: 400 },
@@ -44,6 +48,9 @@ export async function POST(req: Request) {
         { status: 401 },
       );
     }
+
+    const accountLimit = await limitAuthAccount("google", email);
+    if (accountLimit) return accountLimit;
 
     const existing = await pool.query("SELECT * FROM users WHERE email = $1", [
       email,
