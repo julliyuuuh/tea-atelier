@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { motion, type Transition } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { SkeletonBlock } from "@/components/Skeleton";
+import { isOptimizableImage } from "@/lib/image-src";
 
 const EASE_OUT: Transition["ease"] = "easeOut";
 
@@ -19,7 +21,8 @@ interface HeroData {
 }
 
 export default function Hero(): React.JSX.Element | null {
-  const [hero, setHero] = useState<HeroData | null>(null);
+  // undefined while loading, null if the hero could not be loaded
+  const [hero, setHero] = useState<HeroData | null | undefined>(undefined);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -33,6 +36,7 @@ export default function Hero(): React.JSX.Element | null {
       } catch (error) {
         if (error instanceof Error && error.name !== "AbortError") {
           console.error(error.message);
+          setHero(null);
         }
       }
     }
@@ -41,6 +45,7 @@ export default function Hero(): React.JSX.Element | null {
     return () => controller.abort();
   }, []);
 
+  if (hero === undefined) return <HeroSkeleton />;
   if (!hero) return null;
 
   return (
@@ -74,15 +79,23 @@ export default function Hero(): React.JSX.Element | null {
             {hero.subheading}
           </p>
 
-          <Link
-            href={hero.cta_link}
-            className="group inline-flex items-center gap-2 w-fit font-body text-sm tracking-wide uppercase text-charcoal border-b border-charcoal pb-1"
-          >
-            {hero.cta_text}
-            <span className="transition-transform duration-300 group-hover:translate-x-1">
-              →
-            </span>
-          </Link>
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-5">
+            <Link
+              href={hero.cta_link}
+              className="group inline-flex items-center gap-3 bg-charcoal text-cream font-body text-xs tracking-[0.15em] uppercase px-7 py-4 hover:bg-sage transition-colors"
+            >
+              {hero.cta_text}
+              <span className="transition-transform duration-300 group-hover:translate-x-1">
+                →
+              </span>
+            </Link>
+            <Link
+              href="/about"
+              className="font-body text-xs tracking-[0.15em] uppercase text-charcoal/70 border-b border-charcoal/30 pb-1 hover:text-sage hover:border-sage transition-colors"
+            >
+              Our Story
+            </Link>
+          </div>
         </motion.div>
 
         <motion.div
@@ -91,14 +104,15 @@ export default function Hero(): React.JSX.Element | null {
           transition={{ duration: 1, ease: EASE_OUT }}
           className="md:col-span-7 relative py-10 md:py-16 md:pl-10"
         >
-          <div className="relative aspect-[4/3] md:aspect-auto md:h-[540px] overflow-hidden bg-sand">
+          <div className="group relative aspect-[4/3] md:aspect-auto md:h-[540px] overflow-hidden bg-sand">
             <Image
               src={hero.image_url}
-              alt="Loose tea leaves and ceramic ware, Tea Atelier"
+              alt={hero.image_caption || "Loose tea leaves and ceramic ware"}
               fill
-              priority
+              fetchPriority="high"
+              unoptimized={!isOptimizableImage(hero.image_url)}
               sizes="(min-width: 768px) 60vw, 100vw"
-              className="object-cover"
+              className="object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-[1.03]"
             />
 
             <span className="absolute top-4 right-4 font-body text-xs tracking-widest text-cream/90">
@@ -112,6 +126,34 @@ export default function Hero(): React.JSX.Element | null {
         </motion.div>
       </div>
 
+      <div className="border-b border-charcoal/20" />
+    </section>
+  );
+}
+
+// Mirrors the hero's layout so the page doesn't jump when the content arrives.
+function HeroSkeleton() {
+  return (
+    <section
+      className="max-w-7xl mx-auto px-8 pt-10 md:pt-14"
+      aria-busy="true"
+      aria-label="Loading"
+    >
+      <div className="border-t border-b border-charcoal/20 py-3">
+        <SkeletonBlock className="h-3 w-24" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-12 md:divide-x md:divide-charcoal/20">
+        <div className="md:col-span-5 flex flex-col justify-center gap-6 py-16 md:py-24 md:pr-10">
+          <SkeletonBlock className="h-3 w-32" />
+          <SkeletonBlock className="h-12 w-full" />
+          <SkeletonBlock className="h-12 w-3/4" />
+          <SkeletonBlock className="h-16 w-full max-w-sm" />
+          <SkeletonBlock className="h-12 w-48" />
+        </div>
+        <div className="md:col-span-7 py-10 md:py-16 md:pl-10">
+          <SkeletonBlock className="aspect-[4/3] md:aspect-auto md:h-[540px] w-full rounded-none" />
+        </div>
+      </div>
       <div className="border-b border-charcoal/20" />
     </section>
   );

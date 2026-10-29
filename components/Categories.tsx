@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { RotateCw } from "lucide-react";
+import { SkeletonBlock } from "@/components/Skeleton";
+import { isOptimizableImage } from "@/lib/image-src";
 
 interface Category {
   id: number;
@@ -14,7 +17,8 @@ interface Category {
 }
 
 export default function Categories() {
-  const [categories, setCategories] = useState<Category[]>([]);
+  // null while loading
+  const [categories, setCategories] = useState<Category[] | null>(null);
   const [flippedIndex, setFlippedIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -32,6 +36,7 @@ export default function Categories() {
       } catch (error) {
         if (error instanceof Error && error.name !== "AbortError") {
           console.error(error.message);
+          setCategories([]);
         }
       }
     }
@@ -40,19 +45,32 @@ export default function Categories() {
     return () => controller.abort();
   }, []);
 
-  if (categories.length === 0) return null;
+  if (categories?.length === 0) return null;
 
   return (
     <section className="max-w-7xl mx-auto px-8 py-16 md:py-24">
       <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-4 block">
         Explore
       </span>
-      <h2 className="font-display text-4xl text-charcoal mb-10">
-        Shop by Category
-      </h2>
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
+        <h2 className="font-display text-4xl text-charcoal">
+          Shop by Category
+        </h2>
+        <p className="font-body text-sm text-charcoal/60">
+          Tap a card to learn more.
+        </p>
+      </div>
+
+      {categories === null && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <SkeletonBlock key={i} className="h-[420px] rounded-none" />
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {categories.map((cat, i) => {
+        {categories?.map((cat, i) => {
           const isFlipped = flippedIndex === i;
 
           return (
@@ -96,12 +114,19 @@ export default function Categories() {
                     alt={cat.name}
                     fill
                     sizes="(min-width: 768px) 33vw, 100vw"
-                    className="object-cover"
+                    unoptimized={!isOptimizableImage(cat.image)}
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-charcoal/10" />
-                  <span className="absolute top-4 left-4 bg-cream/90 px-3 py-1 font-body text-[10px] tracking-[0.15em] uppercase text-charcoal">
-                    {cat.name}
-                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-6">
+                    <span className="font-display text-3xl text-white drop-shadow-sm">
+                      {cat.name}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-cream/90 px-3 py-1.5 font-body text-[10px] tracking-[0.15em] uppercase text-charcoal transition-colors group-hover:bg-sage group-hover:text-white">
+                      <RotateCw aria-hidden="true" className="h-3 w-3" />
+                      Details
+                    </span>
+                  </div>
                 </div>
 
                 <div
