@@ -5,7 +5,7 @@ import { useState, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 import {
   getPasswordError,
@@ -19,6 +19,8 @@ function ResetPasswordForm() {
   const token = searchParams.get("token");
 
   const [newPassword, setNewPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -143,18 +145,31 @@ function ResetPasswordForm() {
                 >
                   New Password
                 </label>
-                <input
-                  id="reset-password-new-password"
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={PASSWORD_MIN_LENGTH}
-                  required
-                  autoFocus
-                  name="newPassword"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    id="reset-password-new-password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    minLength={PASSWORD_MIN_LENGTH}
+                    required
+                    autoFocus
+                    name="newPassword"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full rounded-xl border border-charcoal/20 bg-sand/20 pl-4 pr-12 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={
+                      showPassword ? "Hide passwords" : "Show passwords"
+                    }
+                    aria-pressed={showPassword}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-charcoal/70 hover:text-charcoal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <p className="font-body text-xs leading-relaxed text-charcoal/70">
@@ -168,17 +183,30 @@ function ResetPasswordForm() {
                 >
                   Confirm Password
                 </label>
-                <input
-                  id="reset-password-confirm-password"
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={PASSWORD_MIN_LENGTH}
-                  required
-                  name="confirmPassword"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-xl border border-charcoal/20 bg-sand/20 px-4 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    id="reset-password-confirm-password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    minLength={PASSWORD_MIN_LENGTH}
+                    required
+                    name="confirmPassword"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full rounded-xl border border-charcoal/20 bg-sand/20 pl-4 pr-12 py-3 font-body text-sm text-charcoal focus:outline-none focus:border-sage transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={
+                      showPassword ? "Hide passwords" : "Show passwords"
+                    }
+                    aria-pressed={showPassword}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-charcoal/70 hover:text-charcoal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <button
