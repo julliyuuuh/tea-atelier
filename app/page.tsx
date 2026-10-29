@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { MotionConfig } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import StorePromises from "@/components/StorePromises";
 import Categories from "@/components/Categories";
 import BestSellers from "@/components/BestSellers";
 import WhyChooseUs from "@/components/WhyChooseUs";
@@ -24,21 +26,26 @@ export default function Home() {
     }
   }, [isAdmin, isLoading]);
 
-  if (isLoading || isAdmin) {
+  // Visitors see the storefront right away; only a confirmed admin is held
+  // back while the redirect happens.
+  if (isAdmin) {
     return null;
   }
 
   return (
-    <main className="min-h-screen">
-      <Navbar />
-      <Hero />
-      <Categories />
-      <BestSellers />
-      <WhyChooseUs />
-      <PromoBanner />
-      <Reviews />
-      <Newsletter />
-      <Footer />
-    </main>
+    <MotionConfig reducedMotion="user">
+      <main className="min-h-screen">
+        <Navbar />
+        <Hero />
+        <StorePromises />
+        <Categories />
+        <BestSellers />
+        <WhyChooseUs />
+        <PromoBanner />
+        <Reviews />
+        <Newsletter />
+        <Footer />
+      </main>
+    </MotionConfig>
   );
 }

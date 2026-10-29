@@ -11,6 +11,10 @@ interface Review {
   sort_order: number;
 }
 
+// Ratings come from the CMS; keep them a whole number between 0 and 5.
+const stars = (rating: number) =>
+  Math.min(5, Math.max(0, Math.round(Number(rating) || 0)));
+
 export default function Reviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
 
@@ -49,7 +53,7 @@ export default function Reviews() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-14">
         {reviews.map((review, i) => (
-          <motion.div
+          <motion.figure
             key={review.id}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -57,19 +61,29 @@ export default function Reviews() {
             transition={{ duration: 0.6, delay: i * 0.15 }}
             className={i === 1 ? "md:mt-10" : ""}
           >
-            <p className="font-display italic text-2xl text-charcoal leading-snug mb-6">
-              “{review.quote}”
-            </p>
-            <div className="flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="block font-display text-6xl leading-none text-sage/40 -mb-4"
+            >
+              “
+            </span>
+            <blockquote className="font-display italic text-2xl text-charcoal leading-snug mb-6">
+              {review.quote}
+            </blockquote>
+            <figcaption className="flex items-center gap-3">
               <span className="font-body text-xs tracking-[0.15em] uppercase text-charcoal/70">
                 {review.name}
               </span>
-              <span className="font-body text-sm text-sage">
-                {"★".repeat(review.rating)}
-                {"☆".repeat(5 - review.rating)}
+              <span
+                role="img"
+                aria-label={`Rated ${stars(review.rating)} out of 5`}
+                className="font-body text-sm text-sage"
+              >
+                {"★".repeat(stars(review.rating))}
+                {"☆".repeat(5 - stars(review.rating))}
               </span>
-            </div>
-          </motion.div>
+            </figcaption>
+          </motion.figure>
         ))}
       </div>
     </section>

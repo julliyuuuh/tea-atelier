@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
+import Link from "next/link";
+import { isOptimizableImage } from "@/lib/image-src";
 
 interface PromoData {
   label: string;
@@ -40,12 +43,16 @@ export default function PromoBanner() {
 
   return (
     <section className="relative h-[480px] overflow-hidden">
-      <img
+      <Image
         src={promo.image_url}
-        alt="Seasonal Collection"
-        className="absolute inset-0 w-full h-full object-cover"
+        alt=""
+        fill
+        sizes="100vw"
+        unoptimized={!isOptimizableImage(promo.image_url)}
+        className="object-cover"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-charcoal/90 via-charcoal/30 to-transparent" />
+      {/* charcoal turns light in dark mode, so the scrim behind the text is black */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
       <div className="relative h-full max-w-7xl mx-auto px-8 flex flex-col justify-end pb-16">
         <motion.div
@@ -61,12 +68,15 @@ export default function PromoBanner() {
             {promo.heading}
           </h2>
 
-          <a
+          <Link
             href={promo.cta_link}
-            className="inline-block w-fit bg-cream text-charcoal font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-sage hover:text-cream transition-colors"
+            className="group inline-flex items-center gap-3 w-fit bg-cream text-charcoal font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-sage hover:text-cream transition-colors"
           >
             {promo.cta_text}
-          </a>
+            <span className="transition-transform duration-300 group-hover:translate-x-1">
+              →
+            </span>
+          </Link>
         </motion.div>
       </div>
     </section>
