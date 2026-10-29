@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import CollectionCard from "@/components/CollectionCard";
+import { COLLECTIONS } from "@/lib/collections";
 import { motion } from "framer-motion";
 import BusinessPurchaseBanner from "@/components/BusinessPurchaseBanner";
 import DisplayPrice from "@/components/DisplayPrice";
@@ -54,24 +56,6 @@ function matchesSubcategory(
 function inStock(product: Product) {
   return isProductAvailable(product);
 }
-
-const collectionsTeaser = [
-  {
-    name: "Morning Ritual",
-    image: "/images/morning-ritual.png",
-    href: "/collections",
-  },
-  {
-    name: "Matcha Moments",
-    image: "/images/matcha-moments.png",
-    href: "/collections",
-  },
-  {
-    name: "The Atelier Essentials",
-    image: "/images/tea-acc.png",
-    href: "/collections",
-  },
-];
 
 export default function ShopPage() {
   const { toggleWishlist, isWishlisted } = useWishlist();
@@ -265,32 +249,37 @@ export default function ShopPage() {
 
       {/* Collections Teaser, logged in only */}
       {user && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 border-b border-charcoal/10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-body text-sm font-medium text-charcoal">
-              Explore Collections
-            </h2>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 pb-10 border-b border-charcoal/10">
+          <div className="flex items-end justify-between gap-4 mb-5">
+            <div>
+              <span className="font-body text-[11px] tracking-[0.2em] uppercase text-sage mb-1 block">
+                Curated for you
+              </span>
+              <h2 className="font-display text-2xl text-charcoal">
+                Explore Collections
+              </h2>
+            </div>
             <Link
               href="/collections"
-              className="font-body text-xs uppercase tracking-wide text-sage hover:text-charcoal transition-colors"
+              className="group inline-flex items-center gap-2 font-body text-xs uppercase tracking-[0.15em] text-charcoal/70 border-b border-charcoal/30 pb-1 hover:text-sage hover:border-sage transition-colors"
             >
-              View All
+              View all
+              <span className="transition-transform duration-300 group-hover:translate-x-1">
+                →
+              </span>
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {collectionsTeaser.map((col) => (
-              <Link key={col.name} href={col.href} className="group block">
-                <div className="relative h-40 rounded-2xl overflow-hidden bg-sand mb-2">
-                  <img
-                    src={col.image}
-                    alt={col.name}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02] motion-reduce:transform-none motion-reduce:transition-none"
-                  />
-                </div>
-                <p className="font-body text-sm text-charcoal">{col.name}</p>
-              </Link>
+            {COLLECTIONS.map((collection) => (
+              <CollectionCard
+                key={collection.slug}
+                href={`/collections/${collection.slug}`}
+                name={collection.name}
+                tagline={collection.tagline}
+                image={collection.image}
+                imagePosition={collection.imagePosition}
+                className="h-60"
+              />
             ))}
           </div>
         </div>
