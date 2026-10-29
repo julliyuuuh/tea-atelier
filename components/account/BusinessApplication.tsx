@@ -65,14 +65,14 @@ export default function BusinessApplication() {
           Refresh status
         </button>
       </div>
-      <p className="my-3 text-sm text-charcoal/60">
+      <p className="my-3 text-sm text-charcoal/70">
         {approved
           ? "Business purchasing enabled"
           : application?.status === "PENDING"
             ? "Your application is under review."
             : "Buying in bulk? Apply for higher purchase limits."}
       </p>
-      <p className="text-xs text-charcoal/50">
+      <p className="text-xs text-charcoal/70">
         {tier.perProduct} per product · {tier.totalUnits} units per checkout ·
         Up to {php(tier.totalCents)} including delivery. COD up to{" "}
         {php(limits.codCents)}.
@@ -87,7 +87,7 @@ export default function BusinessApplication() {
       )}
       {application?.admin_message && (
         <div className="mt-4 whitespace-pre-wrap break-words rounded-xl border border-sage/20 p-3 text-sm">
-          <p className="mb-1 text-xs text-charcoal/50">
+          <p className="mb-1 text-xs text-charcoal/70">
             {application.status} · Admin response
           </p>
           {application.admin_message}
@@ -116,7 +116,7 @@ export default function BusinessApplication() {
                 ["contact_details", "Business contact details", 300],
                 ["registration_number", "Registration / reference number", 100],
               ].map(([name, label, max]) => (
-                <label key={String(name)} className="text-xs text-charcoal/60">
+                <label key={String(name)} className="text-xs text-charcoal/70">
                   {label}
                   <input
                     name={String(name)}
@@ -131,7 +131,7 @@ export default function BusinessApplication() {
                   />
                 </label>
               ))}
-              <label className="text-xs text-charcoal/60 sm:col-span-2">
+              <label className="text-xs text-charcoal/70 sm:col-span-2">
                 Expected quantities and purchasing plans
                 <textarea
                   name="purchase_plan"

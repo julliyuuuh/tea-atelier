@@ -1,8 +1,8 @@
 "use client";
 import { useBusiness } from "@/lib/business-context";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useParams } from "next/navigation";
 import ProductGallery from "@/components/ProductGallery";
 import DisplayPrice from "@/components/DisplayPrice";
@@ -11,9 +11,9 @@ import Footer from "@/components/Footer";
 import ProductReviews from "@/components/reviews/ProductReviews";
 import StorePromises from "@/components/StorePromises";
 import { useCart } from "@/lib/cart-context";
-import { isProductAvailable, type Product } from "@/lib/products";
+import { isProductAvailable, stockStatus, type Product } from "@/lib/products";
 import Link from "next/link";
-import { Heart } from "lucide-react";
+import { Heart, ShoppingBag } from "lucide-react";
 import { useStoreSettings } from "@/lib/store-settings-context";
 import { SHIPPING_OPTIONS, type ShippingOption } from "@/lib/store-settings";
 import { useWishlist } from "@/lib/wishlist-context";
@@ -31,6 +31,32 @@ export default function ProductDetailsPage() {
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
+  // On phones, keep "Add to cart" within reach once the main button scrolls away.
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+
+  useEffect(() => {
+    const el = actionsRef.current;
+    if (!el) return;
+    // A scroll check rather than IntersectionObserver: a fast flick can jump
+    // straight past the row without it ever reporting as visible.
+    let frame = 0;
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() =>
+        setShowStickyBar(el.getBoundingClientRect().bottom < 0),
+      );
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+    // isLoading too: the actions row only exists once the loading view is gone.
+  }, [product, isLoading]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -59,7 +85,7 @@ export default function ProductDetailsPage() {
   if (isLoading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="font-body text-charcoal/60">Loading...</p>
+        <p className="font-body text-charcoal/70">Loading...</p>
       </main>
     );
   }
@@ -67,7 +93,7 @@ export default function ProductDetailsPage() {
   if (errorMessage || !product) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="font-body text-charcoal/60">
+        <p className="font-body text-charcoal/70">
           {errorMessage || "Product not found."}
         </p>
       </main>
@@ -79,7 +105,7 @@ export default function ProductDetailsPage() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-8 pt-8">
-        <span className="font-body text-xs text-charcoal/50">
+        <span className="font-body text-xs text-charcoal/70">
           <Link href="/shop" className="hover:text-charcoal transition-colors">
             Shop
           </Link>
@@ -123,32 +149,41 @@ export default function ProductDetailsPage() {
           </p>
 
           <span className="font-body text-xs uppercase tracking-wide mb-8">
-            {!isProductAvailable(product) ? (
-              <span className="text-charcoal/40">Out of Stock</span>
-            ) : product.stockQuantity <= 10 ? (
-              <span className="text-amber-600">Low Stock</span>
-            ) : (
-              <span className="text-sage">In Stock</span>
-            )}
+            <span
+              className={
+                {
+                  out: "text-charcoal/70",
+                  low: "text-amber-800",
+                  in: "text-sage",
+                }[stockStatus(product).tone]
+              }
+            >
+              {stockStatus(product).label}
+            </span>
           </span>
 
-          <p className="mb-3 text-xs text-charcoal/50">
+          <p className="mb-3 text-xs text-charcoal/70">
             Your account allows up to {perProductLimit} units of this product,
             subject to stock.
           </p>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center rounded-full border border-charcoal/20 overflow-hidden">
+          <div ref={actionsRef} className="flex items-center gap-3 sm:gap-4">
+            <div className="flex shrink-0 items-center rounded-full border border-charcoal/20 overflow-hidden">
               <button
+                aria-label="Decrease quantity"
                 disabled={quantity <= 1 || !isProductAvailable(product)}
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 className="px-4 py-3 font-body text-charcoal hover:bg-sand transition-colors"
               >
                 −
               </button>
-              <span className="px-4 font-body text-sm text-charcoal">
+              <span
+                aria-live="polite"
+                className="px-4 font-body text-sm text-charcoal"
+              >
                 {quantity}
               </span>
               <button
+                aria-label="Increase quantity"
                 disabled={
                   !isProductAvailable(product) ||
                   !limitsReady ||
@@ -172,21 +207,27 @@ export default function ProductDetailsPage() {
                 quantity > product.stockQuantity ||
                 quantity > perProductLimit
               }
-              className="flex-1 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/15 disabled:text-charcoal/40"
+              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-charcoal text-cream font-body text-sm py-4 hover:bg-sage transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/15 disabled:text-charcoal/40"
             >
-              {isProductAvailable(product) ? "Add to Cart" : "Out of Stock"}
+              <ShoppingBag size={16} aria-hidden="true" />
+              {isProductAvailable(product) ? "Add to cart" : "Out of stock"}
             </button>
             <button
               onClick={() => toggleWishlist(product)}
               className="w-14 h-14 rounded-full border border-charcoal/20 flex items-center justify-center hover:border-red-400 transition-colors shrink-0"
-              aria-label="Toggle wishlist"
+              aria-label={
+                isWishlisted(product.id)
+                  ? "Remove from wishlist"
+                  : "Save to wishlist"
+              }
+              aria-pressed={isWishlisted(product.id)}
             >
               <Heart
                 size={18}
                 className={
                   isWishlisted(product.id)
                     ? "fill-red-500 text-red-500"
-                    : "text-charcoal/60"
+                    : "text-charcoal/70"
                 }
               />
             </button>
@@ -232,6 +273,43 @@ export default function ProductDetailsPage() {
         </div>
       </div>
 
+      <AnimatePresence>
+        {showStickyBar && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 400, damping: 36 }}
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-charcoal/10 bg-cream/95 px-4 py-3 backdrop-blur md:hidden"
+          >
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-display text-base text-charcoal">
+                  {product.name}
+                </p>
+                <p className="font-body text-sm text-charcoal/70">
+                  <DisplayPrice pesos={Number(product.price) * quantity} />
+                  {quantity > 1 && ` · ${quantity} items`}
+                </p>
+              </div>
+              <button
+                onClick={() => addToCart(product, quantity)}
+                disabled={
+                  !limitsReady ||
+                  !isProductAvailable(product) ||
+                  quantity > product.stockQuantity ||
+                  quantity > perProductLimit
+                }
+                className="flex shrink-0 items-center gap-2 rounded-full bg-charcoal px-6 py-3.5 font-body text-sm text-cream hover:bg-sage transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/15 disabled:text-charcoal/70"
+              >
+                <ShoppingBag size={16} aria-hidden="true" />
+                {isProductAvailable(product) ? "Add to cart" : "Out of stock"}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Footer />
     </main>
   );
@@ -251,12 +329,12 @@ export default function ProductDetailsPage() {
           className="w-full flex items-center justify-between py-5 text-left"
         >
           <span className="font-body text-sm text-charcoal">{title}</span>
-          <span className="text-charcoal/40 text-lg leading-none">
+          <span className="text-charcoal/70 text-lg leading-none">
             {open ? "−" : "+"}
           </span>
         </button>
         {open && (
-          <p className="font-body text-sm text-charcoal/60 leading-relaxed pb-5">
+          <p className="font-body text-sm text-charcoal/70 leading-relaxed pb-5">
             {children}
           </p>
         )}

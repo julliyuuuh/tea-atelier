@@ -100,7 +100,7 @@ function ResetPasswordForm() {
           <h1 className="font-display text-3xl text-charcoal text-center mb-2">
             Reset Password
           </h1>
-          <p className="font-body text-sm text-charcoal/60 text-center mb-8">
+          <p className="font-body text-sm text-charcoal/70 text-center mb-8">
             Choose a new password for your account
           </p>
 
@@ -137,10 +137,14 @@ function ResetPasswordForm() {
               }}
             >
               <div>
-                <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+                <label
+                  htmlFor="reset-password-new-password"
+                  className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-2"
+                >
                   New Password
                 </label>
                 <input
+                  id="reset-password-new-password"
                   type="password"
                   autoComplete="new-password"
                   minLength={PASSWORD_MIN_LENGTH}
@@ -153,15 +157,19 @@ function ResetPasswordForm() {
                 />
               </div>
 
-              <p className="font-body text-xs leading-relaxed text-charcoal/60">
+              <p className="font-body text-xs leading-relaxed text-charcoal/70">
                 {PASSWORD_HINT}
               </p>
 
               <div>
-                <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+                <label
+                  htmlFor="reset-password-confirm-password"
+                  className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-2"
+                >
                   Confirm Password
                 </label>
                 <input
+                  id="reset-password-confirm-password"
                   type="password"
                   autoComplete="new-password"
                   minLength={PASSWORD_MIN_LENGTH}
@@ -176,7 +184,7 @@ function ResetPasswordForm() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:opacity-50"
+                className="w-full rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-sage transition-colors disabled:opacity-50"
               >
                 {isLoading ? "Updating..." : "Reset Password"}
               </button>

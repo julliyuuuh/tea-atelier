@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const collection = getCollection((await params).slug);
   if (!collection) return {};
   return {
-    title: `${collection.name} | Tea Atelier`,
+    title: collection.name,
     description: collection.tagline,
     openGraph: { images: [collection.image] },
   };

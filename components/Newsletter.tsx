@@ -31,7 +31,7 @@ export default function Newsletter() {
         </div>
 
         {isLoading ? (
-          <p role="status" className="font-body text-sm text-charcoal/60">
+          <p role="status" className="font-body text-sm text-charcoal/70">
             Loading email preferences...
           </p>
         ) : user?.role === "customer" ? (
@@ -54,7 +54,7 @@ export default function Newsletter() {
                 Sign in
               </Link>
             </div>
-            <p className="mt-4 font-body text-xs leading-relaxed text-charcoal/55">
+            <p className="mt-4 font-body text-xs leading-relaxed text-charcoal/70">
               Newsletter sign-up lives in your account settings, so you stay in
               control of what we send.
             </p>

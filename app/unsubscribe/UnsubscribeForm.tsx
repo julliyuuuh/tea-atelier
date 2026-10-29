@@ -34,7 +34,7 @@ export default function UnsubscribeForm({ token }: { token: string }) {
           type="button"
           onClick={() => void unsubscribe()}
           disabled={busy || !token}
-          className="rounded-full bg-sage px-6 py-3 font-body text-sm text-white hover:bg-charcoal disabled:opacity-50"
+          className="rounded-full bg-charcoal px-6 py-3 font-body text-sm text-white hover:bg-sage disabled:opacity-50"
         >
           {busy ? "Unsubscribing…" : "Unsubscribe"}
         </button>
@@ -45,7 +45,7 @@ export default function UnsubscribeForm({ token }: { token: string }) {
         </p>
       )}
       {!token && (
-        <p className="font-body text-sm text-charcoal/60">
+        <p className="font-body text-sm text-charcoal/70">
           Open the unsubscribe link from one of your promotional emails.
         </p>
       )}

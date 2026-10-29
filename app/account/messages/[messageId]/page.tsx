@@ -82,13 +82,13 @@ export default function MessageDetailsPage({
     <main className="mx-auto max-w-2xl px-4 py-10">
       <Link
         href="/account"
-        className="mb-6 flex items-center gap-2 font-body text-sm text-charcoal/60 hover:text-charcoal"
+        className="mb-6 flex items-center gap-2 font-body text-sm text-charcoal/70 hover:text-charcoal"
       >
         <ArrowLeft size={16} /> Back to messages
       </Link>
 
       {isLoading && (
-        <p className="font-body text-sm text-charcoal/50">Loading...</p>
+        <p className="font-body text-sm text-charcoal/70">Loading...</p>
       )}
 
       {errorMessage && (
@@ -110,7 +110,7 @@ export default function MessageDetailsPage({
                 <p className="font-display text-lg text-charcoal">
                   {data.subject || "(No subject)"}
                 </p>
-                <p className="font-body text-xs text-charcoal/50 mt-1">
+                <p className="font-body text-xs text-charcoal/70 mt-1">
                   Sent on{" "}
                   {new Date(data.createdAt).toLocaleDateString("en-PH", {
                     month: "long",
@@ -142,7 +142,7 @@ export default function MessageDetailsPage({
                   {data.adminReply}
                 </p>
                 {data.repliedAt && (
-                  <p className="font-body text-xs text-charcoal/50 mt-3 pt-3 border-t border-sage/25">
+                  <p className="font-body text-xs text-charcoal/70 mt-3 pt-3 border-t border-sage/25">
                     Replied on{" "}
                     {new Date(data.repliedAt).toLocaleDateString("en-PH", {
                       month: "long",
@@ -153,7 +153,7 @@ export default function MessageDetailsPage({
                 )}
               </>
             ) : (
-              <p className="font-body text-sm text-charcoal/50">
+              <p className="font-body text-sm text-charcoal/70">
                 We haven&apos;t replied yet, we&apos;ll get back to you soon.
               </p>
             )}

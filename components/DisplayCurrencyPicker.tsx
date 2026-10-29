@@ -23,7 +23,7 @@ export default function DisplayCurrencyPicker() {
           </button>
         ))}
       </div>
-      <p className="text-xs text-cream/50">
+      <p className="text-xs text-cream/60">
         USD prices are estimates. Charged in PHP.
       </p>
     </div>

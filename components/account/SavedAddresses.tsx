@@ -216,7 +216,7 @@ export default function SavedAddresses() {
           <Plus size={14} className="mr-1 inline" /> Add Address
         </button>
       </div>
-      <p className="mb-6 font-body text-sm text-charcoal/60">
+      <p className="mb-6 font-body text-sm text-charcoal/70">
         Choose where orders are delivered and which address to use for billing.
         One address can serve both purposes.
       </p>
@@ -249,7 +249,7 @@ export default function SavedAddresses() {
       ) : (
         <div className="mb-5 space-y-3">
           {!addresses.length && (
-            <p className="font-body text-sm text-charcoal/50">
+            <p className="font-body text-sm text-charcoal/70">
               No saved addresses yet.
             </p>
           )}
@@ -273,7 +273,7 @@ export default function SavedAddresses() {
                     </p>
                   )}
                   {address.billing_contact && (
-                    <p className="font-body text-xs text-charcoal/60">
+                    <p className="font-body text-xs text-charcoal/70">
                       Billing contact: {address.billing_contact}
                     </p>
                   )}
@@ -281,7 +281,7 @@ export default function SavedAddresses() {
                     {formatAddress(address)}
                   </p>
                   {address.tax_id && (
-                    <p className="mt-1 font-body text-xs text-charcoal/60">
+                    <p className="mt-1 font-body text-xs text-charcoal/70">
                       TIN: {address.tax_id}
                     </p>
                   )}
@@ -295,7 +295,7 @@ export default function SavedAddresses() {
                   disabled={busy || adding || !!editing}
                   aria-label={`Edit ${formatAddress(address)}`}
                   onClick={() => openForm(address)}
-                  className="p-2 text-charcoal/60 disabled:opacity-50"
+                  className="p-2 text-charcoal/70 disabled:opacity-50"
                 >
                   <Pencil size={16} />
                 </button>
@@ -307,7 +307,7 @@ export default function SavedAddresses() {
                     setError(null);
                     setDeleting(address);
                   }}
-                  className="p-2 text-charcoal/60 hover:text-red-700 disabled:opacity-50"
+                  className="p-2 text-charcoal/70 hover:text-red-700 disabled:opacity-50"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -452,7 +452,7 @@ export default function SavedAddresses() {
                   />
                 </>
               )}
-              <p className="font-body text-xs text-charcoal/60">
+              <p className="font-body text-xs text-charcoal/70">
                 Mark this address for both shipping and billing below if they
                 are the same.
               </p>

@@ -135,7 +135,7 @@ function OrderConfirmationContent() {
         </p>
         <Link
           href="/shop"
-          className="inline-block bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
+          className="inline-block bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-sage transition-colors"
         >
           Continue Shopping
         </Link>
@@ -250,7 +250,7 @@ function OrderConfirmationContent() {
 
         <Link
           href={isFailedPayment ? "/checkout" : "/shop"}
-          className="inline-block bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
+          className="inline-block bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-sage transition-colors"
         >
           {isFailedPayment ? "Return to Checkout" : "Continue Shopping"}
         </Link>

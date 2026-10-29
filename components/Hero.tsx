@@ -111,7 +111,7 @@ export default function Hero(): React.JSX.Element | null {
             )}
           </div>
 
-          <p className="mt-3 px-1 font-body text-[11px] tracking-[0.15em] text-charcoal/50 uppercase">
+          <p className="mt-3 px-1 font-body text-[11px] tracking-[0.15em] text-charcoal/70 uppercase">
             {hero.image_caption}
           </p>
         </motion.div>

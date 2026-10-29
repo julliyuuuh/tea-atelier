@@ -21,3 +21,17 @@ export function isProductAvailable(product: Product) {
     product.availability === "In Stock"
   );
 }
+
+// Urgency only when it's real: a handful left, not "10 or fewer".
+export const LOW_STOCK_THRESHOLD = 3;
+
+export function stockStatus(product: Product): {
+  label: string;
+  tone: "out" | "low" | "in";
+} {
+  if (!isProductAvailable(product))
+    return { label: "Out of stock", tone: "out" };
+  if (product.stockQuantity <= LOW_STOCK_THRESHOLD)
+    return { label: `Only ${product.stockQuantity} left`, tone: "low" };
+  return { label: "In stock", tone: "in" };
+}

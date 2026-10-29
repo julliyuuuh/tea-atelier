@@ -115,7 +115,7 @@ function ReviewEditor({
                 className="w-full rounded-xl border border-charcoal/15 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-sage/40 disabled:opacity-50"
               />
             </label>
-            <p className="font-body text-xs text-charcoal/50">
+            <p className="font-body text-xs text-charcoal/70">
               10–2,000 characters. Your first name and last initial will appear
               publicly.
             </p>
@@ -196,17 +196,17 @@ export default function OrderReviews({ orderId }: { orderId: number }) {
           </button>
         </p>
       ) : !data ? (
-        <p className="font-body text-sm text-charcoal/60">
+        <p className="font-body text-sm text-charcoal/70">
           Loading your reviews…
         </p>
       ) : !data.eligible ? (
-        <p className="font-body text-sm text-charcoal/60">
+        <p className="font-body text-sm text-charcoal/70">
           Reviews are available once your order is delivered and payment is
           recorded.
         </p>
       ) : (
         <>
-          <p className="font-body text-xs text-charcoal/60">
+          <p className="font-body text-xs text-charcoal/70">
             Share your experience with other tea lovers. One review per product;
             you can edit it later.
           </p>

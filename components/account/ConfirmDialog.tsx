@@ -53,7 +53,7 @@ export default function ConfirmDialog({
               {title}
             </p>
             {description && (
-              <p className="font-body text-xs text-charcoal/50 mb-6">
+              <p className="font-body text-xs text-charcoal/70 mb-6">
                 {description}
               </p>
             )}
@@ -71,7 +71,7 @@ export default function ConfirmDialog({
                 className={`flex-1 rounded-full font-body text-sm py-3 transition-colors text-cream ${
                   destructive
                     ? "bg-red-600 hover:bg-red-700"
-                    : "bg-sage hover:bg-charcoal"
+                    : "bg-charcoal hover:bg-sage"
                 }`}
               >
                 {confirmLabel}

@@ -65,6 +65,12 @@ function CheckoutContent() {
   } = useBusiness();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Guests can build a cart, but orders belong to an account: sign in first,
+  // then come straight back here with the guest cart merged in.
+  useEffect(() => {
+    if (!authLoading && !user) router.replace("/login?redirect=%2Fcheckout");
+  }, [authLoading, user, router]);
   const searchParams = useSearchParams();
   const returnOrderId = searchParams.get("orderId");
   const returnPayment = searchParams.get("payment");
@@ -423,7 +429,7 @@ function CheckoutContent() {
     if (!order || submittingRef.current || checking) return;
     const token = localStorage.getItem("token");
     if (!user || !token) {
-      router.push("/login");
+      router.push("/login?redirect=%2Fcheckout");
       return;
     }
     submittingRef.current = true;
@@ -550,7 +556,7 @@ function CheckoutContent() {
     if (!order || !restored || checking || submittingRef.current) return;
     const token = localStorage.getItem("token");
     if (!user || !token) {
-      router.push("/login");
+      router.push("/login?redirect=%2Fcheckout");
       return;
     }
     submittingRef.current = true;
@@ -637,7 +643,7 @@ function CheckoutContent() {
       return;
     const token = localStorage.getItem("token");
     if (!user || !token) {
-      router.push("/login");
+      router.push("/login?redirect=%2Fcheckout");
       return;
     }
     if (
@@ -926,10 +932,15 @@ function CheckoutContent() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block font-body text-sm text-charcoal/70 mb-2">
+                    <label
+                      htmlFor="checkout-full-name"
+                      className="block font-body text-sm text-charcoal/70 mb-2"
+                    >
                       Full Name
                     </label>
                     <input
+                      id="checkout-full-name"
+                      autoComplete="name"
                       type="text"
                       name="fullName"
                       value={formData.fullName}
@@ -939,10 +950,14 @@ function CheckoutContent() {
                     />
                   </div>
                   <div>
-                    <label className="block font-body text-sm text-charcoal/70 mb-2">
+                    <label
+                      htmlFor="checkout-email-address"
+                      className="block font-body text-sm text-charcoal/70 mb-2"
+                    >
                       Email Address
                     </label>
                     <input
+                      id="checkout-email-address"
                       type="email"
                       name="email"
                       value={user?.email || ""}
@@ -953,7 +968,7 @@ function CheckoutContent() {
                     />
                     <p
                       id="checkout-email-note"
-                      className="mt-2 font-body text-xs text-charcoal/60"
+                      className="mt-2 font-body text-xs text-charcoal/70"
                     >
                       Your confirmation will be sent to your account email.
                     </p>
@@ -1027,13 +1042,61 @@ function CheckoutContent() {
               </div>
               <div className="bg-cream border border-charcoal/10 rounded-2xl p-6 md:p-8">
                 <h2 className="font-display text-2xl text-charcoal mb-6">
-                  Payment Method
+                  Delivery
+                </h2>
+                <div className="space-y-3">
+                  {enabledShipping.map((key) => (
+                    <label
+                      key={key}
+                      className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer transition-colors hover:border-charcoal/30 has-checked:border-sage has-checked:bg-sand/30"
+                    >
+                      <input
+                        type="radio"
+                        name="shipping"
+                        checked={chosenShipping === key}
+                        onChange={() => setShippingMethod(key)}
+                        className="accent-sage"
+                      />
+                      <span className="flex-1 font-body text-sm text-charcoal">
+                        {SHIPPING_OPTIONS[key]}
+                        <span className="mt-1 block text-xs text-charcoal/70">
+                          {settings.shipping[key].estimate}
+                        </span>
+                      </span>
+                      <span className="font-body text-sm text-charcoal">
+                        {shippingFeeCents(
+                          settings,
+                          key,
+                          Math.round(subtotal * 100),
+                        ) === 0 ? (
+                          <span className="text-sage">Free</span>
+                        ) : (
+                          `₱${(
+                            shippingFeeCents(
+                              settings,
+                              key,
+                              Math.round(subtotal * 100),
+                            ) / 100
+                          ).toFixed(2)}`
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {settings.freeShippingThresholdCents !== null && (
+                  <p className="mt-3 font-body text-xs text-charcoal/70">
+                    Free delivery on product subtotals of at least ₱
+                    {(settings.freeShippingThresholdCents / 100).toFixed(2)}.
+                  </p>
+                )}
+                <h2 className="mt-10 mb-6 font-display text-2xl text-charcoal">
+                  Payment
                 </h2>
                 <div className="space-y-3">
                   {enabledPayments.map((key) => (
                     <label
                       key={key}
-                      className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer"
+                      className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer transition-colors hover:border-charcoal/30 has-checked:border-sage has-checked:bg-sand/30"
                     >
                       <input
                         type="radio"
@@ -1050,7 +1113,7 @@ function CheckoutContent() {
                       <span className="font-body text-sm text-charcoal">
                         {PAYMENT_OPTIONS[key]}
                         {key === "cod" && (
-                          <span className="ml-2 text-xs text-charcoal/50">
+                          <span className="ml-2 text-xs text-charcoal/70">
                             Up to {php(limits.codCents)}
                           </span>
                         )}
@@ -1058,51 +1121,10 @@ function CheckoutContent() {
                     </label>
                   ))}
                 </div>
-                <h2 className="mt-8 mb-4 font-display text-2xl text-charcoal">
-                  Delivery option
-                </h2>
-                <div className="space-y-3">
-                  {enabledShipping.map((key) => (
-                    <label
-                      key={key}
-                      className="flex items-center gap-3 rounded-xl border border-charcoal/10 p-4 cursor-pointer"
-                    >
-                      <input
-                        type="radio"
-                        name="shipping"
-                        checked={chosenShipping === key}
-                        onChange={() => setShippingMethod(key)}
-                        className="accent-sage"
-                      />
-                      <span className="flex-1 font-body text-sm text-charcoal">
-                        {SHIPPING_OPTIONS[key]}
-                        <span className="mt-1 block text-xs text-charcoal/50">
-                          {settings.shipping[key].estimate}
-                        </span>
-                      </span>
-                      <span className="font-body text-sm">
-                        ₱
-                        {(
-                          shippingFeeCents(
-                            settings,
-                            key,
-                            Math.round(subtotal * 100),
-                          ) / 100
-                        ).toFixed(2)}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                {settings.freeShippingThresholdCents !== null && (
-                  <p className="mt-3 font-body text-xs text-charcoal/50">
-                    Free delivery on product subtotals of at least ₱
-                    {(settings.freeShippingThresholdCents / 100).toFixed(2)}.
-                  </p>
-                )}
                 {(!settingsReady || settingsError) && (
                   <p
                     role="status"
-                    className="mt-4 font-body text-sm text-charcoal/60"
+                    className="mt-4 font-body text-sm text-charcoal/70"
                   >
                     {settingsError || "Loading checkout options…"}{" "}
                     {settingsError && (
@@ -1125,7 +1147,7 @@ function CheckoutContent() {
                 {cartChanged ? "Current Selection" : "Order Summary"}
               </h2>
               {activeOrder && cartChanged && (
-                <p className="mb-6 font-body text-xs leading-relaxed text-charcoal/60">
+                <p className="mb-6 font-body text-xs leading-relaxed text-charcoal/70">
                   Saved order #TA-{activeOrder.orderId}
                   {activeOrder.total !== null && (
                     <> totals ₱{activeOrder.total.toFixed(2)}</>
@@ -1162,7 +1184,7 @@ function CheckoutContent() {
                   </p>
                   <Link
                     href={cartItems.length > 0 ? "/cart" : "/shop"}
-                    className="inline-block rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
+                    className="inline-block rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-sage transition-colors"
                   >
                     {cartItems.length > 0 ? "Select Cart Items" : "Browse Tea"}
                   </Link>
@@ -1178,7 +1200,7 @@ function CheckoutContent() {
                         <p className="font-body text-sm text-charcoal">
                           {item.name}
                         </p>
-                        <p className="font-body text-xs uppercase tracking-wide text-charcoal/60 mt-1">
+                        <p className="font-body text-xs uppercase tracking-wide text-charcoal/70 mt-1">
                           Qty {item.quantity}
                         </p>
                       </div>
@@ -1215,7 +1237,7 @@ function CheckoutContent() {
                   </span>
                 </div>
               </div>
-              <p className="mt-4 font-body text-xs text-charcoal/60">
+              <p className="mt-4 font-body text-xs text-charcoal/70">
                 Charged in PHP.
                 {currency === "USD" && (
                   <span className="ml-1">
@@ -1255,7 +1277,7 @@ function CheckoutContent() {
                               paymentStatus === "failed"),
                         );
                     }}
-                    className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"
+                    className="w-full rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-sage transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"
                   >
                     {!restored || cartLoading || authLoading || checking
                       ? "Checking..."
@@ -1311,7 +1333,7 @@ function CheckoutContent() {
                     unavailableSelection ||
                     isSubmitting
                   }
-                  className="w-full mt-8 rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"
+                  className="w-full mt-8 rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-sage transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/30"
                 >
                   {!restored || cartLoading || authLoading
                     ? "Checking..."
@@ -1340,7 +1362,7 @@ function CheckoutContent() {
               <button
                 onClick={confirmOrder}
                 disabled={isSubmitting}
-                className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-full bg-charcoal text-cream font-body text-sm py-3 hover:bg-sage transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? "Processing..." : "Confirm"}
               </button>
@@ -1406,7 +1428,7 @@ function CheckoutContent() {
                 type="button"
                 onClick={() => void cancelOrder()}
                 disabled={!restored || checking || isSubmitting}
-                className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-full bg-charcoal text-cream font-body text-sm py-3 hover:bg-sage transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel Order
               </button>

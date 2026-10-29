@@ -162,7 +162,7 @@ export default function AboutPage() {
                 <h3 className="font-display text-xl text-charcoal mb-3">
                   {item.title}
                 </h3>
-                <p className="font-body text-sm text-charcoal/60 leading-relaxed">
+                <p className="font-body text-sm text-charcoal/70 leading-relaxed">
                   {item.copy}
                 </p>
               </motion.div>
@@ -201,7 +201,7 @@ export default function AboutPage() {
                 <h3 className="font-display text-base text-charcoal mb-0.5">
                   {member.name}
                 </h3>
-                <p className="font-body text-xs text-charcoal/50 uppercase tracking-wide">
+                <p className="font-body text-xs text-charcoal/70 uppercase tracking-wide">
                   {member.role}
                 </p>
               </motion.div>

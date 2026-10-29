@@ -241,12 +241,12 @@ function SelectField(props: {
           onClick={() => (open ? setOpen(false) : openMenu())}
           className={`${fieldClass} flex items-center justify-between gap-3 text-left`}
         >
-          <span className={`truncate ${selected ? "" : "text-charcoal/40"}`}>
+          <span className={`truncate ${selected ? "" : "text-charcoal/70"}`}>
             {loading ? "Loading…" : (selected?.name ?? placeholder)}
           </span>
           <ChevronDown
             aria-hidden
-            className={`h-4 w-4 shrink-0 text-charcoal/50 transition-transform ${
+            className={`h-4 w-4 shrink-0 text-charcoal/70 transition-transform ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -294,7 +294,7 @@ function SelectField(props: {
                 className="max-h-64 overflow-y-auto"
               >
                 {filtered.length === 0 && (
-                  <li className="px-4 py-3 font-body text-sm text-charcoal/50">
+                  <li className="px-4 py-3 font-body text-sm text-charcoal/70">
                     No matches
                   </li>
                 )}

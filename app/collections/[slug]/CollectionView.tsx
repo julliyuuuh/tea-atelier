@@ -55,7 +55,7 @@ export default function CollectionView({ slug }: { slug: string }) {
 
         <nav
           aria-label="Breadcrumb"
-          className="max-w-7xl mx-auto px-8 pt-8 font-body text-xs text-charcoal/50"
+          className="max-w-7xl mx-auto px-8 pt-8 font-body text-xs text-charcoal/70"
         >
           <Link href="/" className="hover:text-charcoal transition-colors">
             Home
@@ -131,18 +131,18 @@ export default function CollectionView({ slug }: { slug: string }) {
             transition={{ duration: 0.6 }}
             className="lg:col-span-5"
           >
-            <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-4 block">
+            <h2 className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-4 block">
               About the collection
-            </span>
+            </h2>
             <p className="font-display text-2xl md:text-3xl leading-snug text-charcoal">
               {collection.story}
             </p>
           </motion.div>
 
           <div className="lg:col-span-6 lg:col-start-7">
-            <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-6 block">
+            <h2 className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-6 block">
               The ritual
-            </span>
+            </h2>
             <ol className="space-y-4">
               {collection.ritual.map((step, i) => (
                 <motion.li
@@ -185,7 +185,7 @@ export default function CollectionView({ slug }: { slug: string }) {
               </h2>
             </div>
             {products && products.length > 0 && (
-              <p className="font-body text-sm text-charcoal/60">
+              <p className="font-body text-sm text-charcoal/70">
                 {products.length}{" "}
                 {products.length === 1 ? "product" : "products"}
               </p>
@@ -211,7 +211,7 @@ export default function CollectionView({ slug }: { slug: string }) {
                   ? "We couldn't load this collection"
                   : "New pieces are on their way"}
               </h3>
-              <p className="font-body text-sm text-charcoal/60 mb-8">
+              <p className="font-body text-sm text-charcoal/70 mb-8">
                 {failed
                   ? "Please refresh the page, or browse the full shop in the meantime."
                   : "This collection is being restocked. Explore the rest of the atelier in the meantime."}

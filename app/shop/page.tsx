@@ -12,7 +12,13 @@ import Footer from "@/components/Footer";
 import { CustomSelect } from "@/components/admin/AdminUI";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
-import { isProductAvailable, type Product } from "@/lib/products";
+import { isProductAvailable, stockStatus, type Product } from "@/lib/products";
+
+const STOCK_TONE = {
+  out: "text-charcoal/70",
+  low: "text-amber-800",
+  in: "text-sage",
+};
 import { categoryTree, type MainCategory } from "@/lib/categories";
 import {
   Heart,
@@ -233,14 +239,14 @@ export default function ShopPage() {
             <h1 className="font-display text-3xl text-charcoal mb-1">
               Welcome back, {user.name || "there"}
             </h1>
-            <p className="font-body text-sm text-charcoal/60">
+            <p className="font-body text-sm text-charcoal/70">
               Here&apos;s what&apos;s fresh in the atelier today.
             </p>
           </motion.div>
         </div>
       ) : (
         <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-8">
-          <span className="font-body text-xs text-charcoal/50">
+          <span className="font-body text-xs text-charcoal/70">
             Home <span className="mx-2">/</span>
             <span className="text-charcoal">Shop</span>
           </span>
@@ -287,8 +293,13 @@ export default function ShopPage() {
 
       {/* Shop All heading */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-6">
-        <h2 className="font-display text-3xl text-charcoal mb-2">Shop All</h2>
-        <p className="font-body text-sm text-charcoal/60">
+        {/* The page's main heading when there's no welcome-back greeting. */}
+        {user ? (
+          <h2 className="font-display text-3xl text-charcoal mb-2">Shop All</h2>
+        ) : (
+          <h1 className="font-display text-4xl text-charcoal mb-2">Shop All</h1>
+        )}
+        <p className="font-body text-sm text-charcoal/70">
           Find your next everyday ritual, from loose-leaf tea to matcha
           essentials.
         </p>
@@ -302,7 +313,7 @@ export default function ShopPage() {
             <Search
               size={16}
               aria-hidden="true"
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-charcoal/40"
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-charcoal/70"
             />
             <input
               type="search"
@@ -317,7 +328,7 @@ export default function ShopPage() {
                 type="button"
                 aria-label="Clear search"
                 onClick={() => setSearch("")}
-                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-charcoal/40 hover:bg-sand/30 hover:text-charcoal"
+                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-charcoal/70 hover:bg-sand/30 hover:text-charcoal"
               >
                 <X size={15} />
               </button>
@@ -386,9 +397,9 @@ export default function ShopPage() {
             id="shop-categories"
             className={`${showFilters ? "block" : "hidden"} md:block`}
           >
-            <h3 className="font-body text-xs uppercase tracking-wide text-charcoal/50 mb-3">
+            <h2 className="font-body text-xs uppercase tracking-wide text-charcoal/70 mb-3">
               Categories
-            </h3>
+            </h2>
             <button
               type="button"
               aria-pressed={!expandedCategory}
@@ -404,7 +415,7 @@ export default function ShopPage() {
               }`}
             >
               All Products
-              <span className="font-body text-[10px] text-charcoal/40">
+              <span className="font-body text-[11px] text-charcoal/70">
                 {isLoading ? "..." : products.length}
               </span>
             </button>
@@ -428,12 +439,12 @@ export default function ShopPage() {
                 >
                   {cat}
                   <span className="flex shrink-0 items-center gap-2">
-                    <span className="font-body text-[10px] text-charcoal/40">
+                    <span className="font-body text-[11px] text-charcoal/70">
                       {isLoading ? "..." : categoryCounts[cat]}
                     </span>
                     <ChevronDown
                       size={13}
-                      className={`text-charcoal/40 ${expandedCategory === cat ? "rotate-180" : ""}`}
+                      className={`text-charcoal/70 ${expandedCategory === cat ? "rotate-180" : ""}`}
                     />
                   </span>
                 </button>
@@ -457,7 +468,7 @@ export default function ShopPage() {
                         className={`flex w-full cursor-pointer items-center justify-between gap-2 text-left font-body text-xs py-2 px-2 rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-sage ${
                           selectedSubCategory === sub
                             ? "text-sage font-medium"
-                            : "text-charcoal/60 hover:text-charcoal"
+                            : "text-charcoal/70 hover:text-charcoal"
                         }`}
                       >
                         {sub}
@@ -473,11 +484,11 @@ export default function ShopPage() {
 
             <div className="mt-5 space-y-4 border-t border-charcoal/10 pt-4">
               <div>
-                <p className="mb-2 font-body text-xs uppercase tracking-wide text-charcoal/50">
+                <p className="mb-2 font-body text-xs uppercase tracking-wide text-charcoal/70">
                   Price range (PHP)
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  <label className="min-w-0 font-body text-xs text-charcoal/60">
+                  <label className="min-w-0 font-body text-xs text-charcoal/70">
                     Minimum
                     <input
                       type="number"
@@ -494,7 +505,7 @@ export default function ShopPage() {
                       className="mt-1 w-full rounded-lg border border-charcoal/20 bg-transparent px-2 py-2 text-sm text-charcoal outline-none focus:border-sage"
                     />
                   </label>
-                  <label className="min-w-0 font-body text-xs text-charcoal/60">
+                  <label className="min-w-0 font-body text-xs text-charcoal/70">
                     Maximum
                     <input
                       type="number"
@@ -527,7 +538,7 @@ export default function ShopPage() {
                 <div>
                   <label
                     htmlFor="shop-type"
-                    className="mb-2 block font-body text-xs uppercase tracking-wide text-charcoal/50"
+                    className="mb-2 block font-body text-xs uppercase tracking-wide text-charcoal/70"
                   >
                     Product type
                   </label>
@@ -548,7 +559,7 @@ export default function ShopPage() {
               )}
             </div>
 
-            <p className="font-body text-[10px] text-charcoal/40 mt-6 leading-relaxed">
+            <p className="font-body text-[11px] text-charcoal/70 mt-6 leading-relaxed">
               Browse a category or search for a tea you love.
             </p>
           </div>
@@ -556,7 +567,8 @@ export default function ShopPage() {
 
         {/* Grid */}
         <div>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 font-body text-xs text-charcoal/50">
+          <h2 className="sr-only">Products</h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 font-body text-xs text-charcoal/70">
             <p role="status">
               {isLoading
                 ? "Loading products..."
@@ -577,7 +589,7 @@ export default function ShopPage() {
 
           {!isLoading && filteredProducts.length === 0 && !errorMessage && (
             <div className="rounded-2xl border border-dashed border-charcoal/15 bg-sand/10 px-5 py-12 text-center">
-              <p className="font-body text-sm text-charcoal/60 mb-3">
+              <p className="font-body text-sm text-charcoal/70 mb-3">
                 {search ? `No results for "${search}"` : "No products found."}
               </p>
               {hasFilters && (
@@ -627,7 +639,7 @@ export default function ShopPage() {
                       decoding="async"
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02] motion-reduce:transform-none motion-reduce:transition-none"
                     />
-                    <span className="absolute left-2 top-2 max-w-[calc(100%-52px)] truncate rounded-full bg-cream/90 px-2 py-1 font-body text-[8px] uppercase tracking-wide text-charcoal sm:left-3 sm:top-3 sm:text-[9px]">
+                    <span className="absolute left-2 top-2 max-w-[calc(100%-52px)] truncate rounded-full bg-cream/90 px-2 py-1 font-body text-[11px] uppercase tracking-wide text-charcoal sm:left-3 sm:top-3 sm:text-[11px]">
                       {product.category === "Accessories"
                         ? "Tea Accessories"
                         : product.category}
@@ -645,7 +657,7 @@ export default function ShopPage() {
                       className={
                         isWishlisted(product.id)
                           ? "fill-red-500 text-red-500"
-                          : "text-charcoal/60"
+                          : "text-charcoal/70"
                       }
                     />
                   </button>
@@ -662,13 +674,9 @@ export default function ShopPage() {
                       <DisplayPrice pesos={Number(product.price)} />
                     </span>
                     <span
-                      className={`font-body text-[9px] sm:text-[10px] ${!inStock(product) ? "text-charcoal/40" : product.stockQuantity <= 10 ? "text-amber-700" : "text-sage"}`}
+                      className={`font-body text-[11px] sm:text-xs ${STOCK_TONE[stockStatus(product).tone]}`}
                     >
-                      {!inStock(product)
-                        ? "Out of stock"
-                        : product.stockQuantity <= 10
-                          ? "Low stock"
-                          : "In stock"}
+                      {stockStatus(product).label}
                     </span>
                   </div>
                 </Link>
@@ -676,7 +684,7 @@ export default function ShopPage() {
                   type="button"
                   onClick={() => addToCart(product)}
                   disabled={!inStock(product)}
-                  className="flex min-h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-charcoal px-2 py-2.5 font-body text-[10px] text-cream transition-colors hover:bg-sage disabled:cursor-not-allowed disabled:bg-charcoal/15 disabled:text-charcoal/40 sm:text-xs"
+                  className="flex min-h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-charcoal px-2 py-2.5 font-body text-[11px] text-cream transition-colors hover:bg-sage disabled:cursor-not-allowed disabled:bg-charcoal/15 disabled:text-charcoal/40 sm:text-xs"
                 >
                   <ShoppingBag size={13} aria-hidden="true" />
                   {inStock(product) ? "Add to cart" : "Out of stock"}

@@ -183,12 +183,12 @@ function OrderTracker({
             <div className="pt-1">
               <p
                 className={`font-body text-sm ${
-                  done || active ? "text-charcoal" : "text-charcoal/40"
+                  done || active ? "text-charcoal" : "text-charcoal/70"
                 }`}
               >
                 {step.label}
               </p>
-              <p className="font-body text-xs text-charcoal/50 mt-0.5">
+              <p className="font-body text-xs text-charcoal/70 mt-0.5">
                 {step.description}
               </p>
             </div>
@@ -256,13 +256,13 @@ export default function OrderDetailsPage({
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
       <Link
         href="/account"
-        className="mb-6 flex items-center gap-2 font-body text-sm text-charcoal/60 hover:text-charcoal"
+        className="mb-6 flex items-center gap-2 font-body text-sm text-charcoal/70 hover:text-charcoal"
       >
         <ArrowLeft size={16} /> Back to orders
       </Link>
 
       {isLoading && (
-        <p className="font-body text-sm text-charcoal/50">Loading...</p>
+        <p className="font-body text-sm text-charcoal/70">Loading...</p>
       )}
 
       {errorMessage && (
@@ -315,7 +315,7 @@ export default function OrderDetailsPage({
                       </Badge>
                     )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-body text-xs text-charcoal/60">
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-body text-xs text-charcoal/70">
                     <span>
                       Placed on{" "}
                       <time dateTime={order.createdAt}>
@@ -355,7 +355,7 @@ export default function OrderDetailsPage({
                       >
                         Your tea selection
                       </h2>
-                      <span className="rounded-full bg-sand/30 px-3 py-1 font-body text-xs text-charcoal/60">
+                      <span className="rounded-full bg-sand/30 px-3 py-1 font-body text-xs text-charcoal/70">
                         {itemCount} {itemCount === 1 ? "item" : "items"}
                       </span>
                     </div>
@@ -384,10 +384,10 @@ export default function OrderDetailsPage({
                             <p className="break-words font-body text-sm font-medium text-charcoal sm:text-base">
                               {item.name}
                             </p>
-                            <p className="mt-1 font-body text-xs text-charcoal/50">
+                            <p className="mt-1 font-body text-xs text-charcoal/70">
                               ₱{item.price.toFixed(2)} each
                             </p>
-                            <span className="mt-2 inline-flex rounded-full border border-charcoal/10 px-2.5 py-0.5 font-body text-xs text-charcoal/60">
+                            <span className="mt-2 inline-flex rounded-full border border-charcoal/10 px-2.5 py-0.5 font-body text-xs text-charcoal/70">
                               Qty {item.quantity}
                             </span>
                           </div>
@@ -413,7 +413,7 @@ export default function OrderDetailsPage({
                             <span className="block text-charcoal">
                               {formatPaymentMethod(order.paymentMethod)}
                             </span>
-                            <span className="mt-0.5 block text-xs capitalize text-charcoal/50">
+                            <span className="mt-0.5 block text-xs capitalize text-charcoal/70">
                               {order.paymentStatus}
                             </span>
                           </dd>
@@ -455,7 +455,7 @@ export default function OrderDetailsPage({
                       >
                         Order progress
                       </h2>
-                      <p className="mt-2 font-body text-xs text-charcoal/50">
+                      <p className="mt-2 font-body text-xs text-charcoal/70">
                         Follow your order from placement to delivery.
                       </p>
                     </div>

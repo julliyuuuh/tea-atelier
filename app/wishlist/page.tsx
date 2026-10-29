@@ -25,14 +25,14 @@ export default function WishlistPage() {
         <h1 className="font-display text-4xl text-charcoal mb-2">
           My Wishlist
         </h1>
-        <p className="font-body text-sm text-charcoal/60 mb-12">
+        <p className="font-body text-sm text-charcoal/70 mb-12">
           {loading
             ? "Loading saved items..."
             : `${items.length} saved ${items.length === 1 ? "item" : "items"}`}
         </p>
 
         {!user && !loading && (
-          <p className="mb-6 font-body text-sm text-charcoal/60">
+          <p className="mb-6 font-body text-sm text-charcoal/70">
             <Link
               href="/login?redirect=%2Fwishlist"
               className="text-sage underline"
@@ -43,11 +43,11 @@ export default function WishlistPage() {
           </p>
         )}
         {loading ? (
-          <p role="status" className="font-body text-sm text-charcoal/50">
+          <p role="status" className="font-body text-sm text-charcoal/70">
             Loading your wishlist...
           </p>
         ) : error && items.length === 0 ? (
-          <p className="font-body text-sm text-charcoal/60">
+          <p className="font-body text-sm text-charcoal/70">
             Your saved items could not be loaded.{" "}
             <button
               type="button"
@@ -60,12 +60,12 @@ export default function WishlistPage() {
         ) : items.length === 0 ? (
           <div className="text-center py-24">
             <Heart size={32} className="mx-auto text-charcoal/20 mb-4" />
-            <p className="font-body text-charcoal/60 mb-6">
+            <p className="font-body text-charcoal/70 mb-6">
               Nothing saved yet.
             </p>
             <Link
               href="/shop"
-              className="inline-block rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
+              className="inline-block rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-sage transition-colors"
             >
               Browse Shop
             </Link>
@@ -85,9 +85,9 @@ export default function WishlistPage() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <h3 className="font-body text-sm font-medium text-charcoal mb-0.5 truncate">
+                  <h2 className="font-body text-sm font-medium text-charcoal mb-0.5 truncate">
                     {product.name}
-                  </h3>
+                  </h2>
                   <p className="font-display text-base text-charcoal mb-3">
                     <DisplayPrice pesos={Number(product.price)} />
                   </p>
@@ -96,11 +96,11 @@ export default function WishlistPage() {
                   <button
                     onClick={() => addToCart(product)}
                     disabled={!isProductAvailable(product)}
-                    className="flex-1 rounded-full bg-charcoal text-cream font-body text-xs tracking-wide uppercase py-2.5 hover:bg-sage transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/15 disabled:text-charcoal/40"
+                    className="flex-1 rounded-full bg-charcoal text-cream font-body text-xs py-2.5 hover:bg-sage transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/15 disabled:text-charcoal/40"
                   >
                     {isProductAvailable(product)
-                      ? "Add to Cart"
-                      : "Out of Stock"}
+                      ? "Add to cart"
+                      : "Out of stock"}
                   </button>
                   <button
                     onClick={() => removeFromWishlist(product.id)}

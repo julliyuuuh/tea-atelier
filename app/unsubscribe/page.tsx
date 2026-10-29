@@ -21,7 +21,7 @@ export default async function UnsubscribePage({
         <h1 className="mt-3 font-display text-3xl text-charcoal">
           Email preferences
         </h1>
-        <p className="mt-4 font-body text-sm leading-relaxed text-charcoal/60">
+        <p className="mt-4 font-body text-sm leading-relaxed text-charcoal/70">
           Unsubscribe from promotional emails. Your order confirmations and
           order updates will stay enabled.
         </p>

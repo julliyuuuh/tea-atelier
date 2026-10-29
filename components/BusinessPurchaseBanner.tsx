@@ -6,7 +6,7 @@ export default function BusinessPurchaseBanner() {
   const { approved, application, limits, ready } = useBusiness();
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sage/20 bg-sage/5 px-4 py-3 text-xs">
-      <p className="text-charcoal/60">
+      <p className="text-charcoal/70">
         {approved && ready
           ? `Business purchasing enabled · Up to ${limits.business.perProduct} per product and ${limits.business.totalUnits} units per order (${php(limits.business.totalCents)}).`
           : application?.status === "PENDING"

@@ -5,7 +5,7 @@ type BadgeTone = "sage" | "amber" | "neutral";
 const TONE_CLASSES: Record<BadgeTone, string> = {
   sage: "bg-sage/15 text-sage",
   amber: "bg-charcoal/10 text-charcoal/70",
-  neutral: "bg-sand/40 text-charcoal/60",
+  neutral: "bg-sand/40 text-charcoal/70",
 };
 
 export default function Badge({

@@ -43,7 +43,7 @@ function VerifyEmailContent() {
         </a>
 
         {status === "loading" && (
-          <p className="font-body text-sm text-charcoal/60">
+          <p className="font-body text-sm text-charcoal/70">
             Verifying your email...
           </p>
         )}
@@ -53,12 +53,12 @@ function VerifyEmailContent() {
             <h1 className="font-display text-2xl text-charcoal mb-4">
               Email verified!
             </h1>
-            <p className="font-body text-sm text-charcoal/60 mb-8">
+            <p className="font-body text-sm text-charcoal/70 mb-8">
               Your account is now fully active.
             </p>
             <Link
               href="/"
-              className="inline-block bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
+              className="inline-block bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-sage transition-colors"
             >
               Go to Homepage
             </Link>
@@ -75,7 +75,7 @@ function VerifyEmailContent() {
             </p>
             <Link
               href="/"
-              className="inline-block bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
+              className="inline-block bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-sage transition-colors"
             >
               Go to Homepage
             </Link>

@@ -109,7 +109,7 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
         </p>
       )}
       {!data && !error && (
-        <p className="font-body text-sm text-charcoal/60">
+        <p className="font-body text-sm text-charcoal/70">
           Loading request details…
         </p>
       )}
@@ -117,7 +117,7 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
         <div className="space-y-4 font-body text-sm text-charcoal/80">
           <div className="flex flex-wrap items-center gap-2">
             <ReturnStatusBadge status={request.status} />
-            <span className="text-xs text-charcoal/50">
+            <span className="text-xs text-charcoal/70">
               {request.kind === "RETURN" ? "Return request" : "Refund request"}
             </span>
           </div>
@@ -127,7 +127,7 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
           <p className="whitespace-pre-wrap break-words">{request.details}</p>
           {request.customer_message && (
             <p className="whitespace-pre-wrap rounded-lg border border-charcoal/10 p-3">
-              <span className="mb-2 flex items-center gap-2 text-xs font-medium text-charcoal/60">
+              <span className="mb-2 flex items-center gap-2 text-xs font-medium text-charcoal/70">
                 <MessageSquare size={14} aria-hidden="true" />
                 Message from our team
               </span>
@@ -138,7 +138,7 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-cream/80 p-4">
               {request.refund_amount_cents > 0 && (
                 <div>
-                  <p className="text-xs text-charcoal/50">Approved refund</p>
+                  <p className="text-xs text-charcoal/70">Approved refund</p>
                   <p className="mt-1 font-display text-2xl text-charcoal">
                     {peso(request.refund_amount_cents)}
                   </p>
@@ -163,7 +163,7 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
         </div>
       ) : data && (data.canReturn || data.canRefund) ? (
         <ValidatedForm onSubmit={submit} className="space-y-4">
-          <p className="font-body text-sm text-charcoal/60">
+          <p className="font-body text-sm text-charcoal/70">
             Submit one request for this order. Our team will review the items
             and refund amount before approval. Please describe the affected
             items. Do not include banking details.
@@ -225,7 +225,7 @@ export default function OrderReturnPanel({ orderId }: { orderId: number }) {
         </ValidatedForm>
       ) : (
         data && (
-          <p className="font-body text-sm text-charcoal/60">
+          <p className="font-body text-sm text-charcoal/70">
             Returns are available after delivery. Refund requests are available
             for paid, delivered or cancelled orders. Contact support for other
             issues.

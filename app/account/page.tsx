@@ -34,7 +34,7 @@ export default function AccountPage() {
   return (
     <Suspense
       fallback={
-        <p className="p-8 text-sm text-charcoal/50">Loading account…</p>
+        <p className="p-8 text-sm text-charcoal/70">Loading account…</p>
       }
     >
       <AccountPageInner />
@@ -110,7 +110,7 @@ function AccountPageInner() {
   if (authLoading || !user) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="font-body text-charcoal/60">Loading...</p>
+        <p className="font-body text-charcoal/70">Loading...</p>
       </main>
     );
   }
@@ -122,6 +122,10 @@ function AccountPageInner() {
       <div
         className={`mx-auto px-4 py-12 sm:px-8 sm:py-16 ${activeTab === "settings" ? "max-w-5xl" : "max-w-3xl"}`}
       >
+        <h1 className="font-display text-3xl sm:text-4xl text-charcoal mb-8">
+          My Account
+        </h1>
+
         {/* Tabs */}
         <div
           role="tablist"
@@ -152,7 +156,7 @@ function AccountPageInner() {
                   className={
                     isActive
                       ? "text-charcoal"
-                      : "text-charcoal/40 hover:text-charcoal/70"
+                      : "text-charcoal/70 hover:text-charcoal/70"
                   }
                 >
                   {tab.label}
@@ -529,7 +533,7 @@ function ProfileTab() {
                   type="button"
                   onClick={handleRemoveAvatar}
                   disabled={saving}
-                  className="font-body text-xs uppercase tracking-wide text-charcoal/40 hover:text-red-500 transition-colors disabled:opacity-50"
+                  className="font-body text-xs uppercase tracking-wide text-charcoal/70 hover:text-red-500 transition-colors disabled:opacity-50"
                 >
                   Remove Photo
                 </button>
@@ -592,7 +596,7 @@ function ProfileTab() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={saving}
-              className="rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-8 py-3 hover:bg-sage transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? "Saving…" : "Save Changes"}
             </motion.button>
@@ -604,7 +608,7 @@ function ProfileTab() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.2 }}
-                  className="flex items-center gap-1.5 font-body text-xs uppercase tracking-wide text-charcoal/50"
+                  className="flex items-center gap-1.5 font-body text-xs uppercase tracking-wide text-charcoal/70"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-sage/70" />
                   Unsaved changes
@@ -1140,7 +1144,7 @@ function OrdersTab() {
           </p>
         )}
         {groups.length === 0 && (
-          <p className="text-center py-12 font-body text-sm text-charcoal/60">
+          <p className="text-center py-12 font-body text-sm text-charcoal/70">
             {activeTab === "orders"
               ? "No paid or Cash on Delivery orders yet."
               : activeTab === "cancelled"
@@ -1153,7 +1157,7 @@ function OrdersTab() {
             <h3 className="font-display text-2xl text-charcoal mb-2">
               {group.title}
             </h3>
-            <p className="font-body text-sm text-charcoal/60 mb-5">
+            <p className="font-body text-sm text-charcoal/70 mb-5">
               {group.description}
             </p>
             <motion.div
@@ -1173,7 +1177,7 @@ function OrdersTab() {
                       <p className="font-body text-sm text-charcoal">
                         Order #TA-{order.id}
                       </p>
-                      <p className="font-body text-xs text-charcoal/50 mt-1">
+                      <p className="font-body text-xs text-charcoal/70 mt-1">
                         {new Date(order.createdAt).toLocaleDateString("en-PH", {
                           month: "long",
                           day: "numeric",
@@ -1181,7 +1185,7 @@ function OrdersTab() {
                         })}
                       </p>
                       {order.recipientName && (
-                        <p className="font-body text-xs text-charcoal/50 mt-1">
+                        <p className="font-body text-xs text-charcoal/70 mt-1">
                           For: {order.recipientName}
                         </p>
                       )}
@@ -1219,7 +1223,7 @@ function OrdersTab() {
                           <p className="font-body text-sm text-charcoal">
                             {item.name}
                           </p>
-                          <p className="font-body text-xs text-charcoal/50">
+                          <p className="font-body text-xs text-charcoal/70">
                             Qty {item.quantity}
                           </p>
                         </div>
@@ -1253,7 +1257,7 @@ function OrdersTab() {
                         type="button"
                         disabled={cancellingId !== null || payingId !== null}
                         onClick={() => void resumePayment(order)}
-                        className="mt-4 block w-full rounded-full bg-sage py-3 font-body text-sm text-cream hover:bg-charcoal transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="mt-4 block w-full rounded-full bg-charcoal py-3 font-body text-sm text-cream hover:bg-sage transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {payingId === order.id
                           ? "Opening Payment..."
@@ -1296,7 +1300,7 @@ function OrdersTab() {
             >
               &lt;
             </button>
-            <span className="font-body text-base text-charcoal/50">
+            <span className="font-body text-base text-charcoal/70">
               Page {page} of {totalPages}
             </span>
             <button
@@ -1369,7 +1373,7 @@ function OrdersTab() {
                 type="button"
                 onClick={() => void confirmCancellation()}
                 disabled={cancellingId !== null || payingId !== null}
-                className="flex-1 rounded-full bg-sage text-cream font-body text-sm py-3 hover:bg-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-full bg-charcoal text-cream font-body text-sm py-3 hover:bg-sage transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel Order
               </button>
@@ -1471,7 +1475,7 @@ function MessagesTab() {
   if (messages.length === 0) {
     return (
       <div className="text-center py-16">
-        <p className="font-body text-sm text-charcoal/50">
+        <p className="font-body text-sm text-charcoal/70">
           You haven't sent any messages yet.
         </p>
       </div>
@@ -1517,11 +1521,11 @@ function MessagesTab() {
                   </div>
                 </div>
 
-                <p className="font-body text-sm text-charcoal/60 truncate">
+                <p className="font-body text-sm text-charcoal/70 truncate">
                   {m.message}
                 </p>
 
-                <p className="font-body text-xs text-charcoal/40 mt-3">
+                <p className="font-body text-xs text-charcoal/70 mt-3">
                   {new Date(m.createdAt).toLocaleDateString("en-PH", {
                     month: "long",
                     day: "numeric",
@@ -1543,7 +1547,7 @@ function MessagesTab() {
           >
             &lt;
           </button>
-          <span className="font-body text-base text-charcoal/50">
+          <span className="font-body text-base text-charcoal/70">
             Page {page} of {totalPages}
           </span>
           <button

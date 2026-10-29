@@ -9,7 +9,6 @@ import {
   useCallback,
   useRef,
 } from "react";
-import { useRouter, usePathname } from "next/navigation";
 import { isProductAvailable, type Product } from "./products";
 import { useBusiness } from "@/lib/business-context";
 import { useAuth } from "./auth-context";
@@ -60,6 +59,37 @@ function readSelection(accountEmail: string | null): CartSelection {
   return { accountEmail, excludedIds };
 }
 
+// Signed-out shoppers keep their cart in this browser. The product snapshot is
+// only for display: on sign-in each line is re-added through /api/cart, which
+// checks live price, stock and limits.
+const GUEST_CART_STORAGE = "tea-atelier.guest-cart.v1";
+
+function readGuestCart(): CartItem[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(GUEST_CART_STORAGE) || "[]");
+    if (!Array.isArray(saved)) return [];
+    return saved.filter(
+      (item): item is CartItem =>
+        typeof item?.product?.id === "string" &&
+        typeof item.product.name === "string" &&
+        Number.isFinite(Number(item.product.price)) &&
+        Number.isSafeInteger(item.quantity) &&
+        item.quantity > 0,
+    );
+  } catch {
+    return [];
+  }
+}
+
+function writeGuestCart(items: CartItem[]) {
+  try {
+    if (items.length === 0) localStorage.removeItem(GUEST_CART_STORAGE);
+    else localStorage.setItem(GUEST_CART_STORAGE, JSON.stringify(items));
+  } catch {
+    // Without storage the guest cart still works for this visit.
+  }
+}
+
 function authHeaders(): Record<string, string> {
   const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -71,8 +101,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     ? limits.business.perProduct
     : limits.standard.perProduct;
   const { user, isLoading: authLoading } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
   const [items, setItems] = useState<CartItem[]>([]);
   const [selection, setSelection] = useState<CartSelection | null>(null);
   const [loading, setLoading] = useState(true);
@@ -145,22 +173,71 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [accountEmail]);
 
+  // After sign-in, move anything added while signed out into the account cart.
+  // The guest cart is taken out of storage before posting, so a re-run of the
+  // effect (or a second tab) can't add it twice. The server re-checks every
+  // line; refused lines are reported, and only lines lost to a network error
+  // go back into the guest cart for the next attempt.
+  const merging = useRef(false);
+  const mergeGuestCart = async () => {
+    if (merging.current) return;
+    const guest = readGuestCart();
+    if (guest.length === 0) return;
+    merging.current = true;
+    writeGuestCart([]);
+    const refused: string[] = [];
+    const retry: CartItem[] = [];
+    try {
+      for (const item of guest) {
+        try {
+          const res = await fetch("/api/cart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({
+              productId: item.product.id,
+              quantity: item.quantity,
+            }),
+          });
+          if (!res.ok) refused.push(item.product.name);
+        } catch {
+          retry.push(item);
+        }
+      }
+    } finally {
+      merging.current = false;
+    }
+    if (retry.length > 0) writeGuestCart(retry);
+    if (refused.length > 0 || retry.length > 0)
+      setStockError(
+        refused.length > 0
+          ? `We couldn't move ${refused.join(", ")} into your cart. It may be out of stock or over your limit.`
+          : "Some items from before you signed in couldn't be added yet. We'll try again shortly.",
+      );
+  };
+
   useEffect(() => {
     if (authLoading) return; // wait for auth to resolve first
 
     if (!user) {
       loadId.current++; // invalidate any request still in flight
-      setItems([]); // logged out (or never logged in), no persisted cart
+      setItems(readGuestCart());
       setSelection({ accountEmail: null, excludedIds: [] });
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    refreshCart().finally(() => setLoading(false));
+    mergeGuestCart()
+      .then(refreshCart)
+      .finally(() => setLoading(false));
   }, [user, authLoading, refreshCart]);
 
   const clearCart = useCallback(async () => {
+    if (!user) {
+      writeGuestCart([]);
+      setItems([]);
+      return;
+    }
     try {
       const res = await fetch("/api/cart", {
         method: "DELETE",
@@ -177,13 +254,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           : "Unable to clear your cart. Please try again.",
       );
     }
-  }, []);
+  }, [user]);
 
   const addToCart = async (product: Product, quantity: number = 1) => {
-    if (!user) {
-      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
-      return;
-    }
     if (
       !isProductAvailable(product) ||
       !Number.isSafeInteger(quantity) ||
@@ -211,6 +284,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (!user) {
+      const next = existing
+        ? items.map((i) =>
+            i.product.id === product.id
+              ? { product, quantity: currentQuantity + quantity }
+              : i,
+          )
+        : [...items, { product, quantity }];
+      writeGuestCart(next);
+      setItems(next);
+      setLastAdded(product);
+      return;
+    }
+
     try {
       const res = await fetch("/api/cart", {
         method: "POST",
@@ -232,6 +319,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeFromCart = async (productId: string) => {
+    if (!user) {
+      const next = items.filter((item) => item.product.id !== productId);
+      writeGuestCart(next);
+      setItems(next);
+      setItemSelected(productId, true);
+      return;
+    }
     try {
       const res = await fetch(`/api/cart/${productId}`, {
         method: "DELETE",
@@ -274,6 +368,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       quantity >= item.quantity
     ) {
       setStockError("Exceeds stock.");
+      return;
+    }
+
+    if (!user) {
+      const next = items.map((i) =>
+        i.product.id === productId ? { ...i, quantity } : i,
+      );
+      writeGuestCart(next);
+      setItems(next);
       return;
     }
 

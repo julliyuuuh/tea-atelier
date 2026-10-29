@@ -66,7 +66,7 @@ export default function PrivacyPage() {
             <h1 className="font-display text-5xl text-charcoal mb-4">
               {intro.heading}
             </h1>
-            <p className="font-body text-xs tracking-wide uppercase text-charcoal/40 mb-6">
+            <p className="font-body text-xs tracking-wide uppercase text-charcoal/70 mb-6">
               Last updated {intro.last_updated}
             </p>
             <p className="font-body text-charcoal/70 leading-relaxed max-w-xl mx-auto">

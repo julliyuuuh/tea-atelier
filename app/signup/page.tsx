@@ -1,5 +1,7 @@
 "use client";
 
+import { safeAuthRedirect } from "@/lib/auth-redirect";
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -164,7 +166,9 @@ export default function SignupPage() {
       if (!res.ok) throw new Error(data.error || "Signup failed.");
 
       login(data.token, data.user);
-      window.location.href = "/";
+      window.location.href = safeAuthRedirect(
+        new URLSearchParams(window.location.search).get("redirect"),
+      );
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Something went wrong.",
@@ -217,7 +221,7 @@ export default function SignupPage() {
           <h1 className="font-display text-3xl text-charcoal text-center mb-2">
             Create Your Account
           </h1>
-          <p className="font-body text-sm text-charcoal/60 text-center mb-5">
+          <p className="font-body text-sm text-charcoal/70 text-center mb-5">
             Join us for early access to seasonal blends
           </p>
 
@@ -235,12 +239,13 @@ export default function SignupPage() {
               <div className="min-w-0">
                 <label
                   htmlFor="signup-firstName"
-                  className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5"
+                  className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-1.5"
                 >
                   First Name
                 </label>
                 <input
                   id="signup-firstName"
+                  autoComplete="given-name"
                   aria-describedby="signup-firstName-error"
                   type="text"
                   required
@@ -257,12 +262,13 @@ export default function SignupPage() {
               <div className="min-w-0">
                 <label
                   htmlFor="signup-lastName"
-                  className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5"
+                  className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-1.5"
                 >
                   Last Name
                 </label>
                 <input
                   id="signup-lastName"
+                  autoComplete="family-name"
                   aria-describedby="signup-lastName-error"
                   type="text"
                   required
@@ -280,12 +286,13 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="signup-email"
-                className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5"
+                className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-1.5"
               >
                 Email
               </label>
               <input
                 id="signup-email"
+                autoComplete="email"
                 aria-describedby="signup-email-error"
                 type="email"
                 required
@@ -300,11 +307,16 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5">
+              <label
+                htmlFor="signup-phone-number"
+                className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-1.5"
+              >
                 Phone Number{" "}
-                <span className="normal-case text-charcoal/40">(optional)</span>
+                <span className="normal-case text-charcoal/70">(optional)</span>
               </label>
               <input
+                id="signup-phone-number"
+                autoComplete="tel-national"
                 type="tel"
                 value={phoneNumber}
                 onChange={handlePhoneChange}
@@ -318,7 +330,7 @@ export default function SignupPage() {
                 <div className="min-w-0">
                   <label
                     htmlFor="signup-password"
-                    className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5"
+                    className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-1.5"
                   >
                     Password
                   </label>
@@ -344,7 +356,7 @@ export default function SignupPage() {
                       }
                       aria-pressed={showPassword}
                       onClick={() => setShowPassword((visible) => !visible)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-charcoal/60 hover:text-charcoal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-charcoal/70 hover:text-charcoal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage"
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -355,7 +367,7 @@ export default function SignupPage() {
                 <div className="min-w-0">
                   <label
                     htmlFor="signup-confirmPassword"
-                    className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-1.5"
+                    className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-1.5"
                   >
                     Confirm Password
                   </label>
@@ -378,7 +390,7 @@ export default function SignupPage() {
               </div>
               <p
                 id="signup-password-hint"
-                className="mt-3 font-body text-xs leading-relaxed text-charcoal/60"
+                className="mt-3 font-body text-xs leading-relaxed text-charcoal/70"
               >
                 {PASSWORD_HINT}
               </p>
@@ -387,17 +399,17 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-3 hover:bg-charcoal transition-colors disabled:opacity-50"
+              className="w-full rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-3 hover:bg-sage transition-colors disabled:opacity-50"
             >
               {isLoading ? "Creating account..." : "Create Account"}
             </button>
           </form>
 
-          <p className="font-body text-sm text-charcoal/60 text-center mt-5">
+          <p className="font-body text-sm text-charcoal/70 text-center mt-5">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-sage hover:text-charcoal transition-colors"
+              className="text-sage underline underline-offset-2 hover:text-charcoal transition-colors"
             >
               Log in
             </Link>

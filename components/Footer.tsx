@@ -72,7 +72,7 @@ export default function Footer() {
                 />
                 <a
                   href={`mailto:${settings.store.email}`}
-                  className="hover:text-sage-light transition-colors"
+                  className="inline-block py-1.5 hover:text-sage-light transition-colors"
                 >
                   {settings.store.email}
                 </a>
@@ -87,7 +87,7 @@ export default function Footer() {
                 />
                 <a
                   href={`tel:${settings.store.phone.replace(/[^\d+]/g, "")}`}
-                  className="hover:text-sage-light transition-colors"
+                  className="inline-block py-1.5 hover:text-sage-light transition-colors"
                 >
                   {settings.store.phone}
                 </a>
@@ -103,15 +103,15 @@ export default function Footer() {
         >
           {columns.map((column) => (
             <div key={column.title}>
-              <h4 className="font-body text-[11px] tracking-[0.2em] uppercase text-cream/50 mb-5">
+              <h2 className="font-body text-[11px] tracking-[0.2em] uppercase text-cream/60 mb-5">
                 {column.title}
-              </h4>
-              <ul className="space-y-3 font-body text-sm text-cream/80">
+              </h2>
+              <ul className="space-y-1 font-body text-sm text-cream/80">
                 {column.links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="hover:text-sage-light transition-colors"
+                      className="inline-block py-1.5 hover:text-sage-light transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -125,7 +125,7 @@ export default function Footer() {
 
       <div className="max-w-7xl mx-auto px-8">
         <div className="flex flex-col gap-5 border-t border-cream/10 py-8 md:flex-row md:items-center md:justify-between">
-          <p className="font-body text-xs text-cream/50">
+          <p className="font-body text-xs text-cream/60">
             © {new Date().getFullYear()} {settings.store.name}. All rights
             reserved.
           </p>
@@ -147,7 +147,7 @@ export default function Footer() {
             </div>
           )}
         </div>
-        <p className="pb-8 font-body text-[11px] leading-relaxed text-cream/35">
+        <p className="pb-8 font-body text-[11px] leading-relaxed text-cream/60">
           Address data: Philippine Standard Geographic Code (PSGC), Philippine
           Statistics Authority,{" "}
           <a

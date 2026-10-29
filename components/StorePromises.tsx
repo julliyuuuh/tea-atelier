@@ -112,7 +112,7 @@ export default function StorePromises({
               <p className="font-body text-[11px] tracking-[0.2em] uppercase text-charcoal">
                 {title}
               </p>
-              <p className="font-body text-sm text-charcoal/60 mt-1">{copy}</p>
+              <p className="font-body text-sm text-charcoal/70 mt-1">{copy}</p>
             </div>
           </li>
         ))}

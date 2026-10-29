@@ -138,7 +138,7 @@ function CustomerNotifications() {
         {unread > 0 && (
           <span
             aria-hidden
-            className="absolute -right-1 -top-1 flex min-w-4 items-center justify-center rounded-full bg-sage px-1 text-[10px] text-cream"
+            className="absolute -right-1 -top-1 flex min-w-4 items-center justify-center rounded-full bg-sage px-1 text-[11px] text-cream"
           >
             {unread > 99 ? "99+" : unread}
           </span>
@@ -199,12 +199,12 @@ function CustomerNotifications() {
               {loading ? (
                 <p
                   role="status"
-                  className="p-5 font-body text-sm text-charcoal/60"
+                  className="p-5 font-body text-sm text-charcoal/70"
                 >
                   Loading notifications…
                 </p>
               ) : !items.length && !error ? (
-                <p className="p-5 font-body text-sm text-charcoal/60">
+                <p className="p-5 font-body text-sm text-charcoal/70">
                   No notifications yet. Your order updates will appear here.
                 </p>
               ) : (
@@ -244,7 +244,7 @@ function CustomerNotifications() {
                         </p>
                         <time
                           dateTime={item.created_at}
-                          className="mt-2 block font-body text-xs text-charcoal/50"
+                          className="mt-2 block font-body text-xs text-charcoal/70"
                         >
                           {new Date(item.created_at).toLocaleString()}
                         </time>
@@ -254,7 +254,7 @@ function CustomerNotifications() {
                 </ul>
               )}
             </div>
-            <p className="border-t border-charcoal/10 px-4 py-3 font-body text-xs text-charcoal/50">
+            <p className="border-t border-charcoal/10 px-4 py-3 font-body text-xs text-charcoal/70">
               Showing your latest 30 alerts.
             </p>
           </motion.section>

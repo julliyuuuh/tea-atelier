@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import DisplayPrice from "@/components/DisplayPrice";
@@ -42,7 +43,7 @@ export default function ProductCard({
           unoptimized={!isOptimizableImage(product.image)}
           className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        <span className="absolute top-4 left-4 rounded-full bg-cream/90 px-3 py-1 font-body text-[10px] tracking-[0.15em] uppercase text-charcoal">
+        <span className="absolute top-4 left-4 rounded-full bg-cream/90 px-3 py-1 font-body text-[11px] tracking-[0.15em] uppercase text-charcoal">
           {product.category}
         </span>
         {rank && (
@@ -77,9 +78,10 @@ export default function ProductCard({
               ? `Add ${product.name} to cart`
               : `${product.name} is out of stock`
           }
-          className="shrink-0 rounded-full border border-charcoal/20 px-4 py-2 font-body text-[11px] tracking-[0.12em] uppercase text-charcoal hover:border-charcoal hover:bg-charcoal hover:text-cream transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-charcoal disabled:hover:border-charcoal/20"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-charcoal px-4 py-2.5 font-body text-xs text-cream hover:bg-sage transition-colors disabled:cursor-not-allowed disabled:bg-charcoal/15 disabled:text-charcoal/70"
         >
-          {available ? "Add to Cart" : "Out of Stock"}
+          <ShoppingBag size={13} aria-hidden="true" />
+          {available ? "Add to cart" : "Out of stock"}
         </button>
       </div>
     </motion.div>

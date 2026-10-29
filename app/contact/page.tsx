@@ -91,13 +91,13 @@ export default function ContactPage() {
           <h1 className="break-words font-display text-4xl text-charcoal mb-4">
             {content.heading}
           </h1>
-          <p className="break-words whitespace-pre-line font-body text-charcoal/60">
+          <p className="break-words whitespace-pre-line font-body text-charcoal/70">
             {content.intro}
           </p>
         </div>
 
         {authLoading ? (
-          <p className="text-center font-body text-sm text-charcoal/50">
+          <p className="text-center font-body text-sm text-charcoal/70">
             Loading...
           </p>
         ) : !user ? (
@@ -109,12 +109,12 @@ export default function ContactPage() {
             <p className="break-words font-display text-xl text-charcoal mb-2">
               {content.loginHeading}
             </p>
-            <p className="break-words whitespace-pre-line font-body text-sm text-charcoal/60 mb-6">
+            <p className="break-words whitespace-pre-line font-body text-sm text-charcoal/70 mb-6">
               {content.loginBody}
             </p>
             <Link
               href="/login"
-              className="inline-block rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-3 hover:bg-charcoal transition-colors"
+              className="inline-block rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-8 py-3 hover:bg-sage transition-colors"
             >
               Log In
             </Link>
@@ -128,7 +128,7 @@ export default function ContactPage() {
             <p className="break-words font-display text-xl text-charcoal mb-2">
               {content.successHeading}
             </p>
-            <p className="break-words whitespace-pre-line font-body text-sm text-charcoal/60">
+            <p className="break-words whitespace-pre-line font-body text-sm text-charcoal/70">
               {content.successBody}
             </p>
           </motion.div>
@@ -141,10 +141,14 @@ export default function ContactPage() {
             )}
 
             <div>
-              <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+              <label
+                htmlFor="contact-subject"
+                className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-2"
+              >
                 Subject
               </label>
               <input
+                id="contact-subject"
                 type="text"
                 name="subject"
                 required
@@ -155,10 +159,14 @@ export default function ContactPage() {
             </div>
 
             <div>
-              <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+              <label
+                htmlFor="contact-message"
+                className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-2"
+              >
                 Message
               </label>
               <textarea
+                id="contact-message"
                 name="message"
                 required
                 rows={5}
@@ -171,14 +179,14 @@ export default function ContactPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:opacity-50"
+              className="w-full rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-sage transition-colors disabled:opacity-50"
             >
               {loading ? "Sending..." : "Send Message"}
             </button>
           </ValidatedForm>
         )}
 
-        <div className="mt-16 text-center font-body text-sm text-charcoal/60">
+        <div className="mt-16 text-center font-body text-sm text-charcoal/70">
           {settings.store.email && <p>{settings.store.email}</p>}
           {settings.store.phone && (
             <p className="mt-1">{settings.store.phone}</p>

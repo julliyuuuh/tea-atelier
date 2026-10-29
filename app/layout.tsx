@@ -10,6 +10,7 @@ import Script from "next/script";
 import { WishlistProvider } from "@/lib/wishlist-context";
 import { StoreSettingsProvider } from "@/lib/store-settings-context";
 import { ThemeProvider } from "@/lib/theme-context";
+import SkipLink from "@/components/SkipLink";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -25,8 +26,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Tea Atelier",
-  description: "Where every leaf tells a story",
+  title: { default: "Tea Atelier", template: "%s | Tea Atelier" },
+  description:
+    "Small-batch matcha and loose-leaf teas, packed fresh and shipped across the Philippines.",
   icons: {
     icon: { url: "/images/favicon.png", type: "image/png" },
     apple: "/images/logo.png",
@@ -41,6 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${fraunces.variable} ${inter.variable} antialiased`}>
+        <SkipLink />
         <Script
           src="https://accounts.google.com/gsi/client"
           strategy="afterInteractive"

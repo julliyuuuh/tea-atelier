@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
           <h1 className="font-display text-3xl text-charcoal text-center mb-2">
             Forgot Password
           </h1>
-          <p className="font-body text-sm text-charcoal/60 text-center mb-8">
+          <p className="font-body text-sm text-charcoal/70 text-center mb-8">
             Enter your email and we'll send you a link to reset it
           </p>
 
@@ -106,10 +106,15 @@ export default function ForgotPasswordPage() {
           ) : (
             <ValidatedForm onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+                <label
+                  htmlFor="forgot-password-email"
+                  className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-2"
+                >
                   Email
                 </label>
                 <input
+                  id="forgot-password-email"
+                  autoComplete="email"
                   type="email"
                   required
                   autoFocus
@@ -122,7 +127,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:opacity-50"
+                className="w-full rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-sage transition-colors disabled:opacity-50"
               >
                 {isLoading ? "Sending..." : "Send Reset Link"}
               </button>

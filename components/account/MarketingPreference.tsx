@@ -96,7 +96,7 @@ export default function MarketingPreference({
           >
             Offers & tea updates
           </span>
-          <span className="mt-1 block text-xs leading-relaxed text-charcoal/60">
+          <span className="mt-1 block text-xs leading-relaxed text-charcoal/70">
             Choose whether to receive new arrivals, offers and tea inspiration.
           </span>
         </span>
@@ -123,7 +123,7 @@ export default function MarketingPreference({
           />
         </span>
       </label>
-      <p role="status" className="mt-3 font-body text-[11px] text-charcoal/50">
+      <p role="status" className="mt-3 font-body text-[11px] text-charcoal/70">
         {loading
           ? "Loading your preference..."
           : saving
@@ -144,11 +144,11 @@ export default function MarketingPreference({
           <span className="text-xs text-charcoal/70">
             Order & account emails
           </span>
-          <span className="rounded-full bg-sage/10 px-2.5 py-1 text-[10px] text-sage">
+          <span className="rounded-full bg-sage/10 px-2.5 py-1 text-[11px] text-sage">
             Always enabled
           </span>
         </div>
-        <p className="mt-2 text-[11px] leading-relaxed text-charcoal/50">
+        <p className="mt-2 text-[11px] leading-relaxed text-charcoal/70">
           Payment confirmations, order updates and security emails stay enabled.
           You can unsubscribe from offers at any time.
         </p>

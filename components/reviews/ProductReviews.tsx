@@ -54,7 +54,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
         >
           Ratings & reviews
         </h2>
-        <p className="mt-2 font-body text-xs text-charcoal/60">
+        <p className="mt-2 font-body text-xs text-charcoal/70">
           Purchased this tea?{" "}
           <Link
             href="/account"
@@ -65,7 +65,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
         </p>
       </div>
       {loading ? (
-        <p className="font-body text-sm text-charcoal/60">Loading reviews…</p>
+        <p className="font-body text-sm text-charcoal/70">Loading reviews…</p>
       ) : error ? (
         <div role="alert" className="font-body text-sm text-red-600">
           {error}
@@ -87,7 +87,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
                   size={24}
                   aria-hidden="true"
                 />
-                <p className="font-body text-sm text-charcoal/60">
+                <p className="font-body text-sm text-charcoal/70">
                   No reviews yet. Be the first to share your experience.
                 </p>
               </div>
@@ -99,7 +99,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
                   </span>
                   <div>
                     <ReviewStars rating={data.summary.average} />
-                    <p className="mt-1 font-body text-xs text-charcoal/50">
+                    <p className="mt-1 font-body text-xs text-charcoal/70">
                       Based on {data.summary.total} verified{" "}
                       {data.summary.total === 1 ? "review" : "reviews"}
                     </p>
@@ -109,7 +109,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
                   {data.summary.distribution.map((row) => (
                     <div
                       key={row.rating}
-                      className="flex items-center gap-3 font-body text-xs text-charcoal/60"
+                      className="flex items-center gap-3 font-body text-xs text-charcoal/70"
                     >
                       <span className="w-10">{row.rating} star</span>
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-sand/60">
@@ -136,7 +136,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
                         </span>
                         <ReviewStars rating={review.rating} />
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 font-body text-xs text-charcoal/50">
+                      <div className="flex flex-wrap items-center gap-3 font-body text-xs text-charcoal/70">
                         <span className="inline-flex items-center gap-1 text-sage">
                           <BadgeCheck size={13} aria-hidden="true" />
                           Verified purchase

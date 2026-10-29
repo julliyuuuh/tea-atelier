@@ -30,7 +30,7 @@ import MarketingPreference from "@/components/account/MarketingPreference";
 const actionClass =
   "inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-charcoal/20 px-4 py-2 font-body text-xs text-charcoal transition-colors hover:bg-sand/30 focus-visible:outline-2 focus-visible:outline-sage disabled:cursor-not-allowed disabled:opacity-50";
 const primaryClass =
-  "inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-sage px-5 py-2 font-body text-xs text-white transition-colors hover:bg-charcoal focus-visible:outline-2 focus-visible:outline-sage focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-charcoal px-5 py-2 font-body text-xs text-white transition-colors hover:bg-sage focus-visible:outline-2 focus-visible:outline-sage focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 function SettingsCard({
   title,
@@ -249,13 +249,13 @@ export default function SettingsTab({
   return (
     <div className="min-w-0">
       <div className="mb-6">
-        <p className="mb-1 font-body text-[10px] uppercase tracking-widest text-sage">
+        <p className="mb-1 font-body text-[11px] uppercase tracking-widest text-sage">
           Your preferences
         </p>
         <h2 className="font-display text-2xl text-charcoal">
           Account settings
         </h2>
-        <p className="mt-2 font-body text-sm leading-relaxed text-charcoal/60">
+        <p className="mt-2 font-body text-sm leading-relaxed text-charcoal/70">
           Manage your account, security and the way you shop.
         </p>
       </div>
@@ -295,7 +295,7 @@ export default function SettingsTab({
                 });
                 if (key === "emails") setEmailVisited(true);
               }}
-              className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-left font-body text-xs transition-colors focus-visible:outline-2 focus-visible:outline-sage ${activeSection === key ? "bg-sage/10 font-medium text-charcoal" : "text-charcoal/60 hover:bg-sand/25 hover:text-charcoal"}`}
+              className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-left font-body text-xs transition-colors focus-visible:outline-2 focus-visible:outline-sage ${activeSection === key ? "bg-sage/10 font-medium text-charcoal" : "text-charcoal/70 hover:bg-sand/25 hover:text-charcoal"}`}
             >
               <Icon size={16} aria-hidden="true" className="shrink-0" />
               {label}
@@ -314,7 +314,7 @@ export default function SettingsTab({
               icon={UserRound}
               badge={
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-body text-[10px] ${user?.isVerified ? "bg-sage/10 text-sage" : "bg-amber-50 text-amber-800"}`}
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-body text-[11px] ${user?.isVerified ? "bg-sage/10 text-sage" : "bg-amber-50 text-amber-800"}`}
                 >
                   {user?.isVerified && <Check size={12} />}
                   {user?.isVerified ? "Verified" : "Not verified"}
@@ -323,13 +323,13 @@ export default function SettingsTab({
             >
               <dl className="space-y-3 font-body text-sm">
                 <div>
-                  <dt className="text-xs text-charcoal/50">Name</dt>
+                  <dt className="text-xs text-charcoal/70">Name</dt>
                   <dd className="mt-1 break-words text-charcoal">
                     {user?.name || "Your account"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-charcoal/50">Email address</dt>
+                  <dt className="text-xs text-charcoal/70">Email address</dt>
                   <dd className="mt-1 break-all text-charcoal">
                     {user?.email}
                   </dd>
@@ -346,7 +346,7 @@ export default function SettingsTab({
               </div>
               {!user?.isVerified && (
                 <div className="mt-4 rounded-xl bg-sand/20 p-3">
-                  <p className="mb-3 font-body text-xs leading-relaxed text-charcoal/60">
+                  <p className="mb-3 font-body text-xs leading-relaxed text-charcoal/70">
                     Verify your email to receive account updates and subscribe
                     to offers.
                   </p>
@@ -398,11 +398,11 @@ export default function SettingsTab({
                   <h4 className="font-body text-sm font-medium text-charcoal">
                     Two-factor authentication
                   </h4>
-                  <p className="mt-1 font-body text-xs leading-relaxed text-charcoal/60">
+                  <p className="mt-1 font-body text-xs leading-relaxed text-charcoal/70">
                     Use a code from an authenticator app when you sign in.
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full bg-sand/30 px-2.5 py-1 font-body text-[10px] text-charcoal/60">
+                <span className="shrink-0 rounded-full bg-sand/30 px-2.5 py-1 font-body text-[11px] text-charcoal/70">
                   {isLoadingStatus
                     ? "Loading..."
                     : statusError
@@ -457,7 +457,7 @@ export default function SettingsTab({
                   </button>
                 ) : (
                   <div className="mt-4 rounded-xl border border-charcoal/10 bg-cream/50 p-4">
-                    <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/60">
+                    <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/70">
                       Scan this QR code with your authenticator app, then enter
                       its six-digit code.
                     </p>
@@ -474,7 +474,7 @@ export default function SettingsTab({
                       className="mt-4 space-y-3"
                     >
                       <label
-                        className="block font-body text-xs text-charcoal/60"
+                        className="block font-body text-xs text-charcoal/70"
                         htmlFor="settings-authenticator-code"
                       >
                         Authenticator code
@@ -536,7 +536,7 @@ export default function SettingsTab({
                 <h4 className="font-body text-sm font-medium text-charcoal">
                   Password
                 </h4>
-                <p className="mb-3 mt-1 font-body text-xs leading-relaxed text-charcoal/60">
+                <p className="mb-3 mt-1 font-body text-xs leading-relaxed text-charcoal/70">
                   Request a reset link to choose a new password.
                 </p>
                 <Link href="/forgot-password" className={actionClass}>
@@ -557,7 +557,7 @@ export default function SettingsTab({
               title="Appearance"
               icon={theme === "light" ? Sun : Moon}
             >
-              <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/60">
+              <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/70">
                 Choose the theme for this device. Changes apply immediately.
               </p>
               <div
@@ -573,7 +573,7 @@ export default function SettingsTab({
                     onClick={() => {
                       if (theme !== value) toggleTheme();
                     }}
-                    className={`flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 font-body text-sm transition-colors focus-visible:outline-2 focus-visible:outline-sage ${theme === value ? "border-sage bg-sage/10 text-charcoal" : "border-charcoal/10 text-charcoal/50 hover:border-sage/50"}`}
+                    className={`flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 font-body text-sm transition-colors focus-visible:outline-2 focus-visible:outline-sage ${theme === value ? "border-sage bg-sage/10 text-charcoal" : "border-charcoal/10 text-charcoal/70 hover:border-sage/50"}`}
                   >
                     {value === "light" ? <Sun size={16} /> : <Moon size={16} />}
                     {value === "light" ? "Light" : "Dark"}
@@ -609,7 +609,7 @@ export default function SettingsTab({
                       </button>
                     ))}
                   </div>
-                  <p className="mt-3 font-body text-xs leading-relaxed text-charcoal/50">
+                  <p className="mt-3 font-body text-xs leading-relaxed text-charcoal/70">
                     USD prices are estimates. Payments and refunds are processed
                     in PHP.
                   </p>
@@ -618,12 +618,12 @@ export default function SettingsTab({
               {currencyError && (
                 <p
                   role="status"
-                  className="mt-3 font-body text-xs text-charcoal/50"
+                  className="mt-3 font-body text-xs text-charcoal/70"
                 >
                   Currency preferences are temporarily unavailable.
                 </p>
               )}
-              <p className="mt-4 font-body text-[11px] text-charcoal/40">
+              <p className="mt-4 font-body text-[11px] text-charcoal/70">
                 Appearance preferences are saved on this device.
               </p>
             </SettingsCard>
@@ -635,7 +635,7 @@ export default function SettingsTab({
             hidden={activeSection !== "privacy"}
           >
             <SettingsCard title="Privacy & support" icon={Mail}>
-              <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/60">
+              <p className="mb-4 font-body text-xs leading-relaxed text-charcoal/70">
                 Learn how your information is handled or get help with your
                 account.
               </p>

@@ -7,6 +7,7 @@ import Hero from "@/components/Hero";
 import StorePromises from "@/components/StorePromises";
 import Categories from "@/components/Categories";
 import BestSellers from "@/components/BestSellers";
+import TeaFinder from "@/components/TeaFinder";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import PromoBanner from "@/components/PromoBanner";
 import Reviews from "@/components/Reviews";
@@ -40,6 +41,7 @@ export default function Home() {
         <StorePromises />
         <Categories />
         <BestSellers />
+        <TeaFinder />
         <WhyChooseUs />
         <PromoBanner />
         <Reviews />

@@ -9,6 +9,8 @@ import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
+import FreeShippingProgress from "@/components/FreeShippingProgress";
+import { useAuth } from "@/lib/auth-context";
 import { isProductAvailable } from "@/lib/products";
 
 export default function CartPage() {
@@ -28,6 +30,7 @@ export default function CartPage() {
     ready: limitsReady,
     error: limitsError,
   } = useBusiness();
+  const { user } = useAuth();
   const tier = approved ? limits.business : limits.standard;
   const limitError = purchaseViolation(
     selectedItems,
@@ -56,7 +59,7 @@ export default function CartPage() {
         <h1 className="font-display text-4xl text-charcoal mb-12">Your Cart</h1>
 
         {loading ? (
-          <p role="status" className="font-body text-sm text-charcoal/60">
+          <p role="status" className="font-body text-sm text-charcoal/70">
             Loading your cart...
           </p>
         ) : items.length === 0 ? (
@@ -71,7 +74,7 @@ export default function CartPage() {
             <h2 className="font-display text-2xl text-charcoal mb-2">
               Your cart is empty
             </h2>
-            <p className="font-body text-sm text-charcoal/60 mb-8 max-w-sm">
+            <p className="font-body text-sm text-charcoal/70 mb-8 max-w-sm">
               Find a tea for your next quiet moment. Our best sellers are a good
               place to start.
             </p>
@@ -109,7 +112,7 @@ export default function CartPage() {
                   />
                   Select all
                 </label>
-                <p role="status" className="font-body text-xs text-charcoal/60">
+                <p role="status" className="font-body text-xs text-charcoal/70">
                   {selectedItems.length} of {items.length} products selected
                 </p>
               </div>
@@ -141,10 +144,10 @@ export default function CartPage() {
 
                   <div className="min-w-0 flex-1 flex flex-col justify-between gap-3">
                     <div>
-                      <h3 className="font-display text-xl text-charcoal mb-1">
+                      <h2 className="font-display text-xl text-charcoal mb-1">
                         {item.product.name}
-                      </h3>
-                      <span className="font-body text-sm text-charcoal/60">
+                      </h2>
+                      <span className="font-body text-sm text-charcoal/70">
                         <DisplayPrice pesos={Number(item.product.price)} />
                       </span>
                     </div>
@@ -182,7 +185,8 @@ export default function CartPage() {
 
                       <button
                         onClick={() => removeFromCart(item.product.id)}
-                        className="font-body text-xs uppercase tracking-wide text-charcoal/50 hover:text-sage transition-colors"
+                        aria-label={`Remove ${item.product.name} from cart`}
+                        className="-m-2 p-2 font-body text-xs uppercase tracking-wide text-charcoal/70 hover:text-sage transition-colors"
                       >
                         Remove
                       </button>
@@ -196,10 +200,14 @@ export default function CartPage() {
               <h2 className="font-display text-xl text-charcoal mb-6">
                 Order Summary
               </h2>
-              <p className="font-body text-xs text-charcoal/60 mb-5">
+              <p className="font-body text-xs text-charcoal/70 mb-5">
                 {selectedQuantity} item{selectedQuantity === 1 ? "" : "s"}{" "}
                 selected. Unselected products stay in your cart.
               </p>
+              <FreeShippingProgress
+                subtotal={subtotal}
+                className="mb-6 rounded-2xl bg-cream/70 p-4"
+              />
               <div className="flex justify-between font-body text-sm text-charcoal/70 mb-3">
                 <span>Subtotal</span>
                 <span>
@@ -217,7 +225,7 @@ export default function CartPage() {
                 </span>
               </div>
 
-              <p className="mb-3 text-xs text-charcoal/50">
+              <p className="mb-3 text-xs text-charcoal/70">
                 {selectedQuantity}/{tier.totalUnits} units selected · Up to{" "}
                 {php(tier.totalCents)} including delivery
               </p>
@@ -239,17 +247,38 @@ export default function CartPage() {
               !unavailableSelection &&
               !limitError &&
               limitsReady ? (
-                <Link
-                  href="/checkout"
-                  className="block text-center rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors"
-                >
-                  Checkout ({selectedQuantity})
-                </Link>
+                user ? (
+                  <Link
+                    href="/checkout"
+                    className="block text-center rounded-full bg-charcoal text-cream font-body text-sm py-4 hover:bg-sage transition-colors"
+                  >
+                    Checkout ({selectedQuantity})
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      href="/login?redirect=%2Fcheckout"
+                      className="block text-center rounded-full bg-charcoal text-cream font-body text-sm py-4 hover:bg-sage transition-colors"
+                    >
+                      Sign in to check out
+                    </Link>
+                    <p className="mt-3 text-center font-body text-xs text-charcoal/70">
+                      New here?{" "}
+                      <Link
+                        href="/signup?redirect=%2Fcheckout"
+                        className="text-sage underline underline-offset-2 hover:text-charcoal"
+                      >
+                        Create an account
+                      </Link>{" "}
+                      in a minute. Your cart comes with you.
+                    </p>
+                  </>
+                )
               ) : (
                 <button
                   type="button"
                   disabled
-                  className="block w-full cursor-not-allowed rounded-full bg-charcoal/10 py-4 text-center font-body text-sm text-charcoal/50"
+                  className="block w-full cursor-not-allowed rounded-full bg-charcoal/10 py-4 text-center font-body text-sm text-charcoal/70"
                 >
                   {!limitsReady
                     ? "Loading purchase limits…"

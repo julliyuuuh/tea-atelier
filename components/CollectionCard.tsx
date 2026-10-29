@@ -10,6 +10,7 @@ export default function CollectionCard({
   imagePosition = "object-center",
   className = "h-64",
   sizes = "(min-width: 640px) 33vw, 100vw",
+  headingLevel = "h3",
 }: {
   href: string;
   name: string;
@@ -18,7 +19,9 @@ export default function CollectionCard({
   imagePosition?: string;
   className?: string;
   sizes?: string;
+  headingLevel?: "h2" | "h3";
 }) {
+  const Heading = headingLevel;
   return (
     <Link
       href={href}
@@ -36,7 +39,7 @@ export default function CollectionCard({
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent transition-opacity duration-500 group-hover:from-black/85" />
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-6">
         <div>
-          <h3 className="font-display text-2xl text-white">{name}</h3>
+          <Heading className="font-display text-2xl text-white">{name}</Heading>
           {tagline && (
             <p className="mt-1 max-w-xs font-body text-sm leading-snug text-white/80">
               {tagline}

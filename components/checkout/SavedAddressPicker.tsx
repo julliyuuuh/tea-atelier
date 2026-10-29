@@ -74,7 +74,7 @@ export default function SavedAddressPicker({
   return (
     <div className="mb-6 space-y-3">
       {loading && (
-        <p role="status" className="font-body text-sm text-charcoal/60">
+        <p role="status" className="font-body text-sm text-charcoal/70">
           Loading saved addresses…
         </p>
       )}
@@ -104,7 +104,7 @@ export default function SavedAddressPicker({
                 {address.address_label || "Saved address"}
                 {address.default_address ? " · Default shipping" : ""}
               </span>
-              <span className="block break-words text-charcoal/60">
+              <span className="block break-words text-charcoal/70">
                 {[
                   address.address_line1,
                   address.address_line2,

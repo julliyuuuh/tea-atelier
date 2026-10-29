@@ -3,7 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-sage: #778873;
+  --color-sage: #5c6b58;
   --color-sage-light: #a1bc98;
   --color-sand: #dccfc0;
   --color-cream: #fdf6ed;
@@ -116,4 +116,10 @@ body {
 
 .dark [data-validation-invalid="true"] {
   border-color: #fca5a5 !important;
+}
+
+/* Visible, on-brand keyboard focus everywhere (mouse clicks don't trigger it). */
+:focus-visible {
+  outline: 2px solid var(--color-sage);
+  outline-offset: 3px;
 }

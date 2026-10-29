@@ -35,7 +35,7 @@ export default function FormField({
         htmlFor={id}
         animate={{ color: focused ? "var(--color-sage, #8A9A7E)" : undefined }}
         className={`font-body text-xs tracking-wide uppercase block mb-2 ${
-          focused ? "text-sage" : "text-charcoal/60"
+          focused ? "text-sage" : "text-charcoal/70"
         }`}
       >
         {label}
@@ -59,11 +59,11 @@ export default function FormField({
         }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         className={`w-full rounded-xl border px-4 py-3 font-body text-sm text-charcoal outline-none ${
-          disabled ? "text-charcoal/50 bg-sand/20 cursor-not-allowed" : ""
+          disabled ? "text-charcoal/70 bg-sand/20 cursor-not-allowed" : ""
         }`}
       />
       {hint && (
-        <p className="font-body text-xs text-charcoal/40 mt-1.5">{hint}</p>
+        <p className="font-body text-xs text-charcoal/70 mt-1.5">{hint}</p>
       )}
     </div>
   );

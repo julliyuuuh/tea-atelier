@@ -13,7 +13,7 @@ export default function StockErrorModal() {
         <p className="font-body text-sm text-charcoal mb-6">{stockError}</p>
         <button
           onClick={clearStockError}
-          className="bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-3 rounded-lg hover:bg-charcoal transition-colors"
+          className="bg-charcoal text-cream font-body text-sm tracking-wide uppercase px-8 py-3 rounded-lg hover:bg-sage transition-colors"
         >
           Okay
         </button>

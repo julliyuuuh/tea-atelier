@@ -142,6 +142,7 @@ export default function CollectionsPage() {
                       tagline={item.description}
                       image={card.image}
                       imagePosition={card.imagePosition}
+                      headingLevel="h2"
                       className={featured ? "h-[420px]" : "h-80"}
                       sizes={
                         featured

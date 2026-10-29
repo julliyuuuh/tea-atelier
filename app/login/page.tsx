@@ -209,7 +209,7 @@ function LoginForm() {
           <h1 className="font-display text-3xl text-charcoal text-center mb-2">
             {needsTotp ? "Two-Factor Authentication" : "Welcome Back"}
           </h1>
-          <p className="font-body text-sm text-charcoal/60 text-center mb-8">
+          <p className="font-body text-sm text-charcoal/70 text-center mb-8">
             {needsTotp
               ? "Enter the 6-digit code from your authenticator app"
               : "Sign in to continue to your account"}
@@ -232,6 +232,8 @@ function LoginForm() {
                     }}
                     type="text"
                     inputMode="numeric"
+                    autoComplete={i === 0 ? "one-time-code" : "off"}
+                    aria-label={`Digit ${i + 1} of 6`}
                     maxLength={1}
                     autoFocus={i === 0}
                     value={digit}
@@ -245,7 +247,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={isLoading || totpCode.length !== 6}
-                className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:opacity-50"
+                className="w-full rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-sage transition-colors disabled:opacity-50"
               >
                 {isLoading ? "Verifying..." : "Verify"}
               </button>
@@ -257,7 +259,7 @@ function LoginForm() {
                   setOtpDigits(Array(6).fill(""));
                   setErrorMessage("");
                 }}
-                className="w-full font-body text-xs text-charcoal/50 hover:text-charcoal transition-colors"
+                className="w-full font-body text-xs text-charcoal/70 hover:text-charcoal transition-colors"
               >
                 Back
               </button>
@@ -266,10 +268,15 @@ function LoginForm() {
             <>
               <ValidatedForm onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+                  <label
+                    htmlFor="login-email"
+                    className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-2"
+                  >
                     Email
                   </label>
                   <input
+                    id="login-email"
+                    autoComplete="email"
                     type="email"
                     required
                     value={email}
@@ -279,10 +286,15 @@ function LoginForm() {
                 </div>
 
                 <div>
-                  <label className="font-body text-xs tracking-wide uppercase text-charcoal/60 block mb-2">
+                  <label
+                    htmlFor="login-password"
+                    className="font-body text-xs tracking-wide uppercase text-charcoal/70 block mb-2"
+                  >
                     Password
                   </label>
                   <input
+                    id="login-password"
+                    autoComplete="current-password"
                     type="password"
                     required
                     value={password}
@@ -294,7 +306,7 @@ function LoginForm() {
                 <div className="text-right">
                   <a
                     href="/forgot-password"
-                    className="font-body text-xs text-charcoal/50 hover:text-sage transition-colors"
+                    className="font-body text-xs text-charcoal/70 hover:text-sage transition-colors"
                   >
                     Forgot password?
                   </a>
@@ -303,14 +315,14 @@ function LoginForm() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-charcoal transition-colors disabled:opacity-50"
+                  className="w-full rounded-full bg-charcoal text-cream font-body text-sm tracking-wide uppercase py-4 hover:bg-sage transition-colors disabled:opacity-50"
                 >
                   {isLoading ? "Logging in..." : "Log In"}
                 </button>
               </ValidatedForm>
 
               <div className="relative my-6 text-center">
-                <span className="relative bg-cream px-3 font-body text-xs text-charcoal/40 uppercase tracking-wide z-10">
+                <span className="relative bg-cream px-3 font-body text-xs text-charcoal/70 uppercase tracking-wide z-10">
                   Or continue with
                 </span>
                 <div className="absolute top-1/2 left-0 right-0 border-t border-charcoal/10" />
@@ -323,21 +335,25 @@ function LoginForm() {
                 ></div>
               </div>
 
-              <p className="font-body text-sm text-charcoal/60 text-center mt-8">
+              <p className="font-body text-sm text-charcoal/70 text-center mt-8">
                 Don't have an account?{" "}
                 <Link
-                  href="/signup"
-                  className="text-sage hover:text-charcoal transition-colors"
+                  href={
+                    redirectTo === "/"
+                      ? "/signup"
+                      : `/signup?redirect=${encodeURIComponent(redirectTo)}`
+                  }
+                  className="text-sage underline underline-offset-2 hover:text-charcoal transition-colors"
                 >
                   Sign up
                 </Link>
               </p>
 
-              <p className="font-body text-xs text-charcoal/40 text-center mt-4">
+              <p className="font-body text-xs text-charcoal/70 text-center mt-4">
                 Administrator?{" "}
                 <Link
                   href="/admin/login"
-                  className="text-sage hover:text-charcoal transition-colors"
+                  className="text-sage underline underline-offset-2 hover:text-charcoal transition-colors"
                 >
                   Click here
                 </Link>

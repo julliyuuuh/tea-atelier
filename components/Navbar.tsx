@@ -27,6 +27,41 @@ const links = [
   { label: "Contact", href: "/contact" },
 ];
 
+// Cart icon with a count that pops whenever an item is added.
+function CartButton({ count }: { count: number }) {
+  return (
+    <Link
+      href="/cart"
+      className="relative w-10 h-10 flex items-center justify-center rounded-full bg-sage text-cream hover:bg-charcoal transition-colors"
+      aria-label={
+        count > 0 ? `Cart, ${count} ${count === 1 ? "item" : "items"}` : "Cart"
+      }
+    >
+      <motion.span
+        key={count}
+        initial={count > 0 ? { scale: 0.7, rotate: -12 } : false}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", stiffness: 500, damping: 15 }}
+        className="flex"
+      >
+        <ShoppingBag size={18} strokeWidth={1.5} aria-hidden="true" />
+      </motion.span>
+      {count > 0 && (
+        <motion.span
+          key={`badge-${count}`}
+          initial={{ scale: 0.4 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 600, damping: 14 }}
+          aria-hidden="true"
+          className="absolute -top-1 -right-1 bg-charcoal text-cream text-[11px] min-w-5 h-5 px-1 rounded-full flex items-center justify-center ring-2 ring-cream"
+        >
+          {count > 99 ? "99+" : count}
+        </motion.span>
+      )}
+    </Link>
+  );
+}
+
 export default function Navbar() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -159,7 +194,7 @@ export default function Navbar() {
                             >
                               <Heart size={16} strokeWidth={1.5} /> Wishlist
                               {wishlistItems.length > 0 && (
-                                <span className="ml-auto bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                                <span className="ml-auto bg-charcoal text-cream text-[11px] w-4 h-4 rounded-full flex items-center justify-center">
                                   {wishlistItems.length}
                                 </span>
                               )}
@@ -205,25 +240,19 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
 
-              <Link
-                href="/cart"
-                className="relative w-9 h-9 flex items-center justify-center rounded-full bg-sage text-cream hover:bg-charcoal transition-colors"
-                aria-label="Cart"
-              >
-                <ShoppingBag size={18} strokeWidth={1.5} />
-                {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-charcoal text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-                    {totalItems}
-                  </span>
-                )}
-              </Link>
+              <CartButton count={totalItems} />
+            </div>
+
+            <div className="md:hidden">
+              <CartButton count={totalItems} />
             </div>
 
             {/* Mobile Hamburger */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden flex flex-col justify-center gap-1.5 w-8 h-8"
-              aria-label="Toggle menu"
+              className="md:hidden flex flex-col items-center justify-center gap-1.5 w-10 h-10"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
             >
               <motion.span
                 animate={menuOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
