@@ -37,12 +37,15 @@ const FALLBACK_ITEMS: CollectionItem[] = COLLECTIONS.map((collection, i) => ({
   href: `/collections/${collection.slug}`,
 }));
 
-function cardFor(item: CollectionItem): {
+function cardFor(
+  item: CollectionItem,
+  index: number,
+): {
   href: string;
   image: string;
   imagePosition?: string;
 } {
-  const href = collectionHref(item.name, item.href);
+  const href = collectionHref(item.name, item.href, index);
   const known = getCollection(href.replace(/^\/collections\//, ""));
   if (known && (!item.image || PLACEHOLDER_ART.includes(item.image)))
     return { href, image: known.image, imagePosition: known.imagePosition };
@@ -125,7 +128,7 @@ export default function CollectionsPage() {
                 />
               ))
             : items.map((item, i) => {
-                const card = cardFor(item);
+                const card = cardFor(item, i);
                 const featured = i === 0;
                 return (
                   <motion.div

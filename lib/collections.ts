@@ -105,18 +105,43 @@ const normalize = (value: string) =>
     .replace(/^the\s+/, "")
     .trim();
 
-// CMS collection items carry their own link, which defaults to the shop. When
-// it is one of those generic links, send the card to the matching collection.
+// Words that identify each collection when the CMS name differs slightly.
+const KEYWORDS: Record<string, string[]> = {
+  "morning-ritual": ["morning", "ritual"],
+  "matcha-moments": ["matcha"],
+  "atelier-essentials": ["essential", "accessor", "tool", "teaware"],
+};
+
+export function matchCollection(name: string) {
+  const wanted = normalize(name);
+  return (
+    COLLECTIONS.find((collection) =>
+      [collection.name, ...(collection.aliases ?? [])].some(
+        (candidate) => normalize(candidate) === wanted,
+      ),
+    ) ??
+    COLLECTIONS.find((collection) =>
+      KEYWORDS[collection.slug]?.some((word) => wanted.includes(word)),
+    )
+  );
+}
+
+// CMS collection cards always open their collection page when the name
+// matches one. Otherwise a generic link (the editor defaults to /shop) falls
+// back to the collection in the same position, and any custom link is kept.
 const GENERIC_LINKS = ["", "#", "/collections", "/shop"];
 
-export function collectionHref(name: string, href?: string | null) {
-  if (!GENERIC_LINKS.includes((href ?? "").trim().replace(/\/+$/, ""))) {
-    return href as string;
-  }
-  const match = COLLECTIONS.find((collection) =>
-    [collection.name, ...(collection.aliases ?? [])].some(
-      (candidate) => normalize(candidate) === normalize(name),
-    ),
+export function collectionHref(
+  name: string,
+  href?: string | null,
+  index?: number,
+) {
+  const generic = GENERIC_LINKS.includes(
+    (href ?? "").trim().replace(/\/+$/, ""),
   );
-  return match ? `/collections/${match.slug}` : href || "/collections";
+  const match =
+    matchCollection(name) ??
+    (generic && index !== undefined ? COLLECTIONS[index] : undefined);
+  if (match) return `/collections/${match.slug}`;
+  return href || "/collections";
 }

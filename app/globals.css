@@ -123,3 +123,23 @@ body {
   outline: 2px solid var(--color-sage);
   outline-offset: 3px;
 }
+
+/* Fields already show focus with their border; an offset ring would double
+   it (and clash with the red invalid border). Use a soft glow instead. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-sage) 22%, transparent);
+}
+
+[data-validation-invalid="true"]:focus-visible {
+  box-shadow: 0 0 0 3px rgb(185 28 28 / 0.15);
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-sage);
+  outline-offset: 2px;
+}
