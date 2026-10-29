@@ -10,15 +10,6 @@ import { isOptimizableImage } from "@/lib/image-src";
 import { useCart } from "@/lib/cart-context";
 import { isProductAvailable, type Product } from "@/lib/products";
 
-const offsets = [
-  "md:mt-0",
-  "md:mt-12",
-  "md:mt-0",
-  "md:mt-12",
-  "md:mt-0",
-  "md:mt-12",
-];
-
 export default function BestSellers() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,11 +61,11 @@ export default function BestSellers() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-16">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-12">
         {isLoading &&
-          offsets.map((offset, i) => (
-            <div key={i} className={offset} aria-hidden="true">
-              <SkeletonBlock className="aspect-[3/4] mb-4 rounded-none" />
+          [0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} aria-hidden="true">
+              <SkeletonBlock className="aspect-[4/5] mb-4 rounded-2xl" />
               <SkeletonBlock className="h-5 w-2/3 mb-2" />
               <SkeletonBlock className="h-4 w-1/4" />
             </div>
@@ -86,12 +77,16 @@ export default function BestSellers() {
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, ease: "easeOut", delay: (i % 3) * 0.08 }}
-            className={`group ${offsets[i % offsets.length]}`}
+            transition={{
+              duration: 0.5,
+              ease: "easeOut",
+              delay: (i % 3) * 0.08,
+            }}
+            className="group flex flex-col"
           >
             <Link
               href={`/shop/${product.id}`}
-              className="relative block aspect-[3/4] overflow-hidden bg-sand mb-4"
+              className="relative block aspect-[4/5] overflow-hidden rounded-2xl bg-sand mb-5"
             >
               <Image
                 src={product.image}
@@ -101,7 +96,7 @@ export default function BestSellers() {
                 unoptimized={!isOptimizableImage(product.image)}
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
-              <span className="absolute top-4 left-4 bg-cream/90 px-3 py-1 font-body text-[10px] tracking-[0.15em] uppercase text-charcoal">
+              <span className="absolute top-4 left-4 rounded-full bg-cream/90 px-3 py-1 font-body text-[10px] tracking-[0.15em] uppercase text-charcoal">
                 {product.category}
               </span>
               {i < 3 && (
@@ -109,7 +104,7 @@ export default function BestSellers() {
                   No. {i + 1}
                 </span>
               )}
-              <span className="absolute inset-x-4 bottom-4 translate-y-2 bg-cream/95 py-3 text-center font-body text-[11px] tracking-[0.15em] uppercase text-charcoal opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              <span className="absolute inset-x-4 bottom-4 translate-y-2 rounded-full bg-cream/95 py-3 text-center font-body text-[11px] tracking-[0.15em] uppercase text-charcoal opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                 View details
               </span>
             </Link>
@@ -136,7 +131,7 @@ export default function BestSellers() {
                     ? `Add ${product.name} to cart`
                     : `${product.name} is out of stock`
                 }
-                className="shrink-0 font-body text-xs tracking-wide uppercase border-b border-charcoal/40 pb-0.5 text-charcoal/80 hover:border-sage hover:text-sage transition-colors px-1 disabled:cursor-not-allowed disabled:opacity-40"
+                className="shrink-0 rounded-full border border-charcoal/20 px-4 py-2 font-body text-[11px] tracking-[0.12em] uppercase text-charcoal hover:border-charcoal hover:bg-charcoal hover:text-cream transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-charcoal disabled:hover:border-charcoal/20"
               >
                 {isProductAvailable(product) ? "Add to Cart" : "Out of Stock"}
               </button>

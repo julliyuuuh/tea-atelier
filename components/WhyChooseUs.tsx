@@ -38,7 +38,7 @@ export default function WhyChooseUs() {
   if (reasons.length === 0) return null;
 
   return (
-    <section className="max-w-7xl mx-auto px-8 py-16 md:py-24 border-t border-charcoal/10">
+    <section className="max-w-7xl mx-auto px-8 py-16 md:py-24">
       <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-4 block">
         Our Promise
       </span>
@@ -46,7 +46,7 @@ export default function WhyChooseUs() {
         Why Choose Tea Atelier
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {reasons.map((reason, i) => (
           <motion.div
             key={reason.id}
@@ -54,9 +54,7 @@ export default function WhyChooseUs() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.5, delay: i * 0.1 }}
-            className={`px-6 py-8 md:py-0 ${
-              i !== 0 ? "md:border-l border-charcoal/10" : ""
-            }`}
+            className="rounded-2xl border border-charcoal/10 bg-sand/25 p-7"
           >
             <span className="font-display text-3xl text-sage">
               {String(i + 1).padStart(2, "0")}

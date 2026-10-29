@@ -9,6 +9,7 @@ import DisplayPrice from "@/components/DisplayPrice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductReviews from "@/components/reviews/ProductReviews";
+import StorePromises from "@/components/StorePromises";
 import { useCart } from "@/lib/cart-context";
 import { isProductAvailable, type Product } from "@/lib/products";
 import Link from "next/link";
@@ -190,6 +191,7 @@ export default function ProductDetailsPage() {
               />
             </button>
           </div>
+          <StorePromises compact />
         </motion.div>
       </div>
 

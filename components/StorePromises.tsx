@@ -6,9 +6,15 @@ import DisplayPrice from "@/components/DisplayPrice";
 import { useStoreSettings } from "@/lib/store-settings-context";
 import { PAYMENT_OPTIONS, type PaymentOption } from "@/lib/store-settings";
 
+const COLUMNS = ["", "", "lg:grid-cols-2", "lg:grid-cols-3", "lg:grid-cols-4"];
+
 // Every line here comes from the admin's store settings, so the strip never
-// promises something checkout won't honour.
-export default function StorePromises() {
+// promises something checkout won't honour. `compact` is the product-page list.
+export default function StorePromises({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
   const { settings, ready } = useStoreSettings();
   if (!ready) return null;
 
@@ -49,21 +55,53 @@ export default function StorePromises() {
     },
   ].filter((item) => !!item);
 
+  if (compact) {
+    return (
+      <ul
+        aria-label="Store promises"
+        className="mt-8 space-y-3 border-t border-charcoal/10 pt-6"
+      >
+        {items.map(({ icon: Icon, title, copy }) => (
+          <li
+            key={title}
+            className="flex items-center gap-3 font-body text-sm text-charcoal/70"
+          >
+            <Icon
+              aria-hidden="true"
+              strokeWidth={1.5}
+              className="h-4 w-4 shrink-0 text-sage"
+            />
+            <span>
+              <span className="text-charcoal">{title}</span>
+              <span className="mx-1.5 text-charcoal/30">·</span>
+              {copy}
+            </span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   return (
-    <section aria-label="Store promises" className="max-w-7xl mx-auto px-8">
+    <section
+      aria-label="Store promises"
+      className="max-w-7xl mx-auto px-8 pt-4"
+    >
       <motion.ul
         initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-b border-charcoal/20"
+        className={`grid grid-cols-1 ${COLUMNS[items.length]} rounded-2xl border border-charcoal/10 bg-sand/25 px-6`}
       >
         {items.map(({ icon: Icon, title, copy }, i) => (
           <li
             key={title}
             className={`flex items-start gap-4 py-6 lg:px-6 ${
-              i !== 0 ? "border-t sm:border-t-0 lg:border-l border-charcoal/10" : ""
-            } ${i === 0 ? "lg:pl-0" : ""}`}
+              i === 0
+                ? "lg:pl-0"
+                : "border-t lg:border-t-0 lg:border-l border-charcoal/10"
+            }`}
           >
             <Icon
               aria-hidden="true"

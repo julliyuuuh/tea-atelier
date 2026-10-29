@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/lib/cart-context";
 import Link from "next/link";
+import { ShoppingBag } from "lucide-react";
 import { isProductAvailable } from "@/lib/products";
 
 export default function CartPage() {
@@ -59,17 +60,36 @@ export default function CartPage() {
             Loading your cart...
           </p>
         ) : items.length === 0 ? (
-          <div className="text-center py-24">
-            <p className="font-body text-charcoal/60 mb-6">
-              Your cart is empty.
+          <div className="flex flex-col items-center rounded-3xl border border-charcoal/10 bg-sand/25 px-6 py-20 text-center">
+            <span className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-cream text-sage">
+              <ShoppingBag
+                aria-hidden="true"
+                strokeWidth={1.5}
+                className="h-7 w-7"
+              />
+            </span>
+            <h2 className="font-display text-2xl text-charcoal mb-2">
+              Your cart is empty
+            </h2>
+            <p className="font-body text-sm text-charcoal/60 mb-8 max-w-sm">
+              Find a tea for your next quiet moment. Our best sellers are a good
+              place to start.
             </p>
 
-            <Link
-              href="/shop"
-              className="inline-block rounded-full bg-sage text-cream font-body text-sm tracking-wide uppercase px-8 py-4 hover:bg-charcoal transition-colors"
-            >
-              Continue Shopping
-            </Link>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link
+                href="/shop"
+                className="inline-block rounded-full bg-charcoal text-cream font-body text-xs tracking-[0.15em] uppercase px-8 py-4 hover:bg-sage transition-colors"
+              >
+                Shop all teas
+              </Link>
+              <Link
+                href="/collections"
+                className="inline-block rounded-full border border-charcoal/25 text-charcoal font-body text-xs tracking-[0.15em] uppercase px-8 py-4 hover:border-charcoal transition-colors"
+              >
+                Browse collections
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">

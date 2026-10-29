@@ -43,7 +43,7 @@ export default function Reviews() {
   if (reviews.length === 0) return null;
 
   return (
-    <section className="max-w-7xl mx-auto px-8 py-16 md:py-24 border-t border-charcoal/10">
+    <section className="max-w-7xl mx-auto px-8 py-16 md:py-24">
       <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-4 block">
         Testimonials
       </span>
@@ -51,7 +51,7 @@ export default function Reviews() {
         What Our Customers Say
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-14">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {reviews.map((review, i) => (
           <motion.figure
             key={review.id}
@@ -59,7 +59,7 @@ export default function Reviews() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, delay: i * 0.15 }}
-            className={i === 1 ? "md:mt-10" : ""}
+            className="flex flex-col rounded-2xl border border-charcoal/10 bg-sand/25 p-8"
           >
             <span
               aria-hidden="true"
@@ -67,10 +67,10 @@ export default function Reviews() {
             >
               “
             </span>
-            <blockquote className="font-display italic text-2xl text-charcoal leading-snug mb-6">
+            <blockquote className="flex-1 font-display italic text-xl md:text-2xl text-charcoal leading-snug mb-8">
               {review.quote}
             </blockquote>
-            <figcaption className="flex items-center gap-3">
+            <figcaption className="flex items-center justify-between gap-3 border-t border-charcoal/10 pt-5">
               <span className="font-body text-xs tracking-[0.15em] uppercase text-charcoal/70">
                 {review.name}
               </span>

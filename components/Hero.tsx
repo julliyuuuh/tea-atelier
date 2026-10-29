@@ -49,40 +49,30 @@ export default function Hero(): React.JSX.Element | null {
   if (!hero) return null;
 
   return (
-    <section className="max-w-7xl mx-auto px-8 pt-10 md:pt-14">
-      <div className="flex items-baseline justify-between border-t border-b border-charcoal/20 py-3 font-body text-[11px] tracking-[0.25em] uppercase text-charcoal/60">
-        <span>Tea Atelier</span>
-        <span>{hero.volume_label}</span>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-12 md:divide-x md:divide-charcoal/20">
+    <section className="max-w-7xl mx-auto px-8 pt-6 md:pt-10">
+      <div className="grid grid-cols-1 md:grid-cols-12 md:items-center md:gap-12">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE_OUT }}
-          className="md:col-span-5 flex flex-col justify-center py-16 md:py-24 md:pr-10"
+          className="md:col-span-5 flex flex-col justify-center pt-10 pb-12 md:py-20"
         >
           <span className="font-body text-xs tracking-[0.2em] uppercase text-sage mb-6">
             {hero.eyebrow}
           </span>
 
-          <h1
-            className="font-display text-4xl md:text-5xl leading-[1.15] text-charcoal mb-8
-                      first-letter:text-7xl md:first-letter:text-8xl first-letter:font-display
-                      first-letter:float-left first-letter:leading-[0.8] first-letter:pr-2
-                      first-letter:text-sage"
-          >
+          <h1 className="font-display text-[2.75rem] md:text-6xl leading-[1.05] tracking-tight text-charcoal mb-6 text-balance">
             {hero.heading}
           </h1>
 
-          <p className="font-body text-sm leading-relaxed text-charcoal/60 mb-10 max-w-sm">
+          <p className="font-body text-base leading-relaxed text-charcoal/70 mb-10 max-w-md">
             {hero.subheading}
           </p>
 
           <div className="flex flex-wrap items-center gap-x-8 gap-y-5">
             <Link
               href={hero.cta_link}
-              className="group inline-flex items-center gap-3 bg-charcoal text-cream font-body text-xs tracking-[0.15em] uppercase px-7 py-4 hover:bg-sage transition-colors"
+              className="group inline-flex items-center gap-3 rounded-full bg-charcoal text-cream font-body text-xs tracking-[0.15em] uppercase px-8 py-4 shadow-sm hover:bg-sage transition-colors"
             >
               {hero.cta_text}
               <span className="transition-transform duration-300 group-hover:translate-x-1">
@@ -102,9 +92,9 @@ export default function Hero(): React.JSX.Element | null {
           initial={{ opacity: 0, scale: 1.04 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, ease: EASE_OUT }}
-          className="md:col-span-7 relative py-10 md:py-16 md:pl-10"
+          className="md:col-span-7 relative pb-10 md:py-10"
         >
-          <div className="group relative aspect-[4/3] md:aspect-auto md:h-[540px] overflow-hidden bg-sand">
+          <div className="group relative aspect-[4/3] md:aspect-auto md:h-[560px] overflow-hidden rounded-3xl bg-sand">
             <Image
               src={hero.image_url}
               alt={hero.image_caption || "Loose tea leaves and ceramic ware"}
@@ -114,19 +104,18 @@ export default function Hero(): React.JSX.Element | null {
               sizes="(min-width: 768px) 60vw, 100vw"
               className="object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-[1.03]"
             />
-
-            <span className="absolute top-4 right-4 font-body text-xs tracking-widest text-cream/90">
-              01
-            </span>
+            {hero.volume_label && (
+              <span className="absolute top-5 left-5 rounded-full bg-cream/90 px-4 py-1.5 font-body text-[11px] tracking-[0.2em] uppercase text-charcoal backdrop-blur">
+                {hero.volume_label}
+              </span>
+            )}
           </div>
 
-          <p className="mt-3 font-body text-[11px] tracking-wide text-charcoal/40 uppercase">
+          <p className="mt-3 px-1 font-body text-[11px] tracking-[0.15em] text-charcoal/50 uppercase">
             {hero.image_caption}
           </p>
         </motion.div>
       </div>
-
-      <div className="border-b border-charcoal/20" />
     </section>
   );
 }
@@ -135,26 +124,22 @@ export default function Hero(): React.JSX.Element | null {
 function HeroSkeleton() {
   return (
     <section
-      className="max-w-7xl mx-auto px-8 pt-10 md:pt-14"
+      className="max-w-7xl mx-auto px-8 pt-6 md:pt-10"
       aria-busy="true"
       aria-label="Loading"
     >
-      <div className="border-t border-b border-charcoal/20 py-3">
-        <SkeletonBlock className="h-3 w-24" />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-12 md:divide-x md:divide-charcoal/20">
-        <div className="md:col-span-5 flex flex-col justify-center gap-6 py-16 md:py-24 md:pr-10">
+      <div className="grid grid-cols-1 md:grid-cols-12 md:items-center md:gap-12">
+        <div className="md:col-span-5 flex flex-col justify-center gap-6 pt-10 pb-12 md:py-20">
           <SkeletonBlock className="h-3 w-32" />
-          <SkeletonBlock className="h-12 w-full" />
-          <SkeletonBlock className="h-12 w-3/4" />
-          <SkeletonBlock className="h-16 w-full max-w-sm" />
-          <SkeletonBlock className="h-12 w-48" />
+          <SkeletonBlock className="h-14 w-full" />
+          <SkeletonBlock className="h-14 w-3/4" />
+          <SkeletonBlock className="h-16 w-full max-w-md" />
+          <SkeletonBlock className="h-12 w-52 rounded-full" />
         </div>
-        <div className="md:col-span-7 py-10 md:py-16 md:pl-10">
-          <SkeletonBlock className="aspect-[4/3] md:aspect-auto md:h-[540px] w-full rounded-none" />
+        <div className="md:col-span-7 pb-10 md:py-10">
+          <SkeletonBlock className="aspect-[4/3] md:aspect-auto md:h-[560px] w-full rounded-3xl" />
         </div>
       </div>
-      <div className="border-b border-charcoal/20" />
     </section>
   );
 }

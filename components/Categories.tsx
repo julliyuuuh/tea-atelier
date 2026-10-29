@@ -62,9 +62,12 @@ export default function Categories() {
       </div>
 
       {categories === null && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6" aria-hidden="true">
+        <div
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          aria-hidden="true"
+        >
           {[0, 1, 2].map((i) => (
-            <SkeletonBlock key={i} className="h-[420px] rounded-none" />
+            <SkeletonBlock key={i} className="h-[420px] rounded-2xl" />
           ))}
         </div>
       )}
@@ -103,7 +106,7 @@ export default function Categories() {
                 }}
               >
                 <div
-                  className="absolute inset-0 overflow-hidden bg-sand"
+                  className="absolute inset-0 overflow-hidden rounded-2xl bg-sand"
                   style={{
                     backfaceVisibility: "hidden",
                     WebkitBackfaceVisibility: "hidden",
@@ -130,7 +133,7 @@ export default function Categories() {
                 </div>
 
                 <div
-                  className="absolute inset-0 bg-charcoal flex flex-col justify-between p-6"
+                  className="absolute inset-0 overflow-hidden rounded-2xl bg-charcoal flex flex-col justify-between p-8"
                   style={{
                     backfaceVisibility: "hidden",
                     WebkitBackfaceVisibility: "hidden",
@@ -149,9 +152,9 @@ export default function Categories() {
                   <Link
                     href="/shop"
                     onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center justify-center w-fit bg-sage text-cream font-body text-xs tracking-wide uppercase px-6 py-3.5 hover:bg-cream hover:text-charcoal transition-colors"
+                    className="inline-flex items-center justify-center w-fit rounded-full bg-sage text-cream font-body text-xs tracking-[0.15em] uppercase px-7 py-3.5 hover:bg-cream hover:text-charcoal transition-colors"
                   >
-                    Shop Now
+                    Shop Now →
                   </Link>
                 </div>
               </div>
